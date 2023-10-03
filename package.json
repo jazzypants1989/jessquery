@@ -1,0 +1,23 @@
+{
+  "name": "j-query",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Modern JavaScript is pretty good, but typing document.querySelector() is a pain. This is a tiny library that makes DOM manipulation easy. jQuery is around 30kb, while this is only around 1.5kb. Lots of JSDoc comments so it's self-documenting and works great with TypeScript.",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "jquery",
+    "javascript",
+    "typescript",
+    "JSDoc",
+    "Dom Manipulation",
+    "Easy",
+    "Small",
+    "Tiny"
+  ],
+  "author": "Jesse Pence",
+  "license": "ISC"
+}
