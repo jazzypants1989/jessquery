@@ -85,6 +85,7 @@ interface DomElement {
     options: KeyframeAnimationOptions
   ) => DomElement
 }
+
 /**
  * An HTML element collection with some extra methods
  */
