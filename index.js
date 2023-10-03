@@ -1,15 +1,8 @@
-/** Finds the first element in the DOM that matches a CSS selector and returns it with some extra, useful methods.
- * @param {string} selector - The CSS selector to match
- * @returns {DomElement}
- * @example
- * $('button').on('click', () => console.log('Clicked!'))
- * // The first button on the page will log 'Clicked!' when clicked
- */
 function $(selector) {
   /** @type {HTMLElement | null} */
   const element = document.querySelector(selector)
   if (!element) throw new Error(selector + " is not found on the page")
-  /** @type {DomElement} */
+  /** @type {import("jessquery").DomElement} */
   const self = {
     on: (ev, fn) => {
       element.addEventListener(ev, fn)
@@ -61,14 +54,6 @@ function $(selector) {
   return self
 }
 
-/**
- * Finds all elements in the DOM that match a CSS selector and returns them with some extra, useful methods.
- * @param {string} selector - The CSS selector to match
- * @returns {DomElementCollection}
- * @example
- * $$('.button').on('click', () => console.log('Clicked!'))
- * // Every button on the page will log 'Clicked!' when clicked
- */
 function $$(selector) {
   /** @type {HTMLElement[]} */
   const elements = Array.from(document.querySelectorAll(selector))
@@ -95,7 +80,7 @@ function $$(selector) {
       return self
     }
 
-  /** @type {DomElementCollection} */
+  /** @type {import("jessquery").DomElementCollection} */
   const self = {
     on: (ev, fn) =>
       applyFunc((ev, fn) => {
