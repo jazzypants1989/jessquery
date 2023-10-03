@@ -26,7 +26,7 @@ const buttons = $$(".buttons")
 
 // Have fun!
 button.on("click", () => console.log("clicked"))
-buttons.addClass("btn")
+buttons.addClass("btn").css('backgroundColor', 'hotPink')
 ```
 
 ## Interfaces
