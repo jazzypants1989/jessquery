@@ -1,6 +1,8 @@
-# Dom Manipulation Library
+# jessquery
 
-A library that simplifies DOM manipulation, providing a jQuery-like experience with methods to alter elements and collections of elements.
+`jessquery` is a light wrapper around the browser's native DOM API with less verbosity and more convenience methods. It's just like jQuery, except with a smaller footprint and a different name. It doesn't do quite as much, but most of jQuery's features have been subsumed by the browser itself.
+
+The main difference? jQuery is 80kb before gzip. jessquery is 2kb before gzip-- 800 bytes after gzip. So, you get most of the convenience at a fraction of the cost.
 
 ## Installation
 
