@@ -1,23 +1,8 @@
 # jessquery
 
-`jessquery` is a light wrapper around the browser's native DOM API with less verbosity and more convenience methods. It's just like jQuery, except with a smaller footprint and a different name. It doesn't do quite as much, but most of jQuery's features have been subsumed by the browser itself.
+`jessquery` is a light wrapper around the browser's native DOM API with less verbosity and more convenience methods. It's just like [jQuery](https://jquery.com/), except with a smaller footprint and a sillier name. It doesn't do quite as much, but most of jQuery's features have been subsumed by the browser itself. The key thing that is lost when working without jQuery is the ability to easily compose multiple actions in a readable, logical way. So, I made sure that all these methods can be chained together-- just like with jQuery!
 
 The main difference? jQuery is 80kb before gzip. jessquery is 2kb before gzip-- 800 bytes after gzip. So, you get most of the convenience at a fraction of the cost.
-
-## Installation
-
-I suggest a CDN, but you can also install it via NPM, PNPM, Yarn, or Bun.
-
-```html
-<script src="https://esm.sh/jessquery"></script>
-```
-
-```bash
-npm install jessquery
-pnpm install jessquery
-yarn add jessquery
-bun install jessquery
-```
 
 ## Usage
 
@@ -34,6 +19,32 @@ const buttons = $$(".buttons")
 button.on("click", () => console.log("clicked"))
 buttons.addClass("btn").css({ color: "red", backgroundColor: "blue" })
 ```
+
+## Installation
+
+You can install it via NPM, PNPM, Yarn, or Bun just like anything else on NPM.
+
+```bash
+npm install jessquery
+pnpm install jessquery
+yarn add jessquery
+bun install jessquery
+```
+
+Or, since it's so small, you can just use a CDN like the good, old days. The big problem with this is that you lose the types and the JSDoc annotations. I keep those in the `d.ts` file to keep the file size small.
+
+```html
+<script src="https://esm.sh/jessquery"></script>
+<script src="https://unpkg.com/jessquery"></script>
+```
+
+## Demo and Key Concepts
+
+Here's a [Stackblitz Playground](https://stackblitz.com/edit/jessquery?file=main.js) if you want to try it out. It works slightly differently from jQuery, but it makes sense once you understand the rules. Use `$` to operate on a single element, and use `$$` for operating on multiple elements at once. If you ever used [PrototypeJS](http://prototypejs.org/doc/latest/dom/dollar-dollar/), this should be familiar to you.
+
+The magic sauce here is that everything is a proxy, so you can still use the full DOM API if your use case isn't covered by one of the methods. The NodeList that you get from `$$` is automatically turned into an array for you. So, you can map over the DOMElementCollection and operate on each element. Or, if you forget about the `.css` operator and use `.style` instead when using `$`, it will just work. 
+
+This might get problematic in large applications as proxies bring a small performance overhead, but I'm probably just being paranoid. I welcome anyone to do some tests! 😅
 
 ## Interfaces
 
