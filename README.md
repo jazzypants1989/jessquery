@@ -6,6 +6,12 @@ The main difference? jQuery is 80kb before gzip. jessquery is 2kb before gzip-- 
 
 ## Installation
 
+I suggest a CDN, but you can also install it via NPM, PNPM, Yarn, or Bundler.
+
+```html
+<script src="https://esm.sh/jessquery"></script>
+```
+
 ```bash
 npm install jessquery
 pnpm install jessquery
@@ -26,7 +32,7 @@ const buttons = $$(".buttons")
 
 // Have fun!
 button.on("click", () => console.log("clicked"))
-buttons.addClass("btn")
+buttons.addClass("btn").css({ color: "red", backgroundColor: "blue" })
 ```
 
 ## Interfaces
@@ -54,10 +60,21 @@ A representation of an HTML element enriched with extra methods for easier manip
   - Adds an event listener to the element.
   - Example: `$('button').on('click', () => console.log('clicked'))`
 
-- **css(prop: string, value: string): DomElement**
+- **css(prop: string | Record<string, string>, value?: string): DomElement**
 
-  - Adds a CSS Rule to the element.
+  - Adds one or more CSS Rules to the element. If the first argument is an object, each key-value pair will be added as a CSS Rule. If the first argument is a string, it will be treated as a CSS property and the second argument will be treated as its value.
   - Example: `$('button').css('color', 'red')`
+  - Example: `$('button').css({ color: 'red', backgroundColor: 'blue' })`
+
+- **html(newHtml: string): DomElement**
+
+  - Changes the HTML of the element.
+  - Example: `$('button').html('<span>Click me!</span>')`
+
+- **text(newText: string): DomElement**
+
+  - Changes the text of the element.
+  - Example: `$('button').text('Click me!')`
 
 - **addClass(className: string): DomElement**
 
@@ -83,20 +100,15 @@ A representation of an HTML element enriched with extra methods for easier manip
   - Appends an additional element to the element.
   - Example: `$('button').append('<span>Click me!</span>')`
 
+- **appendTo(target: string): DomElement**
+
+  - Appends the element to a target.
+  - Example: `$('button').appendTo('.container')`
+
 - **remove(): DomElement**
 
   - Removes the element from the DOM.
   - Example: `$('button').remove()`
-
-- **html(newHtml: string): DomElement**
-
-  - Changes the HTML of the element.
-  - Example: `$('button').html('<span>Click me!</span>')`
-
-- **text(newText: string): DomElement**
-
-  - Changes the text of the element.
-  - Example: `$('button').text('Click me!')`
 
 - **animate(keyframes: Keyframe[] | PropertyIndexedKeyframes, options: KeyframeAnimationOptions): DomElement**
   - Animates the element using the WAAPI.
@@ -138,15 +150,15 @@ A collection of DomElement instances with similar enhanced methods for bulk acti
   - Appends an additional element to the elements.
   - Example: `$$('.container').append('<span>New Element</span>')`
 
-- **remove(): DomElementCollection**
-
-  - Removes the elements from the DOM.
-  - Example: `$$('.buttons').remove()`
-
 - **appendTo(target: string): DomElementCollection**
 
   - Appends the elements to a target.
   - Example: `$$('.buttons').appendTo('.container')`
+
+- **remove(): DomElementCollection**
+
+  - Removes the elements from the DOM.
+  - Example: `$$('.buttons').remove()`
 
 - **find(subSelector: string): DomElementCollection**
 
@@ -182,3 +194,7 @@ A collection of DomElement instances with similar enhanced methods for bulk acti
 - **text(newText: string): DomElementCollection**
   - Changes the text of the elements.
   - Example: `$$('.buttons').text('Click me!')`
+
+```
+
+```

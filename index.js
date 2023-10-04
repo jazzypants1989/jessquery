@@ -1,83 +1,96 @@
 function $(selector) {
   /** @type {HTMLElement | null} */
   const element = document.querySelector(selector)
-  if (!element) throw new Error(selector + " is not found on the page")
+  if (!element) return null
 
-  const handler = {
-    get(target, prop) {
-      if (typeof target[prop] === "function") {
-        return function (...args) {
-          const result = target[prop].apply(element, args)
-          return result === element ? self : result // Maintain chainability when methods return the element
+  const customMethods = {
+    on(ev, fn) {
+      element.addEventListener(ev, fn)
+      return proxy
+    },
+    css(arg1, arg2) {
+      if (typeof arg1 === "string") {
+        element.style[arg1] = arg2
+      } else if (typeof arg1 === "object") {
+        for (const prop in arg1) {
+          if (arg1.hasOwnProperty(prop)) {
+            element.style[prop] = arg1[prop]
+          }
         }
       }
-      return Reflect.get(element, prop)
+      return proxy
     },
-    set(target, prop, value) {
-      return Reflect.set(element, prop, value)
+    addClass(className) {
+      element.classList.add(className)
+      return proxy
+    },
+    removeClass(className) {
+      element.classList.remove(className)
+      return proxy
+    },
+    toggleClass(className) {
+      element.classList.toggle(className)
+      return proxy
+    },
+    setAttribute(attr, value) {
+      if (element.getAttribute(attr) !== value) {
+        element.setAttribute(attr, value)
+      }
+      return proxy
+    },
+    append(htmlString) {
+      element.insertAdjacentHTML("beforeend", htmlString)
+      return proxy
+    },
+    appendTo(target) {
+      const targetElement = document.querySelector(target)
+      targetElement.appendChild(element)
+      return proxy
+    },
+    remove() {
+      element.remove()
+      return proxy
+    },
+    html(newHtml) {
+      element.innerHTML = newHtml
+      return proxy
+    },
+    text(newText) {
+      element.textContent = newText
+      return proxy
+    },
+    animate(keyframes, options) {
+      const animation = element.animate(keyframes, options)
+      animation.onfinish = () => proxy // Return proxy on animation finish for chaining
+      return proxy
     },
   }
 
-  const self = new Proxy(element, handler)
-
-  self.on = (ev, fn) => {
-    element.addEventListener(ev, fn)
-    return self
-  }
-  self.css = (prop, value) => {
-    element.style[prop] = value
-    return self
-  }
-  self.addClass = (className) => {
-    element.classList.add(className)
-    return self
-  }
-  self.removeClass = (className) => {
-    element.classList.remove(className)
-    return self
-  }
-  self.toggleClass = (className) => {
-    element.classList.toggle(className)
-    return self
-  }
-  self.setAttribute = (attr, value) => {
-    element.setAttribute(attr, value)
-    return self
-  }
-  self.append = (htmlString) => {
-    element.insertAdjacentHTML("beforeend", htmlString)
-    return self
-  }
-  self.appendTo = (target) => {
-    const targetElement = document.querySelector(target)
-    targetElement.appendChild(element)
-    return self
-  }
-  self.remove = () => {
-    element.remove()
-    return self
-  }
-  self.html = (newHtml) => {
-    element.innerHTML = newHtml
-    return self
-  }
-  self.text = (newText) => {
-    element.textContent = newText
-    return self
-  }
-  self.animate = (keyframes, options) => {
-    const animation = element.animate(keyframes, options)
-    animation.onfinish = () => self // Return self on animation finish for chaining
-    return self
+  const handler = {
+    get(_, prop) {
+      if (prop in customMethods) {
+        return customMethods[prop]
+      }
+      return element[prop]
+    },
+    set(_, prop, value) {
+      if (prop in customMethods) {
+        customMethods[prop] = value
+        return true
+      }
+      element[prop] = value
+      return true
+    },
   }
 
-  return self
+  const proxy = new Proxy(customMethods, handler)
+  return proxy
 }
 
 function $$(selector) {
   /** @type {HTMLElement[]} */
   const elements = Array.from(document.querySelectorAll(selector))
-  const noop = () => self
+  const noop = () => proxy
 
   const applyToElements =
     (method) =>
@@ -87,7 +100,7 @@ function $$(selector) {
         const context = namespace ? element[namespace] : element
         context[func](...args)
       })
-      return self
+      return proxy
     }
 
   const checkAndApply = (method) =>
@@ -97,11 +110,10 @@ function $$(selector) {
     (customFunction) =>
     (...args) => {
       customFunction(...args)
-      return self
+      return proxy
     }
 
-  /** @type {import("jessquery").DomElementCollection} */
-  const self = {
+  const customMethods = {
     on: (ev, fn) =>
       applyFunc((ev, fn) => {
         elements.forEach((element) => element.addEventListener(ev, fn))
@@ -115,12 +127,12 @@ function $$(selector) {
         element.insertAdjacentHTML("beforeend", htmlString)
       )
     }),
-    remove: applyFunc(() => {
-      elements.forEach((element) => element.remove())
-    }),
     appendTo: applyFunc((target) => {
       const targetElement = document.querySelector(target)
       elements.forEach((element) => targetElement.appendChild(element))
+    }),
+    remove: applyFunc(() => {
+      elements.forEach((element) => element.remove())
     }),
     find: (subSelector) => $$(selector + " " + subSelector),
     closest: (ancestorSelector) => {
@@ -139,11 +151,21 @@ function $$(selector) {
     animate: applyFunc((keyframes, options) => {
       elements.forEach((element) => {
         const animation = element.animate(keyframes, options)
-        animation.onfinish = () => self // Return self on animation finish for chaining
+        animation.onfinish = () => proxy
       })
     }),
-    css: applyFunc((prop, value) => {
-      elements.forEach((element) => (element.style[prop] = value))
+    css: applyFunc((arg1, arg2) => {
+      elements.forEach((element) => {
+        if (typeof arg1 === "string") {
+          element.style[arg1] = arg2
+        } else if (typeof arg1 === "object") {
+          for (const prop in arg1) {
+            if (arg1.hasOwnProperty(prop)) {
+              element.style[prop] = arg1[prop]
+            }
+          }
+        }
+      })
     }),
     html: applyFunc((newHtml) => {
       elements.forEach((element) => (element.innerHTML = newHtml))
@@ -153,23 +175,28 @@ function $$(selector) {
     }),
   }
 
-  return new Proxy(self, {
-    get(target, prop, receiver) {
-      if (prop in target) {
-        return Reflect.get(target, prop, receiver)
+  const handler = {
+    get(_, prop) {
+      if (prop in customMethods) {
+        return customMethods[prop]
       }
-      return Reflect.get(elements, prop, receiver)
+      return elements[prop] // for array methods and properties
     },
-    set(target, prop, value, receiver) {
-      if (prop in target) {
-        return Reflect.set(target, prop, value, receiver)
+    set(_, prop, value) {
+      if (prop in customMethods) {
+        customMethods[prop] = value
+        return true
       }
-      return Reflect.set(elements, prop, value, receiver)
+      elements[prop] = value
+      return true
     },
-    has(target, prop) {
-      return prop in target || prop in elements
+    has(_, prop) {
+      return prop in customMethods || prop in elements
     },
-  })
+  }
+
+  const proxy = new Proxy(customMethods, handler)
+  return proxy
 }
 
 export { $, $$ }

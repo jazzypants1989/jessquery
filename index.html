@@ -10,10 +10,18 @@
     <div class="test">yo</div>
     <script type="module">
       import { $, $$ } from "./index.js"
-      $("#hey").style.color = "blue"
+      $("#hey")
+        .on("click", () => {
+          console.log("clicked")
+        })
+        .css({
+          backgroundColor: "blue",
+        })
+        .setAttribute("contenteditable", true)
 
-      $$(".test").forEach((el) => {
-        el.style.color = "red"
+      $$(".test").css({
+        color: "red",
+        fontSize: "20px",
       })
     </script>
   </body>
