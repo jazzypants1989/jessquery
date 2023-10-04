@@ -8,7 +8,7 @@ function $(selector) {
       if (typeof target[prop] === "function") {
         return function (...args) {
           const result = target[prop].apply(element, args)
-          return result === element ? self : result
+          return result === element ? self : result // Maintain chainability when methods return the element
         }
       }
       return Reflect.get(element, prop)
@@ -46,6 +46,11 @@ function $(selector) {
   }
   self.append = (htmlString) => {
     element.insertAdjacentHTML("beforeend", htmlString)
+    return self
+  }
+  self.appendTo = (target) => {
+    const targetElement = document.querySelector(target)
+    targetElement.appendChild(element)
     return self
   }
   self.remove = () => {
@@ -148,28 +153,23 @@ function $$(selector) {
     }),
   }
 
-  const handler = {
-    get: (target, property) => {
-      if (property in self) {
-        return typeof self[property] === "function"
-          ? self[property].bind(self)
-          : self[property]
-      } else {
-        return elements[property]
+  return new Proxy(self, {
+    get(target, prop, receiver) {
+      if (prop in target) {
+        return Reflect.get(target, prop, receiver)
       }
+      return Reflect.get(elements, prop, receiver)
     },
-    set: (target, property, value) => {
-      elements[property] = value
-      return true
+    set(target, prop, value, receiver) {
+      if (prop in target) {
+        return Reflect.set(target, prop, value, receiver)
+      }
+      return Reflect.set(elements, prop, value, receiver)
     },
-    apply: (target, thisArg, argumentsList) => {
-      return target(...argumentsList)
+    has(target, prop) {
+      return prop in target || prop in elements
     },
-  }
-
-  const proxy = new Proxy(self, handler)
-
-  return proxy
+  })
 }
 
 export { $, $$ }

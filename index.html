@@ -6,14 +6,15 @@
     <title>Document</title>
   </head>
   <body>
-    <div id="test"></div>
+    <div class="test" id="hey">hi</div>
+    <div class="test">yo</div>
     <script type="module">
-      import { $ } from "./index.js"
-      $("div")
-        .html("hello world")
-        .on("click", function () {
-          alert("hello world")
-        }).style.backgroundColor = "red" // This should now work
+      import { $, $$ } from "./index.js"
+      $("#hey").style.color = "blue"
+
+      $$(".test").forEach((el) => {
+        el.style.color = "red"
+      })
     </script>
   </body>
 </html>
