@@ -2,53 +2,68 @@ function $(selector) {
   /** @type {HTMLElement | null} */
   const element = document.querySelector(selector)
   if (!element) throw new Error(selector + " is not found on the page")
-  /** @type {import("jessquery").DomElement} */
-  const self = {
-    on: (ev, fn) => {
-      element.addEventListener(ev, fn)
-      return self
+
+  const handler = {
+    get(target, prop) {
+      if (typeof target[prop] === "function") {
+        return function (...args) {
+          const result = target[prop].apply(element, args)
+          return result === element ? self : result
+        }
+      }
+      return Reflect.get(element, prop)
     },
-    css: (prop, value) => {
-      element.style[prop] = value
-      return self
+    set(target, prop, value) {
+      return Reflect.set(element, prop, value)
     },
-    addClass: (className) => {
-      element.classList.add(className)
-      return self
-    },
-    removeClass: (className) => {
-      element.classList.remove(className)
-      return self
-    },
-    toggleClass: (className) => {
-      element.classList.toggle(className)
-      return self
-    },
-    setAttribute: (attr, value) => {
-      element.setAttribute(attr, value)
-      return self
-    },
-    append: (htmlString) => {
-      element.insertAdjacentHTML("beforeend", htmlString)
-      return self
-    },
-    remove: () => {
-      element.remove()
-      return self
-    },
-    html: (newHtml) => {
-      element.innerHTML = newHtml
-      return self
-    },
-    text: (newText) => {
-      element.textContent = newText
-      return self
-    },
-    animate: (keyframes, options) => {
-      const animation = element.animate(keyframes, options)
-      animation.onfinish = () => self // Return self on animation finish for chaining
-      return self
-    },
+  }
+
+  const self = new Proxy(element, handler)
+
+  self.on = (ev, fn) => {
+    element.addEventListener(ev, fn)
+    return self
+  }
+  self.css = (prop, value) => {
+    element.style[prop] = value
+    return self
+  }
+  self.addClass = (className) => {
+    element.classList.add(className)
+    return self
+  }
+  self.removeClass = (className) => {
+    element.classList.remove(className)
+    return self
+  }
+  self.toggleClass = (className) => {
+    element.classList.toggle(className)
+    return self
+  }
+  self.setAttribute = (attr, value) => {
+    element.setAttribute(attr, value)
+    return self
+  }
+  self.append = (htmlString) => {
+    element.insertAdjacentHTML("beforeend", htmlString)
+    return self
+  }
+  self.remove = () => {
+    element.remove()
+    return self
+  }
+  self.html = (newHtml) => {
+    element.innerHTML = newHtml
+    return self
+  }
+  self.text = (newText) => {
+    element.textContent = newText
+    return self
+  }
+  self.animate = (keyframes, options) => {
+    const animation = element.animate(keyframes, options)
+    animation.onfinish = () => self // Return self on animation finish for chaining
+    return self
   }
 
   return self
