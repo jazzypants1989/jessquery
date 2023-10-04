@@ -6,7 +6,14 @@
     <title>Document</title>
   </head>
   <body>
-    <div class="test" id="hey">hi</div>
+    <div class="test" id="hey">
+      1
+      <p>yo</p>
+      <div class="nested">
+        2
+        <div class="nested">3</div>
+      </div>
+    </div>
     <div class="test">yo</div>
     <script type="module">
       import { $, $$ } from "./index.js"
@@ -41,7 +48,11 @@
       button.textContent = "click me"
       document.body.appendChild(button)
 
-      $("button").animate([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 })
+      $("button")
+        .animate([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 })
+        .on("click", () => {
+          console.log("clicked")
+        })
     </script>
   </body>
 </html>
