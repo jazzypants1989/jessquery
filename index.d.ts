@@ -11,20 +11,19 @@ declare module "jessquery" {
      * $('button').on('click', () => console.log('clicked'))
      */
     on: (ev: string, fn: EventListenerOrEventListenerObject) => DomElement
-    /** Add a CSS Rule to the element
+    /** Add a CSS Rule to the element. If the first argument is an object, it will be treated as a map of CSS properties and values. Otherwise, it will be treated as a single CSS property and the second argument will be treated as the value.
      * @param prop The CSS property
      * @param value The CSS value
      * @returns This DomElement
      * @example
      * $('button').css('color', 'red')
+     * OR
+     * $('button').css({ color: 'red', backgroundColor: 'blue' })
      */
-    css: (prop: string, value: string) => DomElement
-    /** Add a class to the element
-     * @param className The class name
-     * @returns This DomElement
-     * @example
-     * $('button').addClass('btn')
-     */
+    css: (
+      prop: string | { [key: string]: string },
+      value?: string
+    ) => DomElement
     addClass: (className: string) => DomElement
     /** Remove a class from the element
      * @param className The class name
@@ -44,6 +43,8 @@ declare module "jessquery" {
      * @param attr The attribute name
      * @param value The attribute value
      * @returns This DomElement
+     * @example
+     * $('button').toggleClass('btn')
      */
     setAttribute: (attr: string, value: string) => DomElement
     /** Append an additional element to the element
@@ -53,11 +54,19 @@ declare module "jessquery" {
      * $('button').append('<span>Click me!</span>')
      */
     append: (htmlString: string) => DomElement
+    /** Append the element to a target
+     * @param target The target selector
+     * @returns This DomElement
+     * @example
+     * $('button').appendTo('.container')
+     */
+    appendTo: (target: string) => DomElement
     /** Remove the element from the DOM
      * @returns This DomElement
      * @example
      * $('button').remove()
      */
+
     remove: () => DomElement
     /** Change the HTML of the element
      * @param newHtml The new HTML
@@ -199,14 +208,15 @@ declare module "jessquery" {
       options: KeyframeAnimationOptions
     ) => DomElementCollection
 
-    /** Add a CSS Rule to the elements
+    /** Adds one or more CSS rule(s) to the elements. If the first argument is an object, it will be treated as a map of CSS properties and values. Otherwise, it will be treated as a single CSS property and the second argument will be treated as the value.
      * @param prop The CSS property
      * @param value The CSS value
      * @returns This DomElementCollection
      * @example
      * $$('.buttons').css('color', 'red')
+     * OR
+     * $$('.buttons').css({ color: 'red', backgroundColor: 'blue' })
      */
-    css: (prop: string, value: string) => DomElementCollection
 
     /** Change the HTML of the elements
      * @param newHtml The new HTML

@@ -1,63 +1,96 @@
 function $(selector) {
   /** @type {HTMLElement | null} */
   const element = document.querySelector(selector)
-  if (!element) throw new Error(selector + " is not found on the page")
-  /** @type {import("jessquery").DomElement} */
-  const self = {
-    on: (ev, fn) => {
+  if (!element) return null
+
+  const customMethods = {
+    on(ev, fn) {
       element.addEventListener(ev, fn)
-      return self
+      return proxy
     },
-    css: (prop, value) => {
-      element.style[prop] = value
-      return self
+    css(arg1, arg2) {
+      if (typeof arg1 === "string") {
+        element.style[arg1] = arg2
+      } else if (typeof arg1 === "object") {
+        for (const prop in arg1) {
+          if (arg1.hasOwnProperty(prop)) {
+            element.style[prop] = arg1[prop]
+          }
+        }
+      }
+      return proxy
     },
-    addClass: (className) => {
+    addClass(className) {
       element.classList.add(className)
-      return self
+      return proxy
     },
-    removeClass: (className) => {
+    removeClass(className) {
       element.classList.remove(className)
-      return self
+      return proxy
     },
-    toggleClass: (className) => {
+    toggleClass(className) {
       element.classList.toggle(className)
-      return self
+      return proxy
     },
-    setAttribute: (attr, value) => {
-      element.setAttribute(attr, value)
-      return self
+    setAttribute(attr, value) {
+      if (element.getAttribute(attr) !== value) {
+        element.setAttribute(attr, value)
+      }
+      return proxy
     },
-    append: (htmlString) => {
-      element.insertAdjacentHTML("beforeend", htmlString)
-      return self
+    append(htmlString) {
+      element.appendChild(htmlString)
+      return proxy
     },
-    remove: () => {
+    appendTo(target) {
+      const targetElement = document.querySelector(target)
+      targetElement.appendChild(element)
+      return proxy
+    },
+    remove() {
       element.remove()
-      return self
+      return proxy
     },
-    html: (newHtml) => {
+    html(newHtml) {
       element.innerHTML = newHtml
-      return self
+      return proxy
     },
-    text: (newText) => {
+    text(newText) {
       element.textContent = newText
-      return self
+      return proxy
     },
-    animate: (keyframes, options) => {
+    animate(keyframes, options) {
       const animation = element.animate(keyframes, options)
-      animation.onfinish = () => self // Return self on animation finish for chaining
-      return self
+      animation.onfinish = () => proxy // Return proxy on animation finish for chaining
+      return proxy
     },
   }
 
-  return self
+  const handler = {
+    get(_, prop) {
+      if (prop in customMethods) {
+        return customMethods[prop]
+      }
+      return element[prop]
+    },
+    set(_, prop, value) {
+      if (prop in customMethods) {
+        customMethods[prop] = value
+        return true
+      }
+      element[prop] = value
+      return true
+    },
+  }
+
+  const proxy = new Proxy(customMethods, handler)
+  return proxy
 }
 
 function $$(selector) {
   /** @type {HTMLElement[]} */
   const elements = Array.from(document.querySelectorAll(selector))
-  const noop = () => self
+  const noop = () => proxy
 
   const applyToElements =
     (method) =>
@@ -67,7 +100,7 @@ function $$(selector) {
         const context = namespace ? element[namespace] : element
         context[func](...args)
       })
-      return self
+      return proxy
     }
 
   const checkAndApply = (method) =>
@@ -77,11 +110,10 @@ function $$(selector) {
     (customFunction) =>
     (...args) => {
       customFunction(...args)
-      return self
+      return proxy
     }
 
-  /** @type {import("jessquery").DomElementCollection} */
-  const self = {
+  const customMethods = {
     on: (ev, fn) =>
       applyFunc((ev, fn) => {
         elements.forEach((element) => element.addEventListener(ev, fn))
@@ -91,16 +123,14 @@ function $$(selector) {
     toggleClass: checkAndApply("classList.toggle"),
     setAttribute: checkAndApply("setAttribute"),
     append: applyFunc((htmlString) => {
-      elements.forEach((element) =>
-        element.insertAdjacentHTML("beforeend", htmlString)
-      )
-    }),
-    remove: applyFunc(() => {
-      elements.forEach((element) => element.remove())
+      elements.forEach((element) => element.appendChild(htmlString))
     }),
     appendTo: applyFunc((target) => {
       const targetElement = document.querySelector(target)
       elements.forEach((element) => targetElement.appendChild(element))
+    }),
+    remove: applyFunc(() => {
+      elements.forEach((element) => element.remove())
     }),
     find: (subSelector) => $$(selector + " " + subSelector),
     closest: (ancestorSelector) => {
@@ -119,11 +149,21 @@ function $$(selector) {
     animate: applyFunc((keyframes, options) => {
       elements.forEach((element) => {
         const animation = element.animate(keyframes, options)
-        animation.onfinish = () => self // Return self on animation finish for chaining
+        animation.onfinish = () => proxy
       })
     }),
-    css: applyFunc((prop, value) => {
-      elements.forEach((element) => (element.style[prop] = value))
+    css: applyFunc((arg1, arg2) => {
+      elements.forEach((element) => {
+        if (typeof arg1 === "string") {
+          element.style[arg1] = arg2
+        } else if (typeof arg1 === "object") {
+          for (const prop in arg1) {
+            if (arg1.hasOwnProperty(prop)) {
+              element.style[prop] = arg1[prop]
+            }
+          }
+        }
+      })
     }),
     html: applyFunc((newHtml) => {
       elements.forEach((element) => (element.innerHTML = newHtml))
@@ -134,26 +174,26 @@ function $$(selector) {
   }
 
   const handler = {
-    get: (target, property) => {
-      if (property in self) {
-        return typeof self[property] === "function"
-          ? self[property].bind(self)
-          : self[property]
-      } else {
-        return elements[property]
+    get(_, prop) {
+      if (prop in customMethods) {
+        return customMethods[prop]
       }
+      return elements[prop] // for array methods and properties
     },
-    set: (target, property, value) => {
-      elements[property] = value
+    set(_, prop, value) {
+      if (prop in customMethods) {
+        customMethods[prop] = value
+        return true
+      }
+      elements[prop] = value
       return true
     },
-    apply: (target, thisArg, argumentsList) => {
-      return target(...argumentsList)
+    has(_, prop) {
+      return prop in customMethods || prop in elements
     },
   }
 
-  const proxy = new Proxy(self, handler)
-
+  const proxy = new Proxy(customMethods, handler)
   return proxy
 }
 
