@@ -10,19 +10,38 @@
     <div class="test">yo</div>
     <script type="module">
       import { $, $$ } from "./index.js"
+
+      $$(".test").css({
+        color: "red",
+        fontSize: "20px",
+      })
+
       $("#hey")
         .on("click", () => {
           console.log("clicked")
         })
         .css({
           backgroundColor: "blue",
+          color: "white",
         })
         .setAttribute("contenteditable", true)
+        .animate(
+          [
+            { opacity: 0, transform: "translateY(-100px)" },
+            { opacity: 1, transform: "translateY(0)" },
+          ],
+          {
+            duration: 500,
+            easing: "ease-in-out",
+            fill: "forwards",
+          }
+        )
 
-      $$(".test").css({
-        color: "red",
-        fontSize: "20px",
-      })
+      const button = document.createElement("button")
+      button.textContent = "click me"
+      document.body.appendChild(button)
+
+      $("button").animate([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 })
     </script>
   </body>
 </html>

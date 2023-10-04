@@ -6,7 +6,7 @@ The main difference? jQuery is 80kb before gzip. jessquery is 2kb before gzip-- 
 
 ## Installation
 
-I suggest a CDN, but you can also install it via NPM, PNPM, Yarn, or Bundler.
+I suggest a CDN, but you can also install it via NPM, PNPM, Yarn, or Bun.
 
 ```html
 <script src="https://esm.sh/jessquery"></script>

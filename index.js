@@ -39,7 +39,7 @@ function $(selector) {
       return proxy
     },
     append(htmlString) {
-      element.insertAdjacentHTML("beforeend", htmlString)
+      element.appendChild(htmlString)
       return proxy
     },
     appendTo(target) {
@@ -123,9 +123,7 @@ function $$(selector) {
     toggleClass: checkAndApply("classList.toggle"),
     setAttribute: checkAndApply("setAttribute"),
     append: applyFunc((htmlString) => {
-      elements.forEach((element) =>
-        element.insertAdjacentHTML("beforeend", htmlString)
-      )
+      elements.forEach((element) => element.appendChild(htmlString))
     }),
     appendTo: applyFunc((target) => {
       const targetElement = document.querySelector(target)
