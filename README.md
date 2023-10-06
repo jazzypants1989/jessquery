@@ -4,7 +4,7 @@
 
 The key thing that is lost when working without jQuery is the ability to easily compose multiple actions in a readable, logical way. So, I made sure that all these methods can be chained together-- just like with jQuery! Each function will wait for the previous one to finish before continuing the chain. This makes it easy to do things like wait for an animation to finish before removing an element from the DOM.
 
-The main difference? jQuery is 80kb before gzip. jessquery is 2kb before gzip-- 800 bytes after gzip. So, you get most of the convenience at a fraction of the cost.
+The main difference? jQuery is 80kb before gzip and around 30kb after compression. jessquery is 5kb before gzip-- 1.69kb after compression! So, you get most of the convenience at a fraction of the cost.
 
 ## Usage
 
