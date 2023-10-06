@@ -12,7 +12,7 @@ declare module "jessquery" {
      */
     on: (ev: string, fn: EventListenerOrEventListenerObject) => DomElement
     /** Add a CSS Rule to the element. If the first argument is an object, it will be treated as a map of CSS properties and values. Otherwise, it will be treated as a single CSS property and the second argument will be treated as the value.
-     * @param prop The CSS property
+     * @param propOrObj The CSS property or object containing CSS properties and values
      * @param value The CSS value
      * @returns This DomElement
      * @example
@@ -21,7 +21,7 @@ declare module "jessquery" {
      * $('button').css({ color: 'red', backgroundColor: 'blue' })
      */
     css: (
-      prop: string | { [key: string]: string },
+      propOrObj: string | { [key: string]: string | number },
       value?: string
     ) => DomElement
     addClass: (className: string) => DomElement
@@ -94,6 +94,79 @@ declare module "jessquery" {
       keyframes: Keyframe[] | PropertyIndexedKeyframes,
       options: KeyframeAnimationOptions
     ) => DomElement
+    /** Find descendants matching a sub-selector
+     * @param subSelector The sub-selector
+     * @returns This DomElement
+     * @example
+     * $('.container').find('.buttons')
+     */
+    find: (subSelector: string) => DomElement
+    /** Get the closest ancestor matching a selector
+     * @param ancestorSelector The ancestor selector
+     * @returns This DomElement
+     * @example
+     * $('.buttons').closest('.container')
+     */
+    closest: (ancestorSelector: string) => DomElement
+    /** Delegate an event listener to the element
+     * @param event The event name
+     * @param subSelector The sub-selector
+     * @param handler The event handler
+     * @returns This DomElement
+     * @example
+     * $('.container').delegate('click', '.buttons', (e) => console.log('Button clicked'))
+     */
+    delegate: (
+      event: string,
+      subSelector: string,
+      handler: EventListenerOrEventListenerObject
+    ) => DomElement
+    /** Find the parent of the element
+     * @returns This DomElement
+     * @example
+     * $('.buttons').parent()
+     */
+    parent: () => DomElement
+    /** Find the children of the element
+     * @returns This DomElement
+     * @example
+     * $('.container').children()
+     */
+    children: () => DomElement
+    /** Find the next sibling of the element
+     * @returns This DomElement
+     * @example
+     * $('.buttons').next()
+     */
+    next: () => DomElement
+    /** Find the previous sibling of the element
+     * @returns This DomElement
+     * @example
+     * $('.buttons').prev()
+     */
+    prev: () => DomElement
+    /** Find the siblings of the element
+     * @returns This DomElement
+     * @example
+     * $('.buttons').siblings()
+     */
+    siblings: () => DomElement
+    /** Await a timeout before continuing the chain
+     * @param ms The number of milliseconds to wait
+     * @returns This DomElement
+     * @example
+     * $('button').css('color', 'red').wait(1000).css('color', 'blue')
+     * // The button will turn red, wait 1 second, then turn blue
+     */
+    wait: (ms: number) => DomElement
+    /** Add a stylesheet to the ENTIRE DOCUMENT (this is useful for things like :hover styles). Got a good idea for how to make this scoped to a single element? Open a PR!
+     * @param css The CSS to add
+     * @returns This DomElement
+     * @example
+     * $('button').stylesheet('button:hover { color: red; }')
+     * // Now all buttons on the page will turn red when hovered
+     */
+    stylesheet: (css: string) => DomElement
   }
 
   /**
@@ -203,10 +276,10 @@ declare module "jessquery" {
      * $$('.buttons').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 })
      * @see https://developer.mozilla.org/en-US/docs/Web/API/Element/animate
      */
-    animate: (
+    animate(
       keyframes: Keyframe[] | PropertyIndexedKeyframes,
       options: KeyframeAnimationOptions
-    ) => DomElementCollection
+    ): DomElementCollection
 
     /** Adds one or more CSS rule(s) to the elements. If the first argument is an object, it will be treated as a map of CSS properties and values. Otherwise, it will be treated as a single CSS property and the second argument will be treated as the value.
      * @param prop The CSS property
@@ -233,6 +306,51 @@ declare module "jessquery" {
      * $$('.buttons').text('Click me!')
      */
     text: (newText: string) => DomElementCollection
+    /** Find the parent of the elements
+     * @returns This DomElementCollection
+     * @example
+     * $$('.buttons').parent()
+     */
+    parent: () => DomElementCollection
+    /** Find the children of the elements
+     * @returns This DomElementCollection
+     * @example
+     * $$('.container').children()
+     */
+    children: () => DomElementCollection
+    /** Find the next sibling of the elements
+     * @returns This DomElementCollection
+     * @example
+     * $$('.buttons').next()
+     */
+    next: () => DomElementCollection
+    /** Find the previous sibling of the elements
+     * @returns This DomElementCollection
+     * @example
+     * $$('.buttons').prev()
+     */
+    prev: () => DomElementCollection
+    /** Find the siblings of the elements
+     * @returns This DomElementCollection
+     * @example
+     * $$('.buttons').siblings()
+     */
+    siblings: () => DomElementCollection
+    /** Add a stylesheet to the ENTIRE DOCUMENT (this is useful for things like :hover styles). Got a good idea for how to make this scoped to a single element? Open a PR!
+     * @param css The CSS to add
+     * @returns This DomElementCollection
+     * @example
+     * $$('.buttons').addStylesheet('button:hover { color: red; }')
+     * // Now all buttons on the page will turn red when hovered
+     */
+    addStylesheet: (css: string) => DomElementCollection
+    /** Await a timeout before continuing the chain
+     * @param ms The number of milliseconds to wait
+     * @returns This DomElementCollection
+     * @example
+     * $$('.buttons').css('color', 'red').wait(1000).css('color', 'blue')
+     */
+    wait: (ms: number) => DomElementCollection
   }
 
   /** Finds the first element in the DOM that matches a CSS selector and returns it with some extra, useful methods.

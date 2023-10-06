@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fetch Demo</title>
+  </head>
+  <body>
+    <div id="content"></div>
+
+    <script type="module">
+      import { $, $$ } from "./index.js"
+
+      // Example usage of your $ function
+      const contentDiv = $("#content")
+
+      contentDiv.text(
+        fetch("https://jsonplaceholder.typicode.com/todos/1")
+          .then((response) => response.json())
+          .then((json) => json.title)
+      )
+    </script>
+  </body>
+</html>

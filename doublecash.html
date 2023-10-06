@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>$$ Test</title>
+    <style>
+      .animateDiv {
+        opacity: 0;
+        transform: translateY(-100px);
+        transition: all 0.5s ease-in-out;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="animateDiv">Div 1</div>
+    <div class="animateDiv">Div 2</div>
+    <div class="animateDiv">Div 3</div>
+    <div class="animateDiv">Div 4</div>
+    <div id="otherDiv">Other Div</div>
+    <div class="moreMultipleElements">Element</div>
+    <div class="moreMultipleElements">Element</div>
+
+    <script type="module">
+      import { $, $$ } from "./booty2.js"
+
+      $$(".animateDiv")
+        .text("Hello")
+        .animate(
+          [
+            { opacity: 0, transform: "translateY(-100px)" },
+            { opacity: 1, transform: "translateY(0)" },
+          ],
+          {
+            duration: 2000,
+            easing: "ease-in-out",
+            fill: "forwards",
+          }
+        )
+        .text("Animation Complete!")
+        .wait(300)
+        .remove()
+
+      $("#otherDiv")
+        .text("Other Div")
+        .wait(1000)
+        .text("Single Timeout Complete!")
+        .css({ color: "red" })
+
+      $$(".moreMultipleElements")
+        .text("Hello")
+        .wait(500)
+        .text("Multiple Timeouts Complete!")
+        .css({ color: "blue" })
+    </script>
+  </body>
+</html>

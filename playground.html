@@ -31,17 +31,36 @@
             { opacity: 1, transform: "translateY(0)" },
           ],
           {
-            duration: 500,
+            duration: 5000,
             easing: "ease-in-out",
             fill: "forwards",
           }
         )
+        .remove()
 
       const button = document.createElement("button")
       button.textContent = "click me"
-      document.body.appendChild(button)
+      $("body").append(button).css({
+        backgroundColor: "blue",
+        color: "white",
+      })
 
-      $("button").animate([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 })
+      let count = 0
+
+      $("button")
+        .on("click", () => {
+          $("button").text("clicked " + ++count + " times")
+        })
+        .css({
+          padding: "10px",
+          borderRadius: "5px",
+          border: "none",
+          cursor: "pointer",
+        }).styleSheet(`
+          button:hover {
+            background-color: red;
+          }
+          `)
     </script>
   </body>
 </html>

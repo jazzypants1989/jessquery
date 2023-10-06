@@ -1,200 +1,179 @@
 function $(selector) {
   /** @type {HTMLElement | null} */
-  const element = document.querySelector(selector)
-  if (!element) return null
+  let element =
+    typeof selector === "string" ? document.querySelector(selector) : selector
+
+  const queue = []
+  const applyFunc = createApplyFunc(() => element, queue)
 
   const customMethods = {
-    on(ev, fn) {
-      element.addEventListener(ev, fn)
-      return proxy
+    on: applyFunc((el, ev, fn) => el.addEventListener(ev, fn)),
+    delegate: applyFunc((el, event, subSelector, handler) =>
+      delegate(el, event, subSelector, handler)
+    ),
+    html: applyFunc((el, newHtml) => (el.innerHTML = newHtml)),
+    text: applyFunc((el, newText) => (el.textContent = newText)),
+    css: applyFunc((el, stylesOrProp, value) => css(el, stylesOrProp, value)),
+    addClass: applyFunc((el, className) => el.classList.add(className)),
+    removeClass: applyFunc((el, className) => el.classList.remove(className)),
+    toggleClass: applyFunc((el, className) => el.classList.toggle(className)),
+    setAttribute: applyFunc((el, attr, value) => el.setAttribute(attr, value)),
+    data: applyFunc((el, key, value) => (el.dataset[key] = value)),
+    remove: applyFunc((el) => el.remove()),
+    animate: applyFunc((el, keyframes, options) =>
+      animate([el], keyframes, options)
+    ),
+    wait: applyFunc(
+      (_, duration) => new Promise((resolve) => setTimeout(resolve, duration))
+    ),
+    find: (subSelector) => $(element.querySelector(subSelector)),
+    closest: (ancestorSelector) => {
+      const ancestor = element.closest(ancestorSelector)
+      return $(ancestor)
     },
-    css(arg1, arg2) {
-      if (typeof arg1 === "string") {
-        element.style[arg1] = arg2
-      } else if (typeof arg1 === "object") {
-        for (const prop in arg1) {
-          if (arg1.hasOwnProperty(prop)) {
-            element.style[prop] = arg1[prop]
-          }
-        }
-      }
-      return proxy
-    },
-    addClass(className) {
-      element.classList.add(className)
-      return proxy
-    },
-    removeClass(className) {
-      element.classList.remove(className)
-      return proxy
-    },
-    toggleClass(className) {
-      element.classList.toggle(className)
-      return proxy
-    },
-    setAttribute(attr, value) {
-      if (element.getAttribute(attr) !== value) {
-        element.setAttribute(attr, value)
-      }
-      return proxy
-    },
-    append(htmlString) {
-      element.appendChild(htmlString)
-      return proxy
-    },
-    appendTo(target) {
-      const targetElement = document.querySelector(target)
-      targetElement.appendChild(element)
-      return proxy
-    },
-    remove() {
-      element.remove()
-      return proxy
-    },
-    html(newHtml) {
-      element.innerHTML = newHtml
-      return proxy
-    },
-    text(newText) {
-      element.textContent = newText
-      return proxy
-    },
-    animate(keyframes, options) {
-      const animation = element.animate(keyframes, options)
-      animation.onfinish = () => proxy // Return proxy on animation finish for chaining
-      return proxy
-    },
+    styleSheet: addStyleSheet,
   }
 
-  const handler = {
-    get(_, prop) {
-      if (prop in customMethods) {
-        return customMethods[prop]
-      }
-      return element[prop]
-    },
-    set(_, prop, value) {
-      if (prop in customMethods) {
+  return new Proxy(element, {
+    get: (_, prop) => customMethods[prop] || element[prop],
+    set: (_, prop, value) => {
+      if (customMethods[prop]) {
         customMethods[prop] = value
-        return true
+      } else {
+        element[prop] = value
       }
-      element[prop] = value
       return true
     },
-  }
-
-  const proxy = new Proxy(customMethods, handler)
-  return proxy
+  })
 }
 
 function $$(selector) {
   /** @type {HTMLElement[]} */
-  const elements = Array.from(document.querySelectorAll(selector))
-  const noop = () => proxy
+  const elements =
+    typeof selector === "string"
+      ? Array.from(document.querySelectorAll(selector))
+      : selector
 
-  const applyToElements =
-    (method) =>
-    (...args) => {
-      elements.forEach((element) => {
-        const [namespace, func] = method.split(".")
-        const context = namespace ? element[namespace] : element
-        context[func](...args)
-      })
-      return proxy
-    }
-
-  const checkAndApply = (method) =>
-    elements.length ? applyToElements(method) : noop
-
-  const applyFunc =
-    (customFunction) =>
-    (...args) => {
-      customFunction(...args)
-      return proxy
-    }
+  const queue = []
+  const applyFunc = createApplyFunc(() => elements, queue)
 
   const customMethods = {
-    on: (ev, fn) =>
-      applyFunc((ev, fn) => {
-        elements.forEach((element) => element.addEventListener(ev, fn))
-      })(ev, fn),
-    addClass: checkAndApply("classList.add"),
-    removeClass: checkAndApply("classList.remove"),
-    toggleClass: checkAndApply("classList.toggle"),
-    setAttribute: checkAndApply("setAttribute"),
-    append: applyFunc((htmlString) => {
-      elements.forEach((element) => element.appendChild(htmlString))
-    }),
-    appendTo: applyFunc((target) => {
-      const targetElement = document.querySelector(target)
-      elements.forEach((element) => targetElement.appendChild(element))
-    }),
-    remove: applyFunc(() => {
-      elements.forEach((element) => element.remove())
-    }),
-    find: (subSelector) => $$(selector + " " + subSelector),
+    on: applyFunc((els, ev, fn) =>
+      els.forEach((el) => el.addEventListener(ev, fn))
+    ),
+    delegate: applyFunc((els, event, subSelector, handler) =>
+      els.forEach((el) => delegate(el, event, subSelector, handler))
+    ),
+    html: applyFunc((els, newHtml) =>
+      els.forEach((el) => (el.innerHTML = newHtml))
+    ),
+    text: applyFunc((els, newText) =>
+      els.forEach((el) => (el.textContent = newText))
+    ),
+    css: applyFunc((els, stylesOrProp, value) =>
+      els.forEach((el) => css(el, stylesOrProp, value))
+    ),
+    addClass: applyFunc((els, className) =>
+      els.forEach((el) => el.classList.add(className))
+    ),
+    removeClass: applyFunc((els, className) =>
+      els.forEach((el) => el.classList.remove(className))
+    ),
+    toggleClass: applyFunc((els, className) =>
+      els.forEach((el) => el.classList.toggle(className))
+    ),
+    setAttribute: applyFunc((els, attr, value) =>
+      els.forEach((el) => el.setAttribute(attr, value))
+    ),
+    data: applyFunc((els, key, value) =>
+      els.forEach((el) => (el.dataset[key] = value))
+    ),
+    remove: applyFunc((els) => els.forEach((el) => el.remove())),
+    animate: applyFunc((els, keyframes, options) =>
+      animate(els, keyframes, options)
+    ),
+    wait: applyFunc(
+      (_, duration) => new Promise((resolve) => setTimeout(resolve, duration))
+    ),
+    find: (subSelector) => $$(subSelector),
     closest: (ancestorSelector) => {
-      const ancestors = elements.map((element) =>
-        element.closest(ancestorSelector)
-      )
-      return $$(ancestors.map((ancestor) => ancestor?.tagName).join(","))
+      const ancestors = elements.map((el) => el.closest(ancestorSelector))
+      return $$(ancestors)
     },
-    delegate: applyFunc((event, subSelector, handler) => {
-      elements.forEach((element) => {
-        element.addEventListener(event, (e) => {
-          if (e.target.matches(subSelector)) handler.call(e.target, e)
-        })
-      })
-    }),
-    animate: applyFunc((keyframes, options) => {
-      elements.forEach((element) => {
-        const animation = element.animate(keyframes, options)
-        animation.onfinish = () => proxy
-      })
-    }),
-    css: applyFunc((arg1, arg2) => {
-      elements.forEach((element) => {
-        if (typeof arg1 === "string") {
-          element.style[arg1] = arg2
-        } else if (typeof arg1 === "object") {
-          for (const prop in arg1) {
-            if (arg1.hasOwnProperty(prop)) {
-              element.style[prop] = arg1[prop]
-            }
-          }
-        }
-      })
-    }),
-    html: applyFunc((newHtml) => {
-      elements.forEach((element) => (element.innerHTML = newHtml))
-    }),
-    text: applyFunc((newText) => {
-      elements.forEach((element) => (element.textContent = newText))
-    }),
+    styleSheet: addStyleSheet,
   }
 
-  const handler = {
-    get(_, prop) {
-      if (prop in customMethods) {
-        return customMethods[prop]
-      }
-      return elements[prop] // for array methods and properties
-    },
-    set(_, prop, value) {
-      if (prop in customMethods) {
+  return new Proxy(elements, {
+    get: (_, prop) => customMethods[prop] || elements[prop],
+    set: (_, prop, value) => {
+      if (customMethods[prop]) {
         customMethods[prop] = value
-        return true
+      } else {
+        elements[prop] = value
       }
-      elements[prop] = value
       return true
     },
-    has(_, prop) {
-      return prop in customMethods || prop in elements
-    },
-  }
+  })
+}
 
-  const proxy = new Proxy(customMethods, handler)
-  return proxy
+function createApplyFunc(getTarget, queue) {
+  return (customFunction) => {
+    return (...args) => {
+      const target = getTarget()
+      const executor = async () => {
+        const result = customFunction(target, ...args)
+        if (result instanceof Promise) {
+          await result
+        }
+      }
+      queue.push(executor)
+      if (queue.length === 1) {
+        handleQueue(queue)
+      }
+      return target
+    }
+  }
+}
+
+async function handleQueue(queue) {
+  while (queue.length) {
+    const execute = queue[0]
+    await execute()
+    queue.shift()
+  }
+}
+
+function delegate(element, event, subSelector, handler) {
+  element.addEventListener(event, (e) => {
+    if (e.target.matches(subSelector)) handler.call(e.target, e)
+  })
+}
+
+function css(element, stylesOrProp, value) {
+  if (typeof stylesOrProp === "string") {
+    element.style[stylesOrProp] = value
+  } else {
+    Object.assign(element.style, stylesOrProp)
+  }
+}
+
+function animate(elements, keyframes, options) {
+  return new Promise((resolve) => {
+    const animations = elements.map((el) => el.animate(keyframes, options))
+    const completedAnimations = []
+    animations.forEach((animation, index) => {
+      animation.onfinish = () => {
+        completedAnimations.push(index)
+        if (completedAnimations.length === animations.length) resolve()
+      }
+    })
+  })
+}
+
+function addStyleSheet(rules) {
+  const style = document.createElement("style")
+  style.textContent = rules
+  document.head.appendChild(style)
 }
 
 export { $, $$ }
