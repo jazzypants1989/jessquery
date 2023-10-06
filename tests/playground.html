@@ -8,35 +8,9 @@
   <body>
     <div class="test" id="hey">hi</div>
     <div class="test">yo</div>
+    <button>click me</button>
     <script type="module">
-      import { $, $$ } from "./index.js"
-
-      $$(".test").css({
-        color: "red",
-        fontSize: "20px",
-      })
-
-      $("#hey")
-        .on("click", () => {
-          console.log("clicked")
-        })
-        .css({
-          backgroundColor: "blue",
-          color: "white",
-        })
-        .setAttribute("contenteditable", true)
-        .animate(
-          [
-            { opacity: 0, transform: "translateY(-100px)" },
-            { opacity: 1, transform: "translateY(0)" },
-          ],
-          {
-            duration: 5000,
-            easing: "ease-in-out",
-            fill: "forwards",
-          }
-        )
-        .remove()
+      import { $, $$, setErrorHandler } from "../index.js"
 
       const button = document.createElement("button")
       button.textContent = "click me"
@@ -56,7 +30,7 @@
           borderRadius: "5px",
           border: "none",
           cursor: "pointer",
-        }).styleSheet(`
+        }).addStyleSheet(`
           button:hover {
             background-color: red;
           }
