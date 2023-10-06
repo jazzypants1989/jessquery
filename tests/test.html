@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test parent function</title>
+  </head>
+  <body>
+    <div id="parent">
+      <div id="child">
+        <!-- Your content here -->
+      </div>
+    </div>
+    <div id="testContainer"></div>
+
+    <script type="module">
+      import { $, $$ } from "./index.js"
+
+      function test(description, fn) {
+        const output = document.createElement("div")
+        output.textContent = `Running test: ${description}...`
+        document.getElementById("testContainer").appendChild(output)
+
+        try {
+          fn()
+          output.style.color = "green"
+          output.textContent += " PASSED"
+        } catch (error) {
+          output.style.color = "red"
+          output.textContent += ` FAILED (${error.message})`
+        }
+      }
+
+      test("parent method", () => {
+        const child = $("#child")
+        const parent = child.parent()
+        child.text("Child text")
+        parent.text("Parent text")
+        console.log(parent.id)
+        if (parent.id !== "parent") throw new Error("Parent not selected")
+      })
+    </script>
+  </body>
+</html>

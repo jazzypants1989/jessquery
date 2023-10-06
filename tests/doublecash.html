@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>$$ Test</title>
+    <style>
+      .animateDiv {
+        opacity: 0;
+        transform: translateY(-100px);
+        transition: all 0.5s ease-in-out;
+      }
+
+      .scaleDiv {
+        width: 100px;
+        height: 100px;
+        background-color: red;
+        margin: 10px;
+        transition: all 0.5s ease-in-out;
+      }
+
+      .rotateDiv {
+        width: 100px;
+        height: 100px;
+        background-color: blue;
+        margin: 10px;
+        transition: all 0.5s ease-in-out;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="animateDiv">Div 1</div>
+    <div class="animateDiv">Div 2</div>
+    <div class="animateDiv">Div 3</div>
+    <div class="animateDiv">Div 4</div>
+    <div class="scaleDiv">Scale Div</div>
+    <div class="rotateDiv">Rotate Div</div>
+    <div id="otherDiv">Other Div</div>
+    <div class="moreMultipleElements">Element</div>
+    <div class="moreMultipleElements">Element</div>
+
+    <script type="module">
+      import { $, $$ } from "./index.js"
+
+      $$(".animateDiv")
+        .text("Hello")
+        .animate(
+          [
+            { opacity: 0, transform: "translateY(-100px)" },
+            { opacity: 1, transform: "translateY(0)" },
+          ],
+          {
+            duration: 4000,
+            easing: "ease-in-out",
+            fill: "forwards",
+          }
+        )
+        .text(fetchData())
+        .wait(2000)
+        .remove()
+
+      $(".rotateDiv")
+        .animate(
+          [{ transform: "rotate(0deg)" }, { transform: "rotate(360deg)" }],
+          {
+            duration: 500,
+            iterations: 3,
+            fill: "forwards",
+          }
+        )
+        .wait(1000)
+        .css({ backgroundColor: "green" })
+        .text("I'm changing over time!")
+        .wait(2000)
+        .css({ color: "white" })
+
+      $("#otherDiv")
+        .text("Other Div")
+        .wait(500)
+        .text("Single Timeout Complete!")
+        .css({ color: "red" })
+
+      $(".scaleDiv")
+        .animate(
+          [
+            { transform: "scale(0.5)", opacity: "0.5" },
+            { transform: "scale(1.2)", opacity: "1" },
+          ],
+          {
+            duration: 800,
+            iterations: 3,
+            direction: "alternate",
+            fill: "forwards",
+          }
+        )
+        .text(fetchData())
+        .css({ color: "white" })
+        .wait(4000)
+        .text("I can say more stuff too!")
+
+      $$(".moreMultipleElements")
+        .text("Hello")
+        .wait(1000)
+        .text("Multiple Timeouts Complete!")
+        .css({ color: "blue" })
+        .animate(
+          [{ transform: "translateX(0)" }, { transform: "translateX(100px)" }],
+          {
+            duration: 1000,
+            iterations: 3,
+            direction: "alternate",
+            fill: "forwards",
+          }
+        )
+
+      async function fetchData() {
+        const res = await fetch(
+          `https://jsonplaceholder.typicode.com/todos/${randomNumberBetweenOneAndTen()}`
+        )
+        const data = await res.json()
+        return data.title
+      }
+
+      function randomNumberBetweenOneAndTen() {
+        return Math.floor(Math.random() * 10) + 1
+      }
+    </script>
+  </body>
+</html>

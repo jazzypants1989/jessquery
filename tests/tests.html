@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="testContainer"></div>
+    <div id="testElement">Test Element</div>
+    <div id="parent">
+      Parent
+      <div id="child">Child</div>
+    </div>
+    <div id="delegateParent">
+      <div class="delegateChild">Delegate Child</div>
+    </div>
+
+    <script type="module">
+      import { $, $$ } from "./index.js"
+
+      function test(description, fn) {
+        const output = document.createElement("div")
+        output.textContent = `Running test: ${description}...`
+        document.getElementById("testContainer").appendChild(output)
+
+        try {
+          fn()
+          output.style.color = "green"
+          output.textContent += " PASSED"
+        } catch (error) {
+          output.style.color = "red"
+          output.textContent += ` FAILED (${error.message})`
+        }
+      }
+
+      test("Selecting element", () => {
+        if (!$("#testElement")) throw new Error("Element not selected")
+      })
+
+      test("Setting HTML content", () => {
+        $("#testElement").html("<p>Test Content!</p>")
+        console.log(document.getElementById("testElement").innerHTML)
+        const content = document.getElementById("testElement").innerHTML
+        Promise.resolve().then(() => {
+          if (!content.includes("Test Content"))
+            throw new Error("HTML content not set correctly")
+        })
+      })
+
+      test("Setting text content", () => {
+        $("#testElement").text("New Text Content")
+        const content = document.getElementById("testElement").textContent
+        Promise.resolve().then(() => {
+          if (content !== "New Text Content")
+            throw new Error("Text content not set correctly")
+        })
+      })
+
+      test("Applying CSS", () => {
+        $("#testElement").css("color", "red")
+        const style = getComputedStyle(
+          document.getElementById("testElement")
+        ).color
+        Promise.resolve().then(() => {
+          if (style !== "rgb(255, 0, 0)")
+            throw new Error("CSS not applied correctly")
+        })
+      })
+
+      test("Adding class", () => {
+        $("#testElement").addClass("testClass")
+        const hasClass = document
+          .getElementById("testElement")
+          .classList.contains("testClass")
+        Promise.resolve().then(() => {
+          if (!hasClass) throw new Error("Class not added")
+        })
+      })
+
+      test("Removing class", () => {
+        $("#testElement").removeClass("testClass")
+        const hasClass = document
+          .getElementById("testElement")
+          .classList.contains("testClass")
+        if (hasClass) throw new Error("Class not removed")
+      })
+
+      test("Data method", () => {
+        $("#testElement").data("key", "value")
+        const dataValue = document.getElementById("testElement").dataset.key
+        if (dataValue !== "value")
+          throw new Error("Data attribute not set correctly")
+      })
+
+      test("Appending child with string", () => {
+        $("#testElement").append("<span>Appended</span>")
+        const appendedContent = document.getElementById("testElement").innerHTML
+        if (!appendedContent.includes("Appended"))
+          throw new Error("Child not appended")
+      })
+
+      const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+      test("Appending child with HTMLElement", () => {
+        const childEl = document.createElement("span")
+        childEl.textContent = "Appended with HTMLElement"
+        wait(100).then(() => {
+          $("#testElement").append(childEl)
+        })
+        wait(100).then(() => {
+          const appendedContent =
+            document.getElementById("testElement").textContent
+          if (!appendedContent.includes("Appended with HTMLElement"))
+            throw new Error("Child HTMLElement not appended")
+        })
+      })
+
+      test("Prepending child", () => {
+        $("#testElement").prepend("<span>Prepended</span>")
+        const firstChild = document.getElementById("testElement").firstChild
+        if (
+          !(firstChild instanceof HTMLElement) ||
+          firstChild.textContent !== "Prepended"
+        ) {
+          throw new Error("Child not prepended")
+        }
+      })
+
+      test("Removing element", () => {
+        const el = document.createElement("div")
+        el.id = "toBeRemoved"
+        document.body.appendChild(el)
+        $("#toBeRemoved").remove()
+        if (document.getElementById("toBeRemoved"))
+          throw new Error("Element not removed")
+      })
+
+      test("Find sub-element", () => {
+        document.getElementById("testElement").innerHTML =
+          "<span>Prepended</span>"
+        const found = $("#testElement").find("span")
+        if (!found.textContent || found.textContent !== "Prepended")
+          throw new Error("Sub-element not found")
+      })
+
+      test("Finding Parent", () => {
+        const child = $("#child")
+        const parent = child.closest("#parent")
+        child.text("Child text")
+        parent.html(`
+          <div id="parent">
+            <p id="child">Parent text</p>
+            <p>Parent text</p>
+          </div>`)
+        if (parent.id !== "parent") throw new Error("Parent not selected")
+      })
+
+      test("testing find", () => {
+        const parent = $("#parent")
+        const child = parent.find("#child")
+        $("#parent")
+          .html(
+            `
+          <div id="parent">
+            <p> WE HATE IDS</p>
+            <p> NO ID HERE</p>
+            <p>Parent text</p>
+          </div>`
+          )
+          .children()
+          .text("hello")
+        if (child.textContent !== "Parent text")
+          throw new Error("Child not found")
+      })
+
+      test("Adding stylesheet rules", async () => {
+        $("#testElement").styleSheet(`
+          #testElement {
+            color: red;
+          }
+        `)
+        const style = getComputedStyle(
+          document.getElementById("testElement")
+        ).color
+        if (style !== "rgb(255, 0, 0)")
+          throw new Error("Stylesheet rules not applied correctly")
+      })
+    </script>
+  </body>
+</html>

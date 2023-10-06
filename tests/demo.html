@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      import { $, $$ } from "./index.js"
+
+      $("#app").sanitize(`<div class="container">
+        <h1>jQuery is for old people.</h1>
+        <div class="card">
+          <button id="counter" type="button"></button>
+        </div>
+        <h2 class="truth">This will disappear.</h2>
+        <h3 class="truth">I love you.</h3>
+      </div>
+      <input type="text" />
+      <div>
+        <input type="text" />
+        <h4 class="truth">Why are you still reading this?</h4>
+      </div>`)
+
+      console.log($("#app"))
+      console.log($$("input"))
+
+      let count = 0
+
+      function increment() {
+        count++
+
+        $("#counter").html(count.toString())
+      }
+
+      $("#counter").text("Click me!").on("click", increment)
+
+      $$("div .container")
+        .find(".truth")
+        .html("JK <em>LOL</em>! jQuery is FOREVER!")
+
+      $$("input").on("input", (e) => {
+        $$("input").val(e.target.value)
+      })
+
+      console.log($$("input").length)
+    </script>
+  </body>
+</html>
