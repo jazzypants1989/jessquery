@@ -437,3 +437,22 @@ A collection of DomProxy instances with similar enhanced methods for bulk action
 
   - Gets the closest ancestor matching a selector.
   - Example: `$$('.buttons').closest('.container')`
+
+### setErrorHandler(handler: (err: Error) => void): void
+
+Sets an error handler that will be called when an error occurs somewhere in JessQuery. The default behavior is to throw the error and log it to the console. You can override this behavior with this method to do something else.
+
+- **handler: (err: Error) => void**
+
+  - The error handler
+
+- Example:
+
+  ```javascript
+  setErrorHandler((err) => alert(err.message))
+  // Now, you'll get an annoying alert every time an error occurs like a good little developer
+  ```
+
+## Contributing
+
+If you have any ideas for new features or improvements, feel free to open an issue or a PR. I'm always open to suggestions! I started this as a bit of a joke, but I think it turned into something pretty useful. I'm sure there are a lot of things that could be improved, so I welcome any and all feedback.
