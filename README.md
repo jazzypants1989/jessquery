@@ -265,161 +265,53 @@ A representation of an HTML element enriched with extra methods for easier manip
   - Example: `$('button').prepend('<image src="x" onerror="alert(\'hacked!\')">')` // No XSS attack here!
   - Example: `$('button').prepend('<image src="x" onerror="alert(\'hacked!\')">', false)` // XSS attack here!
 
-    /\*\*
-
-    - Clone of the element to a new parent element in the DOM. The original element remains in its current location. If you want to move the element instead of cloning it, use `moveTo`.
-    - @param parentSelector CSS selector for the parent element to which the cloned element will be added.
-    - @param options Optional configuration for the function behavior.
-    - @param {"before" | "after" | inside} [options.position="inside"] If not selected, the element will be placed inside the parent element. If you want it right outside of the parent element, use 'before' or 'after'.
-    - @param {boolean} [options.all=false] If set to true, the element will be cloned or moved to all elements matching the parentSelector.
-    - @returns This DomProxy
-    - @example
-    - $('div').cloneTo('.target') // Clones and places inside first .target element (default behavior)
-    - $('div').cloneTo('.target', { position: 'after' }) // Clones and places after first .target element
-    - $('div').cloneTo('.target', { all: true }) // Clones and places inside all .target elements
-    - $('div').cloneTo('.target', { all: true, position: 'before' }) // Clones and places before all .target elements
-
-      \*/
-      cloneTo: (
-      parentSelector: string,
-      options?: { position: string; all: boolean }
-      ) => DomProxy
-
-    /\*\*
-
-    - Move the element to a new parent element in the DOM. The original element is moved from its current location. If you want to clone the element instead of moving it, use `cloneTo`. The all option can technically be passed, but the element will simply be attached to the last parent in the collection as there is only one element.
-    - @param parentSelector CSS selector for the parent element to which the element will be moved.
-    - @param options Optional configuration for the function behavior.
-    - @param {"before" | "after" | inside} [options.position="inside"] Determine where the element should be placed relative to the new parent's children. 'before' places it at the start; 'after' at the end; 'inside' as the first child.
-    - @returns This DomProxy
-    - @example
-    - $('div').moveTo('.target') // Moves element inside first .target element (default behavior)
-    - $('div').moveTo('.target', { position: 'before' }) // Moves element before first .target element
-    - $('div').moveTo('.target', { position: 'after' }) // Moves element after first .target element
-      \*/
-      moveTo: (parentSelector: string, options?: { position: string }) => DomProxy
-
-    /\*\*
-
-    - Replace the element(s) with new element(s). By default, the element is moved to the new location. To clone it instead, set the mode to 'clone'.
-    - @param replacements An array of elements that will replace the original elements.
-    - @param mode Specify whether the original elements should be moved or cloned to their new location.
-    - @returns This DomProxy
-    - @example
-    - $('div').replaceWith([newElement])
-    - $('div').replaceWith([newElement], 'clone')
-      \*/
-      replaceWith: (
-      replacements: Array<HTMLElement>,
-      mode?: "move" | "clone"
-      ) => DomProxy
-
-    /\*\* Remove the element from the DOM entirely
-
-    - @returns This DomProxy
-    - @example
-    - $('button').remove()
-      \*/
-      remove: () => DomProxy
-
-    /\*\* Animate the element using the WAAPI
-
-    - @param keyframes The keyframes to animate
-    - @param options The animation options
-    - @returns This DomProxy
-    - @example
-    - $('button').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 })
-    - @see https://developer.mozilla.org/en-US/docs/Web/API/Element/animate
-      \*/
-      animate: (
-      keyframes: Keyframe[] | PropertyIndexedKeyframes,
-      options: KeyframeAnimationOptions
-      ) => DomProxy
-
-    /\*\* Sets a timeout for the given number of milliseconds and waits for it to resolve before continuing the chain
-
-    - @param ms The number of milliseconds to wait
-    - @returns This DomProxy
-    - @example
-    - $('button').css('color', 'red').wait(1000).css('color', 'blue')
-      \*/
-      wait: (ms: number) => DomProxy
-
-    /\*\* Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too)
-
-    - @param fn The async callback. This can receive the element as an argument.
-    - @returns This DomProxy
-    - @example
-    - $('button')
-    - .css('color', 'red')
-    - .do(async (el) => { // The element is passed as an argument
-    - const response = await fetch('/api')
-    - const data = await response.json()
-    - el.text(data.message) // All the methods are still available
-    - })
-    - .css('color', 'blue')
-      \*/
-      do: (fn: (el: DomProxy) => Promise<void>) => DomProxy
-
-    /\*\* Switch to the parent of the element in the middle of a chain
-
-    - @returns The parent DomProxy
-    - @example
-    - $('button')
-    - .css('color', 'red')
-    - .parent()
-    - .css('color', 'blue')
-    - // the parent of the button will turn blue
-    - // the button itself will remain red
-      \*/
-      parent: () => DomProxy
-
-    /\*\* Switch to the siblings of the element in the middle of a chain
-
-    - @returns The sibling DomProxyCollection
-    - @example
-    - $('button')
-    - .css('color', 'red')
-    - .siblings()
-    - .css('color', 'blue')
-    - // All the siblings of the button will turn blue
-    - // The button itself will remain red
-      \*/
-      siblings: () => DomProxyCollection
-
-    /\*\* Find descendants matching a sub-selector
-
-    - @param subSelector The sub-selector
-    - @returns This DomProxy
-    - @example
-    - $('.container').find('.buttons')
-      \*/
-      find: (subSelector: string) => DomProxyCollection
-
-    /\*\* Get the closest ancestor matching a selector
-
-    - @param ancestorSelector The ancestor selector
-    - @returns This DomProxy
-    - @example
-    - $('.buttons').closest('.container')
-      \*/
-      closest: (ancestorSelector: string) => DomProxy
-      }
-
 - **cloneTo(parentSelector: string, options?: { position: string; all: boolean }): DomProxy**
 
   - Clone of the element to a new parent element in the DOM. The original element remains in its current location. If you want to move the element instead of cloning it, use `moveTo`.
-  - Example: `$('div').cloneTo('.target')` // Clones and places inside first .target element (default behavior)
-  - Example: `$('div').cloneTo('.target', { position: 'after' })` // Clones and places after first .target element
-  - Example: `$('div').cloneTo('.target', { all: true })` // Clones and places inside all .target elements
-  - Example: `$('div').cloneTo('.target', { all: true, position: 'before' })` // Clones and places before all .target elements
+  - @param parentSelector CSS selector for the parent element to which the cloned element will be added.
+  - @param options Optional configuration for the function behavior.
+  - @param {"before" | "after" | inside} [options.position="inside"] If not selected, the element will be placed inside the parent element. If you want it right outside of the parent element, use 'before' or 'after'.
+  - @param {boolean} [options.all=false] If set to true, the element will be cloned or moved to all elements matching the parentSelector.
+  - @returns This DomProxy
+  - @example
+  - $('div').cloneTo('.target') // Clones and places inside first .target element (default behavior)
+  - $('div').cloneTo('.target', { position: 'after' }) // Clones and places after first .target element
+  - $('div').cloneTo('.target', { all: true }) // Clones and places inside all .target elements
+  - $('div').cloneTo('.target', { all: true, position: 'before' }) // Clones and places before all .target elements
+
+    cloneTo: (
+    parentSelector: string,
+    options?: { position: string; all: boolean }
+    ) => DomProxy
 
 - **moveTo(parentSelector: string, options?: { position: string }): DomProxy**
 
   - Move the element to a new parent element in the DOM. The original element is moved from its current location. If you want to clone the element instead of moving it, use `cloneTo`. The all option can technically be passed, but the element will simply be attached to the last parent in the collection as there is only one element.
-  - Example: `$('div').moveTo('.target')` // Moves element inside first .target element (default behavior)
-  - Example: `$('div').moveTo('.target', { position: 'before' })` // Moves element before first .target element
-  - Example: `$('div').moveTo('.target', { position: 'after' })` // Moves element after first .target element
+  - @param parentSelector CSS selector for the parent element to which the element will be moved.
+  - @param options Optional configuration for the function behavior.
+  - @param {"before" | "after" | inside} [options.position="inside"] Determine where the element should be placed relative to the new parent's children. 'before' places it at the start; 'after' at the end; 'inside' as the first child.
+  - @returns This DomProxy
+  - @example
+  - $('div').moveTo('.target') // Moves element inside first .target element (default behavior)
+  - $('div').moveTo('.target', { position: 'before' }) // Moves element before first .target element
+  - $('div').moveTo('.target', { position: 'after' }) // Moves element after first .target element
+    \*/
+    moveTo: (parentSelector: string, options?: { position: string }) => DomProxy
+
+- **replaceWith(replacements: Array<HTMLElement>, mode?: "move" | "clone"): DomProxy**
+
+  - Replace the element(s) with new element(s). By default, the element is moved to the new location. To clone it instead, set the mode to 'clone'.
+  - @param replacements An array of elements that will replace the original elements.
+  - @param mode Specify whether the original elements should be moved or cloned to their new location.
+  - @returns This DomProxy
+  - @example
+  - $('div').replaceWith([newElement])
+  - $('div').replaceWith([newElement], 'clone')
+    \*/
+    replaceWith: (
+    replacements: Array<HTMLElement>,
+    mode?: "move" | "clone"
+    ) => DomProxy
 
 - **remove(): DomProxy**
 
@@ -455,6 +347,11 @@ A representation of an HTML element enriched with extra methods for easier manip
 
   - Switch to the siblings of the element in the middle of a chain.
   - Example: `$('button').siblings().css('color', 'blue')` // All the siblings of the button will turn blue. The button itself will remain red.
+
+- **children(): DomProxyCollection**
+
+  - Switch to the children of the element in the middle of a chain.
+  - Example: `$('.container').children().css('color', 'blue')` // the children of the container will turn blue. The container itself will remain red.
 
 - **find(subSelector: string): DomProxyCollection**
 
@@ -649,6 +546,21 @@ A collection of DomProxy instances with similar enhanced methods for bulk action
   el.text(data.message) // All the methods are still available
 })`
 
+- **parent(): DomProxyCollection**
+
+  - Switch to the parents of the elements in the middle of a chain.
+  - Example: `$$('button').parent().css('color', 'blue')` // the parents of the buttons will turn blue. The buttons themselves will remain red.
+
+- **siblings(): DomProxyCollection**
+
+  - Switch to the siblings of the elements in the middle of a chain.
+  - Example: `$$('button').siblings().css('color', 'blue')` // All the siblings of the buttons will turn blue. The buttons themselves will remain red.
+
+- **children(): DomProxyCollection**
+
+  - Switch to the children of the elements in the middle of a chain.
+  - Example: `$$('.container').children().css('color', 'blue')` // the children of the container will turn blue. The container itself will remain red.
+
 - **find(subSelector: string): DomProxyCollection**
 
   - Finds descendants matching a sub-selector.
@@ -656,7 +568,7 @@ A collection of DomProxy instances with similar enhanced methods for bulk action
 
 - **closest(ancestorSelector: string): DomProxyCollection**
 
-  - Gets the closest ancestor matching a selector.
+  - Gets the closest ancestors for each element in the collection matching a selector.
   - Example: `$$('.buttons').closest('.container')`
 
 ### setErrorHandler(handler: (err: Error) => void): void

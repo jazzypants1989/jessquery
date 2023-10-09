@@ -130,6 +130,20 @@ export function addMethods(type, selector, target) {
       return addMethods("$", selector, elements)
     },
 
+    closest: (subSelector) => {
+      const elements = isSingle
+        ? target.closest(subSelector)
+        : target.map((el) => el.closest(subSelector))
+      return addMethods("$", subSelector, elements)
+    },
+
+    children: () => {
+      const elements = isSingle
+        ? target.children
+        : target.map((el) => el.children)
+      return addMethods("$$", selector, elements)
+    },
+
     siblings: () => {
       const elements = isSingle
         ? Array.from(target.parentElement.children).filter(
@@ -141,13 +155,6 @@ export function addMethods(type, selector, target) {
             )
           )
       return addMethods("$$", selector, elements)
-    },
-
-    closest: (subSelector) => {
-      const elements = isSingle
-        ? target.closest(subSelector)
-        : target.map((el) => el.closest(subSelector))
-      return addMethods("$", subSelector, elements)
     },
 
     find: (subSelector) => {

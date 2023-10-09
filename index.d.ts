@@ -318,6 +318,26 @@ declare module "jessquery" {
      */
     parent: () => DomProxy
 
+    /** Get the closest ancestor matching a selector
+     * @param ancestorSelector The ancestor selector
+     * @returns This DomProxy
+     * @example
+     * $('.buttons').closest('.container')
+     */
+    closest: (ancestorSelector: string) => DomProxy
+
+    /** Switch to the children of the element in the middle of a chain
+     * @returns The child DomProxyCollection
+     * @example
+     * $('.container')
+     * .css('color', 'red')
+     * .children()
+     * .css('color', 'blue')
+     * // All the children of the container will turn blue
+     * // The container itself will remain red
+     */
+    children: () => DomProxyCollection
+
     /** Switch to the siblings of the element in the middle of a chain
      * @returns The sibling DomProxyCollection
      * @example
@@ -337,14 +357,6 @@ declare module "jessquery" {
      * $('.container').find('.buttons')
      */
     find: (subSelector: string) => DomProxyCollection
-
-    /** Get the closest ancestor matching a selector
-     * @param ancestorSelector The ancestor selector
-     * @returns This DomProxy
-     * @example
-     * $('.buttons').closest('.container')
-     */
-    closest: (ancestorSelector: string) => DomProxy
   }
 
   /**
@@ -613,13 +625,41 @@ declare module "jessquery" {
      */
     remove: () => DomProxyCollection
 
-    /** Find descendants matching a sub-selector
-     * @param subSelector The sub-selector
-     * @returns This DomProxyCollection
+    /** Switch to the parents of the elements in the middle of a chain
+     * @returns The parent DomProxyCollection
      * @example
-     * $$('.container').find('.buttons')
+     * $$('.buttons')
+     * .css('color', 'red')
+     * .parents()
+     * .css('color', 'blue')
+     * // the parents of the buttons will turn blue
+     * // the buttons themselves will remain red
      */
-    find: (subSelector: string) => DomProxyCollection
+    parents: () => DomProxyCollection
+
+    /** Switch to the children of the elements in the middle of a chain
+     * @returns The child DomProxyCollection
+     * @example
+     * $$('.container')
+     * .css('color', 'red')
+     * .children()
+     * .css('color', 'blue')
+     * // All the children of the containers will turn blue
+     * // The containers themselves will remain red
+     */
+    children: () => DomProxyCollection
+
+    /** Switch to the siblings of the elements in the middle of a chain
+     * @returns The sibling DomProxyCollection
+     * @example
+     * $$('.buttons')
+     * .css('color', 'red')
+     * .siblings()
+     * .css('color', 'blue')
+     * // All the siblings of the buttons will turn blue
+     * // The buttons themselves will remain red
+     */
+    siblings: () => DomProxyCollection
 
     /** Get the closest ancestor matching a selector
      * @param ancestorSelector The ancestor selector
@@ -628,6 +668,14 @@ declare module "jessquery" {
      * $$('.buttons').closest('.container')
      */
     closest: (ancestorSelector: string) => DomProxyCollection
+
+    /** Find descendants matching a sub-selector
+     * @param subSelector The sub-selector
+     * @returns This DomProxyCollection
+     * @example
+     * $$('.container').find('.buttons')
+     */
+    find: (subSelector: string) => DomProxyCollection
 
     /** Animate the elements using the WAAPI
      * @param keyframes The keyframes to animate
