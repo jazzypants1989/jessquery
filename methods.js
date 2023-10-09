@@ -189,7 +189,7 @@ function setFormElementValue(element, value) {
       },
     }
     const handler = inputTypes[element.type] || inputTypes.default
-    handler()
+    return handler()
   } else if (element instanceof HTMLSelectElement) {
     if (element.multiple && Array.isArray(value)) {
       for (let option of element.options) {
@@ -199,7 +199,6 @@ function setFormElementValue(element, value) {
       element.value = value.toString()
     }
   } else if (
-    element instanceof HTMLInputElement ||
     element instanceof HTMLTextAreaElement ||
     element instanceof HTMLButtonElement
   ) {

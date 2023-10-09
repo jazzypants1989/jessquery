@@ -1,8 +1,10 @@
-# jessquery
+# jessquery 🚀
 
 `jessquery` is a lightweight wrapper around the DOM API that offers the intuitive elegance of jQuery, but streamlined for the modern web.
 
-Rekindle your love for method chaining, now in a lightweight, predictable package. Seamlessly handle asynchronous tasks, customize error behaviors, and ensure actions flow smoothly one after the other. And, the best part?
+Feel like a 🦕 for still using jQuery? Wish that it didn't use up so much of your bundle size like a 🐖? Want something a little more 🆕✨?
+
+Rekindle your love for method chaining, now in a lightweight, predictable package. Seamlessly handle asynchronous tasks, customize error behaviors, and ensure actions flow smoothly one after the other. And, the best part? 🏎️💨
 
 | Library   | Size before gzip | Size after gzip |
 | --------- | ---------------- | --------------- |
@@ -12,7 +14,7 @@ Rekindle your love for method chaining, now in a lightweight, predictable packag
 ## Usage
 
 ```javascript
-import { $, $$, promisify, setErrorHandler } from "../index.js"
+import { $, $$, promisify, setErrorHandler } from "jessquery"
 
 // Use $ to select a single element.
 const display = $(".display")
