@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MoveTo Before Test</title>
+  </head>
+  <body>
+    <div id="testContainer"></div>
+    <div id="originalElement">Original Element</div>
+    <div id="parent">
+      <div id="child">Child</div>
+    </div>
+
+    <script type="module">
+      import { $ } from "../index.js"
+
+      function moveToBeforeTest() {
+        const output = document.createElement("div")
+        document.getElementById("testContainer").appendChild(output)
+
+        const el = $("#originalElement")
+        el.moveTo("#child", { position: "before" })
+
+        const firstChildElement =
+          document.querySelector("#parent").firstElementChild
+
+        if (firstChildElement && firstChildElement.id === "originalElement") {
+          output.style.color = "green"
+          output.textContent = "moveTo before test PASSED"
+        } else {
+          output.style.color = "red"
+          output.textContent = "moveTo before test FAILED"
+        }
+      }
+
+      moveToBeforeTest()
+    </script>
+  </body>
+</html>

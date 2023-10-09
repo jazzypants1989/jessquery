@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MoveTo Multi-Element Test</title>
+  </head>
+  <body>
+    <div id="testContainer"></div>
+    <div class="originalElement">Original Element 1</div>
+    <div class="originalElement">Original Element 2</div>
+    <div id="newParent">New Parent</div>
+    <div id="newParent">New Parent</div>
+
+    <script type="module">
+      import { $$ } from "../index.js"
+
+      function moveToMultiElementTest() {
+        const output = document.createElement("div")
+        document.getElementById("testContainer").appendChild(output)
+
+        const beforeMove = Array.from(
+          document.querySelectorAll(".originalElement")
+        )
+        console.log(
+          "Before move:",
+          beforeMove.map((el) => el.textContent)
+        ) // Diagnostic 2
+
+        const els = $$(".originalElement")
+        els.moveTo("#newParent", { all: true })
+
+        const afterMove = Array.from(
+          document.querySelectorAll("#newParent .originalElement")
+        )
+        console.log(
+          "After move:",
+          afterMove.map((el) => el.textContent)
+        ) // Diagnostic 3
+
+        if (afterMove.length === 2) {
+          output.style.color = "green"
+          output.textContent = "moveTo multi-element test PASSED"
+        } else {
+          output.style.color = "red"
+          output.textContent = "moveTo multi-element test FAILED"
+        }
+      }
+
+      moveToMultiElementTest()
+    </script>
+  </body>
+</html>

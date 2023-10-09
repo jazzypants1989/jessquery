@@ -4,42 +4,75 @@
 
 The key thing that is lost when working without jQuery is the ability to easily compose multiple actions in a readable, logical way. So, I made sure that all these methods can be chained together-- just like with jQuery! Each function will wait for the previous one to finish before continuing the chain. This makes it easy to do things like wait for an animation to finish before removing an element from the DOM.
 
-The main difference? jQuery is 80kb before gzip and around 30kb after compression. jessquery is 5kb before gzip-- 1.69kb after compression! So, you get most of the convenience at a fraction of the cost.
+The main difference? jQuery is 80kb before gzip and around 30kb after compression. jessquery is 5kb before gzip-- 1.97kb after compression! So, you get most of the convenience at a fraction of the cost.
 
 ## Usage
 
 ```javascript
-import { $, $$ } from "jessquery"
+import { $, $$, promisify, setErrorHandler } from "../index.js"
 
-// Select a single element
+// Use $ to select a single element.
+const display = $(".display")
 const button = $("#button")
 
-// Select multiple elements
+// Use $$ to select multiple elements.
 const buttons = $$(".buttons")
 
-// The chains accept promises, so you can do async stuff
+// These elements are now wrapped in a proxy with extra methods.
+// They each have an internal queue that always executes in order.
+// So, the chains are not only convenient and readable, but they're also predictable.
+
+// You can even do async stuff!
 async function fetchData() {
+  await new Promise((resolve) => setTimeout(resolve, 2000))
   const response = await fetch("https://api.github.com/users/jazzypants1989")
   const data = await response.json()
   return data.name
 }
 
-// You don't have to await anything! It just works!
-button.on("click", () => {
-  $(".display").text("Loading...").text(fetchData()).css("color", "red")
+// promisify is for setTimeout/anything async that doesn't return a promise.
+// (You can also just return a promise yourself if you want.)
+const onlyWarnIfLoadIsSlow = promisify((resolve) => {
+  setTimeout(() => {
+    // Each proxy has full access to the DOM API-- useful for conditional logic.
+    if (display.textContent === "") {
+      resolve("Loading...")
+      // reject will automatically throw an error and call the error handler.
+    }
+  }, 200)
 })
 
-// Each chain gets its own queue, and each queue is executed in order. Have fun!
+// There's a default error handler that catches all errors and promise rejections
+// But, you can override it if you want to do something else.
+setErrorHandler((err) => {
+  sendErrorToAnalytics(err)
+})
+
+// Every promise is resolved automatically
+// The next function will never run until the previous one is finished.
+button.on("click", () => {
+  display
+    .text(onlyWarnIfLoadIsSlow()) // Only shows text if data doesn't load in 200ms
+    .text(fetchData()) // You don't have to await anything. It will just work!
+    .css("background-color", "red")
+})
+
+// Most things follow the DOM API closely
+// But, now you can chain them together, they will always execute in order!
+const fadeIn = [{ opacity: 0 }, { opacity: 1 }] // WAAPI keyframes
+const fadeOut = [{ opacity: 1 }, { opacity: 0 }] // WAAPI keyframes
+const oneSecond = { duration: 1000 } // WAAPI options
+
 buttons
   .addClass("btn")
   .text(
-    "these buttons will animate in 5 seconds. It will fade in and out twice then disappear."
+    "These buttons will animate in 2 seconds. They will fade in and out twice then disappear."
   )
-  .wait(5000)
-  .animate([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 }) // Dumb, I know
-  .animate([{ opacity: 1 }, { opacity: 0 }], { duration: 1000 }) // It's just to show that it works
-  .animate([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 }) // You can do whatever you want here
-  .animate([{ opacity: 1 }, { opacity: 0 }], { duration: 1000 }) // I'm not your dad
+  .wait(2000)
+  .animate(fadeIn, oneSecond)
+  .animate(fadeOut, oneSecond)
+  .animate(fadeIn, oneSecond)
+  .animate(fadeOut, oneSecond)
   .remove()
 ```
 
@@ -54,7 +87,7 @@ yarn add jessquery
 bun install jessquery
 ```
 
-Or, since it's so small, you can just use a CDN like the good, old days. The big problem with this is that you lose the types and the JSDoc annotations. I keep those in the `d.ts` file to keep the file size small.
+Or, since it's so small, you can just use a CDN like the good, old days. The big problem with this is that you lose the types and the JSDoc annotations. I keep those in the `d.ts` file to keep the file size small, but I recently learned that gzip takes care of that for you. So, I'll probably change that in the future. For now, you can just use the `index.d.ts` file in your project if you want the types without installing the package.
 
 ```html
 <script src="https://esm.sh/jessquery"></script>
@@ -69,10 +102,10 @@ Or, since it's so small, you can just use a CDN like the good, old days. The big
 4. _ALL_ DOM API's can be used, but they **MUST COME LAST** in the chain. You can always start a new chain if you need to.
 5. All chains are begun in the order they are found in the script, but they await any microtasks or promises found before continuing.
 6. Each chain gets its own queue, so you can have multiple chains operating on the same element at the same time.
-7. Each chain is executed concurrently, so you can use `await` on the functions to wait for one chain to finish executing if another chain is dependent on it.
-8. Synchronous tasks are always executed immediately unless they are preceded by an async task. In that case, they are executed after the async task is finished.
+7. Each chain is executed concurrently, so you can have multiple chains operating on the same element at the same time.
+8. Synchronous tasks are always executed immediately unless they are preceded by an async task. In that case, they will be added to the queue and executed in order.
 
-If anything gets hard, just use the `await` on the function call or use the `wait` method in the middle to let the DOM catch up while you re-evaulate your life choices. 😅
+If anything gets hard, just use the `wait` method to let the DOM catch up while you re-evaulate your life choices. 😅
 
 ## Demo and Key Concepts
 
@@ -138,10 +171,14 @@ A representation of an HTML element enriched with extra methods for easier manip
   - Changes the text of the element while retaining the tag.
   - Example: `$('button').text('Click me!')`
 
-- **val(newVal: string): DomProxy**
+- **val(newValue: string | number | (string | number)[] | FileList): DomProxy**
 
-  - Changes the value of the element.
-  - Example: `$('input').val('Hello, world!')`
+  - Changes the value of the element based on its type. For form elements such as inputs, textareas, and selects, the appropriate property (e.g., `value`, `checked`) will be adjusted. For other elements, the `textContent` property will be set.
+  - Example: `$('input[type="text"]').val('New Value')`
+  - Example: `$('input[type="checkbox"]').val(true)`
+  - Example: `$('input[type="radio"]').val('radio1')`
+  - Example: `$('input[type="file"]').val(myFileList)`
+  - Example: `$('select[multiple]').val(['option1', 'option2'])`
 
 - **css(prop: string | Record<string, string>, value?: string): DomProxy**
 
@@ -309,10 +346,14 @@ A collection of DomProxy instances with similar enhanced methods for bulk action
   - Changes the text of the elements while retaining the tag.
   - Example: `$$('.buttons').text('Click me!')`
 
-- **val(newVal: string): DomProxyCollection**
+- **val(newValue: string | number | (string | number)[] | FileList): DomProxyCollection**
 
-  - Changes the value of the elements.
-  - Example: `$$('.inputs').val('Hello, world!')`
+  - Changes the value of all elements in the collection based on their type. For form elements such as inputs, textareas, and selects, the appropriate property (e.g., `value`, `checked`) will be adjusted. For other elements, the `textContent` property will be set.
+  - Example: `$$('input[type="text"]').val('New Value')`
+  - Example: `$$('input[type="checkbox"]').val(true)`
+  - Example: `$$('input[type="radio"]').val('radio1')`
+  - Example: `$$('input[type="file"]').val(myFileList)`
+  - Example: `$$('select[multiple]').val(['option1', 'option2'])`
 
 - **css(prop: string | Record<string, string>, value?: string): DomProxyCollection**
 

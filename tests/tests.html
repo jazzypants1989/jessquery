@@ -3,189 +3,118 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>Function Tests</title>
+    <!-- Initial Styles -->
+    <style>
+      .highlight {
+        background-color: yellow;
+      }
+    </style>
   </head>
   <body>
-    <div id="testContainer"></div>
-    <div id="testElement">Test Element</div>
-    <div id="parent">
-      Parent
-      <div id="child">Child</div>
+    <!-- Elements for testing purposes -->
+    <button id="testButton">Button</button>
+    <div id="delegateTest" class="testDiv">
+      Delegate Test: <span>Click me</span>
     </div>
-    <div id="delegateParent">
-      <div class="delegateChild">Delegate Child</div>
-    </div>
+    <div class="testDiv">Test Div 1</div>
+    <div class="testDiv">Test Div 2</div>
+    <input id="testInput" type="text" value="Initial Value" />
+    <select id="testSelect">
+      <option value="option1">Option 1</option>
+      <option value="option2">Option 2</option>
+    </select>
+    <div id="appendToThis"></div>
+    <div id="prependToThis"></div>
 
     <script type="module">
-      import { $, $$ } from "./index.js"
+      import { $, $$ } from "../index.js"
 
-      function test(description, fn) {
-        const output = document.createElement("div")
-        output.textContent = `Running test: ${description}...`
-        document.getElementById("testContainer").appendChild(output)
+      $$(".testDiv").map((el) => console.log(el.textContent))
 
-        try {
-          fn()
-          output.style.color = "green"
-          output.textContent += " PASSED"
-        } catch (error) {
-          output.style.color = "red"
-          output.textContent += ` FAILED (${error.message})`
-        }
-      }
+      // // 1. on
+      // $("#testButton").on("click", () => console.log("Button Clicked"))
 
-      test("Selecting element", () => {
-        if (!$("#testElement")) throw new Error("Element not selected")
-      })
+      // // 2. once
+      // $("#testButton").once("click", () => console.log("Button Clicked Once"))
 
-      test("Setting HTML content", () => {
-        $("#testElement").html("<p>Test Content!</p>")
-        console.log(document.getElementById("testElement").innerHTML)
-        const content = document.getElementById("testElement").innerHTML
-        Promise.resolve().then(() => {
-          if (!content.includes("Test Content"))
-            throw new Error("HTML content not set correctly")
-        })
-      })
+      // // 3. off - We'll setup an event, then remove it.
+      // const logClick = () => console.log("This should not appear")
+      // $("#testButton").on("click", logClick)
+      // $("#testButton").off("click", logClick)
 
-      test("Setting text content", () => {
-        $("#testElement").text("New Text Content")
-        const content = document.getElementById("testElement").textContent
-        Promise.resolve().then(() => {
-          if (content !== "New Text Content")
-            throw new Error("Text content not set correctly")
-        })
-      })
+      // // 4. delegate
+      // $("#delegateTest").delegate("click", "span", (e) =>
+      //   console.log("Span within Delegate Test clicked")
+      // )
 
-      test("Applying CSS", () => {
-        $("#testElement").css("color", "red")
-        const style = getComputedStyle(
-          document.getElementById("testElement")
-        ).color
-        Promise.resolve().then(() => {
-          if (style !== "rgb(255, 0, 0)")
-            throw new Error("CSS not applied correctly")
-        })
-      })
+      // // 5. html
+      // $("#testButton").html("<strong>New HTML</strong>")
 
-      test("Adding class", () => {
-        $("#testElement").addClass("testClass")
-        const hasClass = document
-          .getElementById("testElement")
-          .classList.contains("testClass")
-        Promise.resolve().then(() => {
-          if (!hasClass) throw new Error("Class not added")
-        })
-      })
+      // // 6. text
+      // $("#testButton").text("New Text Content")
 
-      test("Removing class", () => {
-        $("#testElement").removeClass("testClass")
-        const hasClass = document
-          .getElementById("testElement")
-          .classList.contains("testClass")
-        if (hasClass) throw new Error("Class not removed")
-      })
+      // // 7. val (for input)
+      // $("#testInput").val("New Input Value")
 
-      test("Data method", () => {
-        $("#testElement").data("key", "value")
-        const dataValue = document.getElementById("testElement").dataset.key
-        if (dataValue !== "value")
-          throw new Error("Data attribute not set correctly")
-      })
+      // // 8. val (for select)
+      // $("#testSelect").val("option2")
 
-      test("Appending child with string", () => {
-        $("#testElement").append("<span>Appended</span>")
-        const appendedContent = document.getElementById("testElement").innerHTML
-        if (!appendedContent.includes("Appended"))
-          throw new Error("Child not appended")
-      })
+      // // 9. css
+      // $(".testDiv").css({ backgroundColor: "lightblue" })
+      // $(".testDiv").css("border", "1px solid red")
 
-      const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+      // // 10. addStyleSheet
+      // $("#testButton").addStyleSheet(".highlight { color: red; }")
+      // $("#testButton").addClass("highlight")
 
-      test("Appending child with HTMLElement", () => {
-        const childEl = document.createElement("span")
-        childEl.textContent = "Appended with HTMLElement"
-        wait(100).then(() => {
-          $("#testElement").append(childEl)
-        })
-        wait(100).then(() => {
-          const appendedContent =
-            document.getElementById("testElement").textContent
-          if (!appendedContent.includes("Appended with HTMLElement"))
-            throw new Error("Child HTMLElement not appended")
-        })
-      })
+      // // 11. addClass
+      // $(".testDiv").addClass("highlight")
 
-      test("Prepending child", () => {
-        $("#testElement").prepend("<span>Prepended</span>")
-        const firstChild = document.getElementById("testElement").firstChild
-        if (
-          !(firstChild instanceof HTMLElement) ||
-          firstChild.textContent !== "Prepended"
-        ) {
-          throw new Error("Child not prepended")
-        }
-      })
+      // // 12. removeClass
+      // $(".testDiv").removeClass("highlight")
 
-      test("Removing element", () => {
-        const el = document.createElement("div")
-        el.id = "toBeRemoved"
-        document.body.appendChild(el)
-        $("#toBeRemoved").remove()
-        if (document.getElementById("toBeRemoved"))
-          throw new Error("Element not removed")
-      })
+      // // 13. toggleClass
+      // $(".testDiv").toggleClass("highlight")
 
-      test("Find sub-element", () => {
-        document.getElementById("testElement").innerHTML =
-          "<span>Prepended</span>"
-        const found = $("#testElement").find("span")
-        if (!found.textContent || found.textContent !== "Prepended")
-          throw new Error("Sub-element not found")
-      })
+      // // 14. set
+      // $("#testButton").set("data-test", "testValue")
 
-      test("Finding Parent", () => {
-        const child = $("#child")
-        const parent = child.closest("#parent")
-        child.text("Child text")
-        parent.html(`
-          <div id="parent">
-            <p id="child">Parent text</p>
-            <p>Parent text</p>
-          </div>`)
-        if (parent.id !== "parent") throw new Error("Parent not selected")
-      })
+      // // 15. unset
+      // $("#testButton").unset("data-test")
 
-      test("testing find", () => {
-        const parent = $("#parent")
-        const child = parent.find("#child")
-        $("#parent")
-          .html(
-            `
-          <div id="parent">
-            <p> WE HATE IDS</p>
-            <p> NO ID HERE</p>
-            <p>Parent text</p>
-          </div>`
-          )
-          .children()
-          .text("hello")
-        if (child.textContent !== "Parent text")
-          throw new Error("Child not found")
-      })
+      // // 16. toggle (attribute)
+      // $("#testButton").toggle("data-toggled")
 
-      test("Adding stylesheet rules", async () => {
-        $("#testElement").styleSheet(`
-          #testElement {
-            color: red;
-          }
-        `)
-        const style = getComputedStyle(
-          document.getElementById("testElement")
-        ).color
-        if (style !== "rgb(255, 0, 0)")
-          throw new Error("Stylesheet rules not applied correctly")
-      })
+      // // 17. data
+      // $("#testButton").data("testData", "SomeData")
+
+      // // 18. append
+      // $("#appendToThis").append("<div>Appended div</div>")
+
+      // // 19. prepend
+      // $("#prependToThis").prepend("<div>Prepended div</div>")
+
+      // // 20. cloneTo
+      // $(".testDiv").cloneTo("#appendToThis")
+
+      // // 21. moveTo
+      // $(".testDiv").moveTo("#prependToThis")
+
+      // // 24. animate - Animate divs by fading them out and scaling them up.
+      // $(".testDiv").animate(
+      //   [
+      //     { transform: "scale(1)", opacity: 1 },
+      //     { transform: "scale(1.5)", opacity: 0 },
+      //   ],
+      //   {
+      //     duration: 1000,
+      //   }
+      // )
+
+      // // 26. find - Log found nested spans
+      // const found = $("#delegateTest").find("span")
+      // // 27. closest
     </script>
   </body>
 </html>

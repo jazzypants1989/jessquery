@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ReplaceWith Test</title>
+  </head>
+  <body>
+    <div id="testContainer"></div>
+    <div id="toBeReplaced">To Be Replaced</div>
+    <div id="replacementElement">Replacement Element</div>
+
+    <script type="module">
+      import { $, $$ } from "../index.js"
+
+      function replaceWithTest() {
+        const output = document.createElement("div")
+
+        const toBeReplacedEl = $("#toBeReplaced")
+        const replacementEl = $("#replacementElement")
+
+        console.log("toBeReplacedEl:", toBeReplacedEl)
+        console.log("replacementEl:", replacementEl)
+
+        document.getElementById("testContainer").appendChild(output)
+
+        toBeReplacedEl.replaceWith(replacementEl)
+
+        if (
+          !document.getElementById("toBeReplaced") &&
+          document.getElementById("replacementElement")
+        ) {
+          output.style.color = "green"
+          output.textContent = "replaceWith test PASSED"
+        } else {
+          output.style.color = "red"
+          output.textContent = "replaceWith test FAILED"
+        }
+      }
+
+      // Add an event listener to ensure the DOM is fully loaded before running the code.
+      document.addEventListener("DOMContentLoaded", replaceWithTest)
+    </script>
+  </body>
+</html>

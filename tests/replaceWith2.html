@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ReplaceWith Multi-Element Test</title>
+  </head>
+  <body>
+    <div id="testContainer"></div>
+    <div class="toBeReplaced">To Be Replaced 1</div>
+    <div class="toBeReplaced">To Be Replaced 2</div>
+    <div class="replacementElement">Replacement Element 1</div>
+    <div class="replacementElement">Replacement Element 2</div>
+
+    <script type="module">
+      import { $$ } from "../index.js"
+
+      function replaceWithMultiElementTest() {
+        const output = document.createElement("div")
+        document.getElementById("testContainer").appendChild(output)
+
+        const toBeReplacedEls = $$(".toBeReplaced")
+        toBeReplacedEls.replaceWith($$(".replacementElement"))
+
+        const replacedElements = document.querySelectorAll(
+          ".replacementElement"
+        )
+
+        if (
+          replacedElements.length === 2 &&
+          !document.querySelectorAll(".toBeReplaced").length
+        ) {
+          output.style.color = "green"
+          output.textContent = "replaceWith multi-element test PASSED"
+        } else {
+          output.style.color = "red"
+          output.textContent = "replaceWith multi-element test FAILED"
+        }
+      }
+
+      replaceWithMultiElementTest()
+    </script>
+  </body>
+</html>

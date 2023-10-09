@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Do Method Test</title>
+  </head>
+  <body>
+    <div id="testContainer"></div>
+    <button class="testButton">Click Me</button>
+    <button class="testButton">Click Me</button>
+
+    <script type="module">
+      import { $, $$ } from "../index.js"
+
+      async function doMethodTest() {
+        const output = document.createElement("div")
+        document.getElementById("testContainer").appendChild(output)
+
+        $$(".testButton").do(async (el) => {
+          // throw new Error("do method test FAILED")
+          await new Promise((resolve, reject) => {
+            setTimeout(() => {
+              resolve()
+            }, 1000)
+          })
+
+          el.style.color = "green"
+          el.textContent = "do method test PASSED"
+
+          // el.css({ color: "green" }).text("do method test PASSED")
+        })
+      }
+
+      doMethodTest()
+    </script>
+  </body>
+</html>

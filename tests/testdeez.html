@@ -3,22 +3,49 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fetch Demo</title>
+    <title>Test cloneTo and moveTo</title>
+    <style>
+      #container1,
+      #container2 {
+        border: 1px solid black;
+        padding: 10px;
+        margin-bottom: 10px;
+      }
+
+      .demo-element {
+        border: 1px solid red;
+        padding: 5px;
+        margin: 5px 0;
+      }
+    </style>
   </head>
   <body>
-    <div id="content"></div>
+    <div id="container1">
+      <p>Container 1</p>
+      <div class="demo-element">Demo Element A</div>
+      <div class="demo-element">Demo Element B</div>
+    </div>
+
+    <div id="container2">
+      <p>Container 2</p>
+    </div>
 
     <script type="module">
-      import { $, $$ } from "./index.js"
+      import { $, $$ } from "../index.js"
+      const btnCloneTo = document.createElement("button")
+      btnCloneTo.textContent = "Clone to Container 2"
+      btnCloneTo.addEventListener("click", () => {
+        $(".demo-element").cloneTo("#container2")
+      })
 
-      // Example usage of your $ function
-      const contentDiv = $("#content")
+      const btnMoveTo = document.createElement("button")
+      btnMoveTo.textContent = "Move to Container 2"
+      btnMoveTo.addEventListener("click", () => {
+        $(".demo-element").moveTo("#container2")
+      })
 
-      contentDiv.text(
-        fetch("https://jsonplaceholder.typicode.com/todos/1").then((response) =>
-          response.json().then((json) => json.title)
-        )
-      )
+      document.body.appendChild(btnCloneTo)
+      document.body.appendChild(btnMoveTo)
     </script>
   </body>
 </html>

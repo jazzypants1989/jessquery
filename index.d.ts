@@ -75,13 +75,24 @@ declare module "jessquery" {
      */
     text: (newText: string) => DomProxy
 
-    /** Change the value of the element
-     * @param newValue The new value
-     * @returns This DomProxy
+    /**
+     * Sets the value of a DOM element based on its type. For form elements such as inputs, textareas, and selects, the appropriate property (e.g., `value`, `checked`) will be adjusted. For other elements, the `textContent` property will be set.
+     * @param newValue - The value to be set. This can be a string, number, an array for multi-selects, a FileList for file inputs, or a boolean for checkboxes.
+     *    - For `input[type="checkbox"]`: A truthy value sets it to checked, otherwise unchecked.
+     *    - For `input[type="radio"]`: If the `newValue` matches the input's value, it's checked.
+     *    - For `input[type="file"]`: Sets the input's `files` property (expects a FileList or similar).
+     *    - For `select[multiple]`: Expects an array of values to select multiple options.
+     * @returns This DomProxy.
      * @example
-     * $('input').value('New Value')
+     * $('input[type="text"]').value('New Value')
+     * $('input[type="checkbox"]').value(true)
+     * $('input[type="radio"]').value('radio1')
+     * $('input[type="file"]').value(myFileList)
+     * $('select[multiple]').value(['option1', 'option2'])
      */
-    val: (newValue: string) => DomProxy
+    val: (
+      newValue: string | number | (string | number)[] | FileList
+    ) => DomProxy
 
     /** Add a CSS Rule to the element. If the first argument is an object, it will be treated as a map of CSS properties and values. Otherwise, it will be treated as a single CSS property and the second argument will be treated as the value.
      * @param propOrObj The CSS property or object containing CSS properties and values
@@ -211,21 +222,46 @@ declare module "jessquery" {
      */
     prepend: (children: ChildInput, sanitize?: boolean) => DomProxy
 
-    /** Append the element to a single parent element in the DOM. So, the element will be removed from its current parent and added to the end of the new parent. If you want to add it to the beginning, use `prependTo`.
-     * @param parent The parent element
+    /**
+     * Clone of the element to a new parent element in the DOM. The original element remains in its current location. If you want to move the element instead of cloning it, use `moveTo`.
+     * @param parentSelector CSS selector for the parent element to which the cloned element will be added.
+     * @param {"before" | "after" | inside} [options.position="inside"] If not selected, the element will be placed inside the parent element. If you want it right outside of the parent element, use 'before' or 'after'.
      * @returns This DomProxy
      * @example
-     * $('button').appendTo($('.container'))
+     * $('div').cloneTo('.target') // Clones and places inside .target (default behavior)
+     * $('div').cloneTo('.target', { position: 'before' }) // Cloned element will be placed before .target
+     * $('div').cloneTo('.target', { position: 'after' }) // Cloned element will be placed after .target
+     *
      */
-    appendTo: (parent: DomProxy) => DomProxy
+    cloneTo: (
+      parentSelector: string,
+      options?: { position: string }
+    ) => DomProxy
 
-    /** Prepend the element to a single parent element in the DOM. So, the element will be removed from its current parent and added to the beginning of the new parent. If you want to add it to the end, use `appendTo`.
-     * @param parent The parent element
+    /**
+     * Move the element to a new parent element in the DOM. The original element is moved from its current location. If you want to clone the element instead of moving it, use `cloneTo`.
+     * @param parentSelector CSS selector for the parent element to which the element will be moved.
+     * @param options Optional configuration for the function behavior.
+     * @param {"before" | "after" | inside} [options.position="inside"] Determine where the element should be placed relative to the new parent's children. 'before' places it at the start; 'after' at the end; 'inside' as the first child.
      * @returns This DomProxy
      * @example
-     * $('button').prependTo($('.container'))
+     * $('div').moveTo('.target') // Moves and appends to .target (default behavior)
+     * $('div').moveTo('.target', { position: 'before' }) // Moves and prepends to .target
      */
-    prependTo: (parent: DomProxy) => DomProxy
+
+    /**
+     * Replace the element(s) with new element(s). By default, the element is moved to the new location. To clone it instead, set the mode to 'clone'.
+     * @param replacements An array of elements that will replace the original elements.
+     * @param mode Specify whether the original elements should be moved or cloned to their new location.
+     * @returns This DomProxy
+     * @example
+     * $('div').replaceWith([newElement])
+     * $('div').replaceWith([newElement], 'clone')
+     */
+    replaceWith: (
+      replacements: Array<HTMLElement>,
+      mode?: "move" | "clone"
+    ) => DomProxy
 
     /** Remove the element from the DOM entirely
      * @returns This DomProxy
@@ -255,13 +291,52 @@ declare module "jessquery" {
      */
     wait: (ms: number) => DomProxy
 
+    /** Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too)
+     * @param fn The async callback. This can receive the element as an argument.
+     * @returns This DomProxy
+     * @example
+     * $('button')
+     * .css('color', 'red')
+     * .do(async (el) => { // The element is passed as an argument
+     *    const response = await fetch('/api')
+     *    const data = await response.json()
+     *    el.text(data.message) // All the methods are still available
+     * })
+     * .css('color', 'blue')
+     */
+    do: (fn: (el: DomProxy) => Promise<void>) => DomProxy
+
+    /** Switch to the parent of the element in the middle of a chain
+     * @returns The parent DomProxy
+     * @example
+     * $('button')
+     * .css('color', 'red')
+     * .parent()
+     * .css('color', 'blue')
+     * // the parent of the button will turn blue
+     * // the button itself will remain red
+     */
+    parent: () => DomProxy
+
+    /** Switch to the siblings of the element in the middle of a chain
+     * @returns The sibling DomProxyCollection
+     * @example
+     * $('button')
+     * .css('color', 'red')
+     * .siblings()
+     * .css('color', 'blue')
+     * // All the siblings of the button will turn blue
+     * // The button itself will remain red
+     */
+    siblings: () => DomProxyCollection
+
     /** Find descendants matching a sub-selector
      * @param subSelector The sub-selector
      * @returns This DomProxy
      * @example
      * $('.container').find('.buttons')
      */
-    find: (subSelector: string) => DomProxy
+    find: (subSelector: string) => DomProxyCollection
 
     /** Get the closest ancestor matching a selector
      * @param ancestorSelector The ancestor selector
@@ -335,13 +410,24 @@ declare module "jessquery" {
      */
     text: (newText: string) => DomProxyCollection
 
-    /** Change the value of the elements
-     * @param newValue The new value
-     * @returns This DomProxyCollection
+    /**
+     * Sets the value of all DOM elements in the collection based on their type. For form elements such as inputs, textareas, and selects, the appropriate property (e.g., `value`, `checked`) will be adjusted. For other elements, the `textContent` property will be set.
+     * @param newValue - The value to be set. This can be a string, number, an array for multi-selects, a FileList for file inputs, or a boolean for checkboxes.
+     *   - For `input[type="checkbox"]`: A truthy value sets it to checked, otherwise unchecked.
+     *  - For `input[type="radio"]`: If the `newValue` matches the input's value, it's checked.
+     * - For `input[type="file"]`: Sets the input's `files` property (expects a FileList or similar).
+     * - For `select[multiple]`: Expects an array of values to select multiple options.
+     * @returns This DomProxyCollection.
      * @example
-     * $$('.inputs').val('New Value')
+     * $('input[type="text"]').value('New Value')
+     * $('input[type="checkbox"]').value(true)
+     * $('input[type="radio"]').value('radio1')
+     * $('input[type="file"]').value(myFileList)
+     * $('select[multiple]').value(['option1', 'option2'])
      */
-    val: (newValue: string) => DomProxyCollection
+    val: (
+      newValue: string | number | (string | number)[] | FileList
+    ) => DomProxyCollection
 
     /** Adds one or more CSS rule(s) to the elements. If the first argument is an object, it will be treated as a map of CSS properties and values. Otherwise, it will be treated as a single CSS property and the second argument will be treated as the value.
      * @param prop The CSS property
@@ -472,21 +558,53 @@ declare module "jessquery" {
      */
     prepend: (children: ChildInput, sanitize?: boolean) => DomProxyCollection
 
-    /** Append the elements to a single parent element in the DOM. So, the elements will be removed from their current parent and added to the end of the new parent. If you want to add them to the beginning, use `prependTo`.
-     * @param parent The parent element
+    /**
+     * Move a clone of the elements to a new parent element in the DOM. The original elements remain in their current location.
+     * @param parentSelector CSS selector for the parent element to which the cloned elements will be added.
+     * @param options Optional configuration for the function behavior.
+     * @param {boolean} [options.all=false] If set to true, the elements will be cloned or moved to all elements matching the parentSelector.
+     * @param {"before" | "after"} [options.position="after"] Determine where the clone should be placed relative to the new parent's children. 'before' places it at the start; 'after' at the end.
      * @returns This DomProxyCollection
      * @example
-     * $$('.buttons').appendTo($('.container'))
+     * $$('.buttons').cloneTo('.target') // Clones and appends to .target (default behavior)
+     * $$('.buttons').cloneTo('.target', { position: 'before' }) // Clones and prepends to .target
+     * $$('.buttons').cloneTo('.target', { all: true }) // Clones and appends to all .target elements
      */
-    appendTo: (parent: DomProxy) => DomProxyCollection
+    cloneTo: (
+      parentSelector: string,
+      options?: MoveOrCloneOptions
+    ) => DomProxyCollection
 
-    /** Prepend the elements to a single parent element in the DOM. So, the elements will be removed from their current parent and added to the beginning of the new parent. If you want to add them to the end, use `appendTo`.
-     * @param parent The parent element
+    /**
+     * Move the elements to a new parent element in the DOM. The original elements are moved from their current location.
+     * @param parentSelector CSS selector for the parent element to which the elements will be moved.
+     * @param options Optional configuration for the function behavior.
+     * @param {boolean} [options.all=false] If set to true, the elements will be cloned or moved to all elements matching the parentSelector.
+     * @param {"before" | "after"} [options.position="after"] Determine where the elements should be placed relative to the new parent's children. 'before' places them at the start; 'after' at the end.
      * @returns This DomProxyCollection
      * @example
-     * $$('.buttons').prependTo($('.container'))
+     * $$('.buttons').moveTo('.target') // Moves and appends to .target (default behavior)
+     * $$('.buttons').moveTo('.target', { position: 'before' }) // Moves and prepends to .target
+     * $$('.buttons').moveTo('.target', { all: true }) // Moves and appends to all .target elements
      */
-    prependTo: (parent: DomProxy) => DomProxyCollection
+    moveTo: (
+      parentSelector: string,
+      options?: MoveOrCloneOptions
+    ) => DomProxyCollection
+
+    /**
+     * Replace the elements with new elements. By default, the elements are moved to the new location. To clone them instead, set the mode to 'clone'.
+     * @param replacements An array of elements that will replace the original elements.
+     * @param mode Specify whether the original elements should be moved or cloned to their new location.
+     * @returns This DomProxyCollection
+     * @example
+     * $$('.buttons').replaceWith([newElement])
+     * $$('.buttons').replaceWith([newElement], 'clone')
+     */
+    replaceWith: (
+      replacements: Array<HTMLElement>,
+      mode?: "move" | "clone"
+    ) => DomProxyCollection
 
     /** Remove the elements from the DOM
      * @returns This DomProxyCollection
@@ -556,11 +674,16 @@ declare module "jessquery" {
    * @param {function} handler - The error handler
    * @example
    * setErrorHandler((err) => alert(err.message))
-   * // Now, you'll get an annoying alert every time an error occurs like a good little developer
+   * // Now, you'll get an annoying alert every time an error occurs like a good little developer.
+   * // The error will not be thrown or logged to the console.
    */
   export function setErrorHandler(handler: (err: Error) => void): void
 
   type ChildInput = string | HTMLElement | DomProxy | ChildInput[]
+}
+
+interface Element {
+  setHTML(input: string, options?: SetHTMLOptions): void
 }
 
 interface SanitizerConfig {
@@ -586,6 +709,7 @@ interface SetHTMLOptions {
   sanitizer?: Sanitizer
 }
 
-interface Element {
-  setHTML(input: string, options?: SetHTMLOptions): void
+type MoveOrCloneOptions = {
+  mode?: "move" | "clone"
+  position?: "before" | "after"
 }

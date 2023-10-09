@@ -40,21 +40,22 @@
     <div class="moreMultipleElements">Element</div>
 
     <script type="module">
-      import { $, $$ } from "./index.js"
+      import { $, $$ } from "../index.js"
+
+      const keyframes = [
+        { transform: "translateY(-100px)", opacity: "0" },
+        { transform: "translateY(0)", opacity: "1" },
+      ]
+
+      const options = {
+        duration: 4000,
+        easing: "ease-in-out",
+        fill: "forwards",
+      }
 
       $$(".animateDiv")
         .text("Hello")
-        .animate(
-          [
-            { opacity: 0, transform: "translateY(-100px)" },
-            { opacity: 1, transform: "translateY(0)" },
-          ],
-          {
-            duration: 4000,
-            easing: "ease-in-out",
-            fill: "forwards",
-          }
-        )
+        .animate(keyframes, options)
         .text(fetchData())
         .wait(2000)
         .remove()
