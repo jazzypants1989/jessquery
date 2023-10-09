@@ -1,10 +1,13 @@
 # jessquery
 
-`jessquery` is a light wrapper around the browser's native DOM API with less verbosity and more convenience methods. It's just like [jQuery](https://jquery.com/), except with a smaller footprint and a sillier name. It doesn't do quite as much, but most of jQuery's features have been subsumed by the browser itself.
+`jessquery` is a lightweight wrapper around the DOM API that offers the intuitive elegance of jQuery, but streamlined for the modern web.
 
-The key thing that is lost when working without jQuery is the ability to easily compose multiple actions in a readable, logical way. So, I made sure that all these methods can be chained together-- just like with jQuery! Each function will wait for the previous one to finish before continuing the chain. This makes it easy to do things like wait for an animation to finish before removing an element from the DOM.
+Rekindle your love for method chaining, now in a lightweight, predictable package. Seamlessly handle asynchronous tasks, customize error behaviors, and ensure actions flow smoothly one after the other. And, the best part?
 
-The main difference? jQuery is 80kb before gzip and around 30kb after compression. jessquery is 5kb before gzip-- 2.02kb after compression! So, you get most of the convenience at a fraction of the cost.
+| Library   | Size before gzip | Size after gzip |
+| --------- | ---------------- | --------------- |
+| jQuery    | 88.3kb           | 31.7kb          |
+| jessquery | 5.25kb           | 2.07kb          |
 
 ## Usage
 
