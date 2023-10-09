@@ -51,7 +51,9 @@ export function addMethods(type, selector, target) {
       toOneOrMany((el) => css(el, stylesOrProp, value))
     }, giveContext("css", selector)),
 
-    addStyleSheet, // SAME NAME. This comment is just here cuz this is easy to miss.
+    addStyleSheet: applyFunc((rules) => {
+      addStyleSheet(rules)
+    }, giveContext("addStyleSheet", selector)),
 
     addClass: applyFunc((className) => {
       toOneOrMany((el) => el.classList.add(className))
@@ -82,7 +84,7 @@ export function addMethods(type, selector, target) {
     }, giveContext("data", selector)),
 
     attach: applyFunc((...children) => {
-      toOneOrMany((el) => insertChild(el, ...children))
+      toOneOrMany((el) => attach(el, ...children))
     }, giveContext("attach", selector)),
 
     cloneTo: applyFunc((parentSelector, options) => {
@@ -221,23 +223,7 @@ function addStyleSheet(rules) {
   document.head.appendChild(style)
 }
 
-function createDOMFromString(htmlString, sanitize = true) {
-  const div = document.createElement("div")
-  sanitize ? div.setHTML(htmlString) : (div.innerHTML = htmlString)
-  return div.firstElementChild
-}
-
-function getDOMElement(item, sanitize = true, all = false) {
-  return typeof item === "string" && item.trim().startsWith("<")
-    ? createDOMFromString(item, sanitize)
-    : item instanceof HTMLElement
-    ? item
-    : all
-    ? Array.from(document.querySelectorAll(item))
-    : document.querySelector(item) || null
-}
-
-function insertChild(element, ...args) {
+function attach(element, ...args) {
   const options =
     args[args.length - 1] instanceof Object &&
     ("sanitize" || "position" || "all" in args[args.length - 1])
@@ -260,34 +246,6 @@ function moveOrClone(elements, parentSelector, options = {}) {
 
   parents.forEach((parent) => {
     modifyDOM(parent, children, options)
-  })
-}
-
-function modifyDOM(
-  parent,
-  children,
-  { position = "append", sanitize = true, mode = "move" } = {}
-) {
-  const operation = mode === "clone" ? (el) => el.cloneNode(true) : (el) => el
-
-  children.forEach((child) => {
-    const domElement = operation(getDOMElement(child, sanitize))
-    switch (position) {
-      case "append":
-        parent.append(domElement)
-        break
-      case "prepend":
-        parent.prepend(domElement)
-        break
-      case "before":
-        parent.before(domElement)
-        break
-      case "after":
-        parent.after(domElement)
-        break
-      default:
-        throw new Error(`Unsupported position: ${position}`)
-    }
   })
 }
 
@@ -316,4 +274,49 @@ function animate(elements, keyframes, options) {
 
 function wait(duration) {
   return new Promise((resolve) => setTimeout(resolve, duration))
+}
+
+function modifyDOM(
+  parent,
+  children,
+  { position = "append", sanitize = true, mode = "move" } = {}
+) {
+  const getCloneOrNode =
+    mode === "clone" ? (el) => el.cloneNode(true) : (el) => el
+
+  children.forEach((child) => {
+    const domElement = getCloneOrNode(getDOMElement(child, sanitize))
+    switch (position) {
+      case "append":
+        parent.append(domElement)
+        break
+      case "prepend":
+        parent.prepend(domElement)
+        break
+      case "before":
+        parent.before(domElement)
+        break
+      case "after":
+        parent.after(domElement)
+        break
+      default:
+        throw new Error(`Unsupported position: ${position}`)
+    }
+  })
+}
+
+function getDOMElement(item, sanitize = true, all = false) {
+  return typeof item === "string" && item.trim().startsWith("<") // If it's an HTML string
+    ? createDOMFromString(item, sanitize) // Create an element from it
+    : item instanceof HTMLElement // If it's already an element
+    ? item // Just return it
+    : all // So, if it isn't an element or an HTML string, check if the all flag is true
+    ? Array.from(document.querySelectorAll(item)) // All is true? - see if you can make an array of elements that match a selector
+    : document.querySelector(item) // All is false? - Return the first element that matches the selector (or null)
+}
+
+function createDOMFromString(htmlString, sanitize = true) {
+  const div = document.createElement("div")
+  sanitize ? div.setHTML(htmlString) : (div.innerHTML = htmlString)
+  return div.firstElementChild
 }

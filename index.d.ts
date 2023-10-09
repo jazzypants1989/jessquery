@@ -1,12 +1,44 @@
 declare module "jessquery" {
   /**
-   * An HTML element with some extra methods
+   * A proxy covering a single HTML element that allows you to chain methods sequentially (including asynchronous tasks) and then execute them all at once.
+   *
+   * Methods:
+   * - {@link DomProxy.on} - Add an event listener to the element
+   * - {@link DomProxy.once} - Add an event listener that will only fire once to the element
+   * - {@link DomProxy.off} - Remove an event listener from the element
+   * - {@link DomProxy.delegate} - Delegate an event listener to the element
+   * - {@link DomProxy.html} - Change the HTML of the element with an **UNSANITIZED** string of new HTML. This is useful if you want to add a script tag or something. If you want to sanitize the HTML, use {@link DomProxy.sanitize} instead.
+   * - {@link DomProxy.sanitize} - Sanitizes a string of untrusted HTML using the setHTML API, and sets the sanitized HTML to the provided element. Offers protection against XSS attacks.
+   * - {@link DomProxy.text} - Change the text of the element while retaining the HTML.
+   * - {@link DomProxy.val} - Sets the value of a DOM element based on its type. For form elements such as inputs, textareas, and selects, the appropriate property (e.g., `value`, `checked`) will be adjusted. For other elements, the `textContent` property will be set.
+   * - {@link DomProxy.css} - Add a CSS Rule to the element. If the first argument is an object, it will be treated as a map of CSS properties and values. Otherwise, it will be treated as a single CSS property and the second argument will be treated as the value.
+   * - {@link DomProxy.addStylesheet} - Add a stylesheet to the ENTIRE DOCUMENT (this is useful for things like :hover styles). Got a good idea for how to make this scoped to a single element? Open a PR!
+   * - {@link DomProxy.addClass} - Add a class to the element
+   * - {@link DomProxy.removeClass} - Remove a class from the element
+   * - {@link DomProxy.toggleClass} - Toggle a class on the element
+   * - {@link DomProxy.set} - Set an attribute on the element. If the value is undefined, it will be set to `""`, which is useful for boolean attributes like disabled or hidden.
+   * - {@link DomProxy.unset} - Remove an attribute from the element
+   * - {@link DomProxy.toggle} - Toggle an attribute on the element
+   * - {@link DomProxy.data} - Set a data attribute on the element.
+   * - {@link DomProxy.attach} - Attaches children to the element based on the provided options.
+   * - {@link DomProxy.cloneTo} - Clone of the element to a new parent element in the DOM. By default, it is appended inside the new parent element, but you change change this with the `position` option. The original element remains in its current location. If you want to move the element instead of cloning it, use {@link DomProxy.moveTo}.
+   * - {@link DomProxy.moveTo} - Move the element to a new parent element in the DOM. By default, it is appended inside the new parent element, but you change change this with the `position` option. The original element is removed from its current location. The `all` option is technically available, but it will simply use the last element in the collection. This is because you can only move an element to one place at a time. If you want to clone the element instead of moving it, use {@link DomProxy.cloneTo}.
+   * - {@link DomProxy.replaceWith} - Replace the element with a new element. By default, the element is moved to the new location. To clone it instead, set the mode to 'clone'.
+   * - {@link DomProxy.remove} - Remove the element from the DOM entirely
+   * - {@link DomProxy.animate} - Animate the element using the WAAPI
+   * - {@link DomProxy.wait} - Sets a timeout for the given number of milliseconds and waits for it to resolve before continuing the chain
+   * - {@link DomProxy.do} - Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too)
+   * - {@link DomProxy.parent} - Switch to the parent of the element in the middle of a chain
+   * - {@link DomProxy.closest} - Switch to the closest ancestor matching a selector in the middle of a chain
+   * - {@link DomProxy.children} - Switch to the children of the element in the middle of a chain
+   * - {@link DomProxy.siblings} - Switch to the siblings of the element in the middle of a chain
+   * - {@link DomProxy.find} - Switch to the descendants of the element that match a selector in the middle of a chain
    */
   export interface DomProxy {
     /** Add an event listener to the element
      * @param ev The event name
      * @param fn The event listener
-     * @returns This DomProxy
+     * @returns This {@link DomProxy}
      * @example
      * $('button').on('click', () => console.log('clicked'))
      */
@@ -15,7 +47,7 @@ declare module "jessquery" {
     /** Add an event listener that will only fire once to the element
      * @param ev The event name
      * @param fn The event listener
-     * @returns This DomProxy
+     * @returns This {@link DomProxy}
      * @example
      * $('button').once('click', () => console.log('clicked'))
      * // The event listener will only fire once
@@ -25,7 +57,7 @@ declare module "jessquery" {
     /** Remove an event listener from the element
      * @param ev The event name
      * @param fn The event listener
-     * @returns This DomProxy
+     * @returns This {@link DomProxy}
      * @example
      * $('button').off('click', clickHandler)
      * // The event listener will no longer fire
@@ -36,7 +68,7 @@ declare module "jessquery" {
      * @param event The event name
      * @param subSelector The sub-selector
      * @param handler The event handler
-     * @returns This DomProxy
+     * @returns This {@link DomProxy}
      * @example
      * $('.container').delegate('click', '.buttons', (e) => console.log('Button clicked'))
      */
@@ -46,30 +78,38 @@ declare module "jessquery" {
       handler: EventListenerOrEventListenerObject
     ) => DomProxy
 
-    /** Change the HTML of the element with an **UNSANITIZED** string of new HTML. This is useful if you want to add a script tag or something. If you want to sanitize the HTML, use `sanitize` instead.
+    /** Change the HTML of the element with an **UNSANITIZED** string of new HTML. This is useful if you want to add a script tag or something. If you want to sanitize the HTML, use {@link DomProxy.sanitize} instead.
      * @param newHtml The new HTML
-     * @returns This DomProxy
+     * @returns This {@link DomProxy}
      * @example
      * $('button').html('<span>Click me!</span>')
      */
     html: (newHtml: string) => DomProxy
 
-    /** Sanitizes a string of untusted HTML, then replaces the element with the new, freshly sanitized HTML. This helps protect you from XSS Attacks. It uses the setHTML API under the hood, so you can provide your own sanitizer if you want with a second argument.
-     * @param html The HTML to sanitize
-     * @param sanitizer A function that takes a string of HTML and returns a sanitized string of HTML. If you don't provide one, the default sanitizer will be used.
-     * @returns The sanitized HTML
+    /**
+     * Sanitizes a string of untrusted HTML using the setHTML API, and sets the sanitized HTML to the provided element.
+     * Offers protection against XSS attacks.
+     *
+     * @param {string} html - Untrusted HTML string to sanitize and set.
+     * @param {Sanitizer} [sanitizer] - An instance of Sanitizer to customize the sanitization. Defaults to a new Sanitizer() with default configuration.
+     * @returns {DomProxy} - The provided element with the sanitized content set.
+     *
      * @example
-     * const html = '<span>Click me!</span><script>alert("hacked!")</script>'
-     * $('button').sanitize(html).on('click', () => console.log('clicked'))
-     * // The button will now contain the sanitized HTML, but the alert will be removed.
-     * @see
-     * https://developer.mozilla.org/en-US/docs/Web/API/Element/setHTML
+     * const maliciousHTML = '<span>Safe Content</span><script>alert("hacked!")</script>';
+     * const customSanitizer = new Sanitizer({
+     *   allowElements: ['span']
+     * });
+     * $('button').sanitize(maliciousHTML, customSanitizer);
+     * // The button will only contain the 'Safe Content' span;
+     * // Any scripts (or other unwanted tags) will be removed.
+     * // Only span elements will be allowed.
+     * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Element/setHTML}
      */
-    sanitize: (html: string, sanitizer?: (html: string) => string) => DomProxy
+    sanitize: (html: string, sanitizer?: Sanitizer) => DomProxy
 
     /** Change the text of the element while retaining the HTML.
      * @param newText The new text
-     * @returns This DomProxy
+     * @returns This {@link DomProxy}
      * @example
      * $('button').text('Click me!')
      */
@@ -82,13 +122,13 @@ declare module "jessquery" {
      *    - For `input[type="radio"]`: If the `newValue` matches the input's value, it's checked.
      *    - For `input[type="file"]`: Sets the input's `files` property (expects a FileList or similar).
      *    - For `select[multiple]`: Expects an array of values to select multiple options.
-     * @returns This DomProxy.
+     * @returns This {@link DomProxy}.
      * @example
-     * $('input[type="text"]').value('New Value')
-     * $('input[type="checkbox"]').value(true)
-     * $('input[type="radio"]').value('radio1')
-     * $('input[type="file"]').value(myFileList)
-     * $('select[multiple]').value(['option1', 'option2'])
+     * $('input[type="text"]').val('New Val')
+     * $('input[type="checkbox"]').val(true)
+     * $('input[type="radio"]').val('radio1')
+     * $('input[type="file"]').val(myFileList)
+     * $('select[multiple]').val(['option1', 'option2'])
      */
     val: (
       newValue: string | number | (string | number)[] | FileList
@@ -97,7 +137,7 @@ declare module "jessquery" {
     /** Add a CSS Rule to the element. If the first argument is an object, it will be treated as a map of CSS properties and values. Otherwise, it will be treated as a single CSS property and the second argument will be treated as the value.
      * @param propOrObj The CSS property or object containing CSS properties and values
      * @param value The CSS value
-     * @returns This DomProxy
+     * @returns This {@link DomProxy}
      * @example
      * $('button').css('color', 'red')
      * OR
@@ -108,9 +148,9 @@ declare module "jessquery" {
       value?: string
     ) => DomProxy
 
-    /** Add a stylesheet to the ENTIRE DOCUMENT (this is useful for things like :hover styles). Got an good idea for how to make this scoped to a single element? Open a PR!
+    /** Add a stylesheet to the ENTIRE DOCUMENT (this is useful for things like :hover styles). Got a good idea for how to make this scoped to a single element? Open a PR!
      * @param css The CSS to add
-     * @returns This DomProxy
+     * @returns This {@link DomProxy}
      * @example
      * $('button').stylesheet('button:hover { color: red; }')
      * // Now all buttons on the page will turn red when hovered
@@ -119,7 +159,7 @@ declare module "jessquery" {
 
     /** Add a class to the element
      * @param className The class name
-     * @returns This DomProxy
+     * @returns This {@link DomProxy}
      * @example
      * $('button').addClass('btn')
      */
@@ -127,7 +167,7 @@ declare module "jessquery" {
 
     /** Remove a class from the element
      * @param className The class name
-     * @returns This DomProxy
+     * @returns This {@link DomProxy}
      * @example
      * $('button').removeClass('btn')
      */
@@ -135,7 +175,7 @@ declare module "jessquery" {
 
     /** Toggle a class on the element
      * @param className The class name
-     * @returns This DomProxy
+     * @returns This {@link DomProxy}
      * @example
      * $('button').toggleClass('btn')
      */
@@ -144,7 +184,7 @@ declare module "jessquery" {
     /** Set an attribute on the element. If the value is undefined, it will be set to `""`, which is useful for boolean attributes like disabled or hidden.
      * @param attr The attribute name
      * @param value The attribute value (optional)
-     * @returns This DomProxy
+     * @returns This {@link DomProxy}
      * @example
      * $('button').set('disabled')
      * $('button').set('formaction', '/submit')
@@ -153,7 +193,7 @@ declare module "jessquery" {
 
     /** Remove an attribute from the element
      * @param attr The attribute name
-     * @returns This DomProxy
+     * @returns This {@link DomProxy}
      * @example
      * $('button').unset('disabled')
      */
@@ -161,7 +201,7 @@ declare module "jessquery" {
 
     /** Toggle an attribute on the element
      * @param attr The attribute name
-     * @returns This DomProxy
+     * @returns This {@link DomProxy}
      * @example
      * $('button').toggle('disabled')
      */
@@ -171,7 +211,7 @@ declare module "jessquery" {
      * Set a data attribute on the element.
      * @param key The dataset key
      * @param value The corresponding value for the dataset key
-     * @returns This DomProxy
+     * @returns This {@link DomProxy}
      * @example
      * $('div').data('info', 'extraDetails')
      * This implies: element.dataset.info = 'extraDetails'
@@ -200,7 +240,7 @@ declare module "jessquery" {
      * @param {Object} [options] - The options object.
      * @param {('append'|'prepend'|'before'|'after')} [options.position='append'] - Where to attach the children.
      * @param {boolean} [options.sanitize=true] - Whether or not to sanitize the HTML.
-     * @returns This DomProxy
+     * @returns This {@link DomProxy}
      *
      * @example
      * $('button').attach('<span>Click me!</span>');
@@ -208,7 +248,6 @@ declare module "jessquery" {
      * $('button').attach([$('.container'), '<span>Click me!</span>'], { position: 'before' });
      * $('button').attach('<image src="x" onerror="alert(\'hacked!\')">'); // No XSS attack here!
      * $('button').attach('<image src="x" onerror="alert(\'hacked!\')">', { sanitize: false }); // XSS attack here!
-     *
      * @see https://stackoverflow.com/questions/14846506/append-prepend-after-and-before
      */
     attach: (...children: ChildInput[]) => DomProxy
@@ -219,7 +258,7 @@ declare module "jessquery" {
      * @param options Optional configuration for the function behavior.
      * @param {boolean} [options.all=false] If set to true, the element will be cloned or moved to all elements matching the parentSelector.
      * @param {"before" | "after" | "prepend" | "append"} [options.position="append"] If not selected, the element will be placed inside the parent element after any existing children. If you want it right outside of the parent element, use 'before' or 'after'. If you want it to be the first child, use 'prepend'.
-     * @returns This DomProxy
+     * @returns This {@link DomProxy}
      * @example
      * $('button').cloneTo('.target') // Clones and appends to .target (default behavior)
      * $('button').cloneTo('.target', { position: 'prepend' }) // Clones and prepends to .target as first child
@@ -234,7 +273,7 @@ declare module "jessquery" {
      * @param parentSelector CSS selector for the parent element to which the element will be moved.
      * @param options Optional configuration for the function behavior.
      * @param {"before" | "after" | "prepend" | "append"} [options.position="append"] If not selected, the element will be placed inside the parent element after any existing children. If you want it right outside of the parent element, use 'before' or 'after'. If you want it to be the first child, use 'prepend'.
-     * @returns This DomProxy
+     * @returns This {@link DomProxy}
      * @example
      * $('button').moveTo('.target') // Moves and appends to .target (default behavior)
      * $('button').moveTo('.target', { position: 'prepend' }) // Moves and prepends to .target as first child
@@ -246,7 +285,7 @@ declare module "jessquery" {
      * Replace the element(s) with new element(s). By default, the element is moved to the new location. To clone it instead, set the mode to 'clone'.
      * @param replacements An array of elements that will replace the original elements.
      * @param mode Specify whether the original elements should be moved or cloned to their new location.
-     * @returns This DomProxy
+     * @returns This {@link DomProxy}
      * @example
      * $('div').replaceWith([newElement])
      * $('div').replaceWith([newElement], 'clone')
@@ -257,7 +296,7 @@ declare module "jessquery" {
     ) => DomProxy
 
     /** Remove the element from the DOM entirely
-     * @returns This DomProxy
+     * @returns This {@link DomProxy}
      * @example
      * $('button').remove()
      */
@@ -266,7 +305,7 @@ declare module "jessquery" {
     /** Animate the element using the WAAPI
      * @param keyframes The keyframes to animate
      * @param options The animation options
-     * @returns This DomProxy
+     * @returns This {@link DomProxy}
      * @example
      * $('button').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 })
      * @see https://developer.mozilla.org/en-US/docs/Web/API/Element/animate
@@ -278,7 +317,7 @@ declare module "jessquery" {
 
     /** Sets a timeout for the given number of milliseconds and waits for it to resolve before continuing the chain
      * @param ms The number of milliseconds to wait
-     * @returns This DomProxy
+     * @returns This {@link DomProxy}
      * @example
      * $('button').css('color', 'red').wait(1000).css('color', 'blue')
      */
@@ -286,7 +325,7 @@ declare module "jessquery" {
 
     /** Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too)
      * @param fn The async callback. This can receive the element as an argument.
-     * @returns This DomProxy
+     * @returns This {@link DomProxy}
      * @example
      * $('button')
      * .css('color', 'red')
@@ -300,7 +339,7 @@ declare module "jessquery" {
     do: (fn: (el: DomProxy) => Promise<void>) => DomProxy
 
     /** Switch to the parent of the element in the middle of a chain
-     * @returns The parent DomProxy
+     * @returns A new {@link DomProxy} from the parent element
      * @example
      * $('button')
      * .css('color', 'red')
@@ -311,16 +350,16 @@ declare module "jessquery" {
      */
     parent: () => DomProxy
 
-    /** Get the closest ancestor matching a selector
+    /** Switch to the closest ancestor matching a selector in the middle of a chain
      * @param ancestorSelector The ancestor selector
-     * @returns This DomProxy
+     * @returns A new {@link DomProxy} from the ancestor element
      * @example
      * $('.buttons').closest('.container')
      */
     closest: (ancestorSelector: string) => DomProxy
 
     /** Switch to the children of the element in the middle of a chain
-     * @returns The child DomProxyCollection
+     * @returns A new {@link DomProxyCollection} created from the children of the element
      * @example
      * $('.container')
      * .css('color', 'red')
@@ -332,7 +371,7 @@ declare module "jessquery" {
     children: () => DomProxyCollection
 
     /** Switch to the siblings of the element in the middle of a chain
-     * @returns The sibling DomProxyCollection
+     * @returns A new {@link DomProxyCollection} created from the siblings of the element
      * @example
      * $('button')
      * .css('color', 'red')
@@ -343,9 +382,9 @@ declare module "jessquery" {
      */
     siblings: () => DomProxyCollection
 
-    /** Find descendants matching a sub-selector
+    /** Switch to the descendants of the element that match a selector in the middle of a chain
      * @param subSelector The sub-selector
-     * @returns This DomProxy
+     * @returns A new {@link DomProxyCollection} created from the descendants matching the sub-selector
      * @example
      * $('.container').find('.buttons')
      */
@@ -353,13 +392,45 @@ declare module "jessquery" {
   }
 
   /**
-   * An HTML element collection with some extra methods
+   * A proxy covering a collection of HTML elements that allows you to chain methods sequentially (including asynchronous tasks) and then execute them all at once.
+   *
+   * Methods:
+   * - {@link DomProxyCollection.on} - Add an event listener to the elements
+   * - {@link DomProxyCollection.once} - Add an event listener that will only fire once to the elements
+   * - {@link DomProxyCollection.off} - Remove an event listener from the elements
+   * - {@link DomProxyCollection.delegate} - Delegate an event listener to the elements
+   * - {@link DomProxyCollection.html} - Change the HTML of the elements with an **UNSANITIZED** string of new HTML. This is useful if you want to add a script tag or something. If you want to sanitize the HTML, use `sanitize` instead.
+   * - {@link DomProxyCollection.sanitize} - Sanitizes a string of untrusted HTML using the setHTML API, and sets the sanitized HTML to the matched elements. Offers protection against XSS attacks.
+   * - {@link DomProxyCollection.text} - Change the text of the elements while retaining the HTML.
+   * - {@link DomProxyCollection.val} - Sets the value of all DOM elements in the collection based on their type. For form elements such as inputs, textareas, and selects, the appropriate property (e.g., `value`, `checked`) will be adjusted. For other elements, the `textContent` property will be set.
+   * - {@link DomProxyCollection.css} - Add a CSS Rule to the elements. If the first argument is an object, it will be treated as a map of CSS properties and values. Otherwise, it will be treated as a single CSS property and the second argument will be treated as the value.
+   * - {@link DomProxyCollection.addStylesheet} - Add a stylesheet to the ENTIRE DOCUMENT (this is useful for things like :hover styles). Got a good idea for how to make this scoped to a single element? Open a PR!
+   * - {@link DomProxyCollection.addClass} - Add a class to the elements
+   * - {@link DomProxyCollection.removeClass} - Remove a class from the elements
+   * - {@link DomProxyCollection.toggleClass} - Toggle a class on the elements
+   * - {@link DomProxyCollection.set} - Set an attribute on the elements. If the value is undefined, it will be set to `""`, which is useful for boolean attributes like disabled or hidden.
+   * - {@link DomProxyCollection.unset} - Remove an attribute from the elements
+   * - {@link DomProxyCollection.toggle} - Toggle an attribute on the elements
+   * - {@link DomProxyCollection.data} - Set a data attribute on the elements.
+   * - {@link DomProxyCollection.attach} - Attaches children to the elements based on the provided options.
+   * - {@link DomProxyCollection.cloneTo} - Clones the elements to a new parent element in the DOM. By default, it is appended inside the new parent element, but you change change this with the `position` option. The original elements remain in their current location. If you want to move the elements instead of cloning them, use {@link DomProxyCollection.moveTo}.
+   * - {@link DomProxyCollection.moveTo} - Moves the elements to a new parent element in the DOM. By default, it is appended inside the new parent element, but you change change this with the `position` option. The original elements are removed from their current location. The `all` option is technically available, but it will simply use the last element in the collection. This is because you can only move an element to one place at a time. If you want to clone the elements instead of moving them, use {@link DomProxyCollection.cloneTo}.
+   * - {@link DomProxyCollection.replaceWith} - Replaces the elements with new elements. By default, the elements are moved to the new location. To clone them instead, set the mode to 'clone'.
+   * - {@link DomProxyCollection.remove} - Remove the elements from the DOM entirely
+   * - {@link DomProxyCollection.animate} - Animate the elements using the WAAPI
+   * - {@link DomProxyCollection.wait} - Sets a timeout for the given number of milliseconds and waits for it to resolve before continuing the chain
+   * - {@link DomProxyCollection.do} - Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too)
+   * - {@link DomProxyCollection.parent} - Switch to the parent of the elements in the middle of a chain
+   * - {@link DomProxyCollection.closest} - Switch to the closest ancestor matching a selector in the middle of a chain
+   * - {@link DomProxyCollection.children} - Switch to the children of the elements in the middle of a chain
+   * - {@link DomProxyCollection.siblings} - Switch to the siblings of the elements in the middle of a chain
+   * - {@link DomProxyCollection.find} - Switch to the descendants of the elements that match a selector in the middle of a chain
    */
   export interface DomProxyCollection {
     /** Add an event listener to the elements
      * @param ev The event name
      * @param fn The event listener
-     * @returns This DomProxyCollection
+     * @returns This {@link DomProxyCollection}
      * @example
      * $('button').on('click', () => console.log('clicked'))
      */
@@ -368,7 +439,7 @@ declare module "jessquery" {
     /** Add an event listener that will only fire once to the elements
      * @param ev The event name
      * @param fn The event listener
-     * @returns This DomProxyCollection
+     * @returns This {@link DomProxyCollection}
      * @example
      * $('button').once('click', () => console.log('clicked'))
      * // The event listener will only fire once
@@ -378,7 +449,7 @@ declare module "jessquery" {
     /** Remove an event listener from the elements
      * @param ev The event name
      * @param fn The event listener
-     * @returns This DomProxyCollection
+     * @returns This {@link DomProxyCollection}
      * @example
      * $('button').off('click', clickHandler)
      * // The event listener will no longer fire
@@ -389,7 +460,7 @@ declare module "jessquery" {
      * @param event The event name
      * @param subSelector The sub-selector
      * @param handler The event handler
-     * @returns This DomProxyCollection
+     * @returns This {@link DomProxyCollection}
      * @example
      * $('.container').delegate('click', '.buttons', (e) => console.log('Button clicked'))
      */
@@ -399,17 +470,37 @@ declare module "jessquery" {
       handler: EventListenerOrEventListenerObject
     ) => DomProxyCollection
 
-    /** Change the HTML of the element The string will **NOT** s
+    /** Change the HTML of the element The string will **NOT** be sanitized. If you want to sanitize the HTML, use `sanitize` instead.
      * @param newHtml The new HTML
-     * @returns This DomProxyCollection
+     * @returns This {@link DomProxyCollection}
      * @example
      * $('.container').html('<span>New Content</span>')
      */
     html: (newHtml: string) => DomProxyCollection
 
+    /**
+     * Sanitizes a string of untrusted HTML using the setHTML API, and sets the sanitized HTML to the matched element(s).
+     * Provides protection against XSS attacks.
+     *
+     * @param {string} html - Untrusted HTML string to sanitize and set.
+     * @param {Sanitizer} [sanitizer] - An instance of Sanitizer to customize the sanitization. Defaults to a new Sanitizer() with default configuration.
+     * @returns {DomProxyCollection} - The matched elements with the sanitized content set.
+     *
+     * @example
+     * const maliciousHTML = '<span>Safe Content</span><script>alert("hacked!")</script>';
+     * const customSanitizer = new Sanitizer({
+     *   allowElements: ['span']
+     * });
+     * $('.targetElement').sanitize(maliciousHTML, customSanitizer);
+     * // The .targetElement will only contain the 'Safe Content' span; the script and other unwanted tags will be removed.
+     *
+     * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Element/setHTML}
+     */
+    sanitize: (html: string, sanitizer?: Sanitizer) => DomProxyCollection
+
     /** Change the text of the elements
      * @param newText The new text
-     * @returns This DomProxyCollection
+     * @returns This {@link DomProxyCollection}
      * @example
      * $$('.buttons').text('Click me!')
      */
@@ -422,7 +513,7 @@ declare module "jessquery" {
      *  - For `input[type="radio"]`: If the `newValue` matches the input's value, it's checked.
      * - For `input[type="file"]`: Sets the input's `files` property (expects a FileList or similar).
      * - For `select[multiple]`: Expects an array of values to select multiple options.
-     * @returns This DomProxyCollection.
+     * @returns This {@link DomProxyCollection}.
      * @example
      * $('input[type="text"]').value('New Value')
      * $('input[type="checkbox"]').value(true)
@@ -437,7 +528,7 @@ declare module "jessquery" {
     /** Adds one or more CSS rule(s) to the elements. If the first argument is an object, it will be treated as a map of CSS properties and values. Otherwise, it will be treated as a single CSS property and the second argument will be treated as the value.
      * @param prop The CSS property
      * @param value The CSS value
-     * @returns This DomProxyCollection
+     * @returns This {@link DomProxyCollection}
      * @example
      * $$('.buttons').css('color', 'red')
      * OR
@@ -450,7 +541,7 @@ declare module "jessquery" {
 
     /** Add a stylesheet to the ENTIRE DOCUMENT (this is useful for things like :hover styles). Got a good idea for how to make this scoped to a single element? Open a PR!
      * @param css The CSS to add
-     * @returns This DomProxyCollection
+     * @returns This {@link DomProxyCollection}
      * @example
      * $$('.buttons').addStylesheet('button:hover { color: red; }')
      * // Now all buttons on the page will turn red when hovered
@@ -459,7 +550,7 @@ declare module "jessquery" {
 
     /** Add a class to the elements
      * @param className The class name
-     * @returns This DomProxyCollection
+     * @returns This {@link DomProxyCollection}
      * @example
      * $$('.buttons').addClass('btn')
      */
@@ -467,7 +558,7 @@ declare module "jessquery" {
 
     /** Remove a class from the elements
      * @param className The class name
-     * @returns This DomProxyCollection
+     * @returns This {@link DomProxyCollection}
      * @example
      * $$('.buttons').removeClass('btn')
      */
@@ -475,7 +566,7 @@ declare module "jessquery" {
 
     /** Toggle a class on the elements
      * @param className The class name
-     * @returns This DomProxyCollection
+     * @returns This {@link DomProxyCollection}
      * @example
      * $$('.buttons').toggleClass('btn')
      */
@@ -484,7 +575,7 @@ declare module "jessquery" {
     /** Set an attribute on the elements. If the value is undefined, it will be set to `""`, which is useful for boolean attributes like disabled or hidden.
      * @param attr The attribute name
      * @param value The attribute value
-     * @returns This DomProxyCollection
+     * @returns This {@link DomProxyCollection}
      * @example
      * $$('.buttons').set('disabled')
      * $$('.buttons').set('formaction', '/submit')
@@ -493,7 +584,7 @@ declare module "jessquery" {
 
     /** Remove an attribute from the elements
      * @param attr The attribute name
-     * @returns This DomProxyCollection
+     * @returns This {@link DomProxyCollection}
      * @example
      * $$('.buttons').unset('disabled')
      */
@@ -501,7 +592,7 @@ declare module "jessquery" {
 
     /** Toggle an attribute on the elements
      * @param attr The attribute name
-     * @returns This DomProxyCollection
+     * @returns This {@link DomProxyCollection}
      * @example
      * $$('.buttons').toggle('disabled')
      */
@@ -510,7 +601,7 @@ declare module "jessquery" {
     /** Set a data attribute on the elements.
      * @param key The dataset key
      * @param value The corresponding value for the dataset key
-     * @returns This DomProxyCollection
+     * @returns This {@link DomProxyCollection}
      * @example
      * $$('.buttons').data('info', 'extraDetails')
      * This implies: element.dataset.info = 'extraDetails'
@@ -536,7 +627,7 @@ declare module "jessquery" {
      * @param {Object} [options] - The options object.
      * @param {('append'|'prepend'|'before'|'after')} [options.position='append'] - Where to attach the children.
      * @param {boolean} [options.sanitize=true] - Whether or not to sanitize the HTML.
-     * @returns This DomProxyCollection
+     * @returns This {@link DomProxyCollection}
      * @example
      * $$('.buttons').attach('<span>Click me!</span>');
      * $$('.buttons').attach($('.container'), { position: 'prepend' });
@@ -545,14 +636,15 @@ declare module "jessquery" {
      * $$('.buttons').attach('<image src="x" onerror="alert(\'hacked!\')">', { sanitize: false }); // XSS attack here!
      * @see https://stackoverflow.com/questions/14846506/append-prepend-after-and-before
      */
+    attach: (...children: ChildInput[]) => DomProxyCollection
 
     /**
-     * Move a clone of the elements to a new parent element in the DOM. The original elements remain in their current location. By default, they are appended inside the new parent element, but you change change this with the `position` option. If you want to move the elements instead of cloning them, use `moveTo`.
+     * Move a clone of the elements to a new parent element in the DOM. The original elements remain in their current location. By default, they are appended inside the new parent element, but you change change this with the `position` option. If you want to move the elements instead of cloning them, use {@link DomProxyCollection.moveTo}
      * @param parentSelector CSS selector for the parent element to which the cloned elements will be added.
      * @param options Optional configuration for the function behavior.
      * @param {boolean} [options.all=false] If set to true, the elements will be cloned or moved to all elements matching the parentSelector.
      * @param {"before" | "after" | "prepend" | "append"} [options.position="append"] If not selected, the elements will be placed inside the parent element after any existing children. If you want them right outside of the parent element, use 'before' or 'after'. If you want them to be the first child, use 'prepend'.
-     * @returns This DomProxyCollection
+     * @returns This {@link DomProxyCollection}
      * @example
      * $$('.buttons').cloneTo('.target')
      * // Clones and appends to .target (default behavior)
@@ -573,11 +665,11 @@ declare module "jessquery" {
     ) => DomProxyCollection
 
     /**
-     * Move the elements to a new parent element in the DOM. By default, they are appended inside the new parent element, but you change change this with the `position` option. The original elements are removed from their current location. The `all` option is technically available, but it will simply use the last element in the collection. This is because you can only move an element to one place at a time. If you want to clone the elements instead of moving them, use `cloneTo`.
+     * Move the elements to a new parent element in the DOM. By default, they are appended inside the new parent element, but you change change this with the `position` option. The original elements are removed from their current location. The `all` option is technically available, but it will simply use the last element in the collection. This is because you can only move an element to one place at a time. If you want to clone the elements instead of moving them, use {@link DomProxyCollection.cloneTo}
      * @param parentSelector CSS selector for the parent element to which the elements will be moved.
      * @param options Optional configuration for the function behavior.
      * @param {"before" | "after" | "prepend" | "append"} [options.position="append"] If not selected, the elements will be placed inside the parent element after any existing children. If you want them right outside of the parent element, use 'before' or 'after'. If you want them to be the first child, use 'prepend'.
-     * @returns This DomProxyCollection
+     * @returns This {@link DomProxyCollection}
      * @example
      * $$('.buttons').moveTo('.target')
      * // Moves and appends to .target (default behavior)
@@ -594,7 +686,7 @@ declare module "jessquery" {
      * Replace the elements with new elements. The elements will be moved to the new location by default. To clone them instead, set the mode to 'clone'.
      * @param replacements An array of elements that will replace the original elements.
      * @param mode Specify whether the original elements should be moved or cloned to their new location.
-     * @returns This DomProxyCollection
+     * @returns This {@link DomProxyCollection}
      * @example
      * $$('.buttons').replaceWith([newElement])
      * $$('.buttons').replaceWith([newElement], 'clone')
@@ -605,11 +697,47 @@ declare module "jessquery" {
     ) => DomProxyCollection
 
     /** Remove the elements from the DOM
-     * @returns This DomProxyCollection
+     * @returns This {@link DomProxyCollection}
      * @example
      * $$('.buttons').remove()
      */
     remove: () => DomProxyCollection
+
+    /** Animate the elements using the WAAPI
+     * @param keyframes The keyframes to animate
+     * @param options The animation options
+     * @returns This {@link DomProxyCollection}
+     * @example
+     * $$('.buttons').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 })
+     * @see https://developer.mozilla.org/en-US/docs/Web/API/Element/animate
+     */
+    animate(
+      keyframes: Keyframe[] | PropertyIndexedKeyframes,
+      options: KeyframeAnimationOptions
+    ): DomProxyCollection
+
+    /** Await a timeout before continuing the chain
+     * @param ms The number of milliseconds to wait
+     * @returns This {@link DomProxyCollection}
+     * @example
+     * $$('.buttons').css('color', 'red').wait(1000).css('color', 'blue')
+     */
+    wait: (ms: number) => DomProxyCollection
+
+    /** Execute an asynchronous function and wait for it to resolve before continuing the chain (can be synchronous too)
+     * @param fn The async callback. This can receive the element as an argument.
+     * @returns This {@link DomProxyCollection}
+     * @example
+     * $$('.buttons')
+     * .css('color', 'red')
+     * .do(async (el) => { // The element is passed as an argument
+     *   const response = await fetch('/api')
+     *  const data = await response.json()
+     * el.text(data.message) // All the methods are still available
+     * })
+     * .css('color', 'blue')
+     */
+    do: (fn: (el: DomProxy) => Promise<void>) => DomProxyCollection
 
     /** Switch to the parents of the elements in the middle of a chain
      * @returns The parent DomProxyCollection
@@ -649,7 +777,7 @@ declare module "jessquery" {
 
     /** Get the closest ancestor matching a selector
      * @param ancestorSelector The ancestor selector
-     * @returns This DomProxyCollection
+     * @returns This {@link DomProxyCollection}
      * @example
      * $$('.buttons').closest('.container')
      */
@@ -657,54 +785,48 @@ declare module "jessquery" {
 
     /** Find descendants matching a sub-selector
      * @param subSelector The sub-selector
-     * @returns This DomProxyCollection
+     * @returns This {@link DomProxyCollection}
      * @example
      * $$('.container').find('.buttons')
      */
     find: (subSelector: string) => DomProxyCollection
-
-    /** Animate the elements using the WAAPI
-     * @param keyframes The keyframes to animate
-     * @param options The animation options
-     * @returns This DomProxyCollection
-     * @example
-     * $$('.buttons').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 })
-     * @see https://developer.mozilla.org/en-US/docs/Web/API/Element/animate
-     */
-    animate(
-      keyframes: Keyframe[] | PropertyIndexedKeyframes,
-      options: KeyframeAnimationOptions
-    ): DomProxyCollection
-
-    /** Await a timeout before continuing the chain
-     * @param ms The number of milliseconds to wait
-     * @returns This DomProxyCollection
-     * @example
-     * $$('.buttons').css('color', 'red').wait(1000).css('color', 'blue')
-     */
-    wait: (ms: number) => DomProxyCollection
   }
 
   /** Finds the first element in the DOM that matches a CSS selector and returns it with some extra, useful methods.
+   *
+   * These methods can be chained together to create a sequence of actions that will be executed in order (including asynchronous tasks).
+   *
+   * Every method returns a {@link DomProxy} or {@link DomProxyCollection} object, which can be used to continue the chain.
    * @param {string} selector - The CSS selector to match
-   * @returns {DomProxy}
+   * @returns A {@link DomProxy} object representing the first element in the DOM that matches the selector
    * @example
-   * $('button').on('click', () => console.log('Clicked!'))
-   * // The first button on the page will log 'Clicked!' when clicked
+   * $('button')
+   *    .on('click', () => console.log('Clicked!'))
+   *    .css('color', 'purple')
+   *    .wait(1000)
+   *    .css('color', 'lightblue')
+   *    .text('Click me!')
    */
   export function $(selector: string): DomProxy
 
-  /**
-   * Finds all elements in the DOM that match a CSS selector and returns them with some extra, useful methods.
+  /** Finds all elements in the DOM that match a CSS selector and returns them with some extra, useful methods.
+   *
+   * These methods can be chained together to create a sequence of actions that will be executed in order (including asynchronous tasks).
+   *
+   * Every method returns a {@link DomProxy} or {@link DomProxyCollection} object, which can be used to continue the chain.
    * @param {string} selector - The CSS selector to match
-   * @returns {DomProxyCollection}
+   * @returns A {@link DomProxyCollection} object representing all elements in the DOM that match the selector
    * @example
-   * $$('.button').on('click', () => console.log('Clicked!'))
-   * // Every button on the page will log 'Clicked!' when clicked
+   * $$('.buttons')
+   *   .on('click', () => console.log('Clicked!'))
+   *   .css('color', 'purple')
+   *   .wait(1000)
+   *   .css('color', 'lightblue')
+   *   .text('Click me!')
    */
   export function $$(selector: string): DomProxyCollection
 
-  /** Sets an error handler that will be called when an error occurs somewhere in JessQuery. The default behavior is to throw the error and log it to the console. You can override this behavior with this method to do something else.
+  /** Sets an error handler that will be called when an error occurs somewhere in JessQuery. The default behavior is to simply log it to the console. You can override this behavior with this method to do something else (or nothing... no judgement here! 😉)
    * @param {function} handler - The error handler
    * @example
    * setErrorHandler((err) => alert(err.message))
@@ -712,6 +834,61 @@ declare module "jessquery" {
    * // The error will not be thrown or logged to the console.
    */
   export function setErrorHandler(handler: (err: Error) => void): void
+
+  /**
+   * Converts any function that uses callbacks into a function that returns a promise, allowing easy integration into DomProxy chains. This is particularly useful for things like setTimeout, setInterval, and any older APIs that use callbacks.
+   *
+   * This works just like building a normal promise: call the resolve function when the function is successful, and call the reject function when it fails.
+   * If the function does not call either resolve or reject within the specified timeout, the promise will automatically reject.
+   * If you call the resolve function, the promise will resolve with the value you pass into it.
+   * If you call the reject function, the promise will reject with the value you pass into it.
+   *
+   * Every promise that rejects or error found inside of a promisified function will get routed through the default error handler (which you can set with the {@link setErrorHandler} function).
+   *
+   * To use this function in the middle of a chain, you can use it to provide values to one of the DomProxy methods like text() or html().
+   *
+   * OR
+   *
+   * You can use the {@link DomProxy.do} method to execute the function and use the result on the element or elements represented by the DomProxy or DomProxyCollection.
+   *
+   * @param {(...args: any[]) => any} fn - The function you wish to promisify. This function must call one of either the resolve or reject functions passed into it.
+   * @param {number} [timeout=2000] - Amount of time (in milliseconds) to wait before automatically rejecting the promise due to inaction.
+   *
+   * @returns {(...args: any[]) => Promise<any>} - Returns a new function that when called, returns a promise.
+   *
+   * @example
+   * const fetchApiData = promisify((resolve, reject) => {
+   *   const xhr = new XMLHttpRequest();
+   *   xhr.open("GET", "https://jsonplaceholder.typicode.com/todos/1");
+   *   xhr.onload = () => resolve(xhr.responseText);
+   *   xhr.onerror = () => reject(xhr.statusText);
+   *   xhr.send();
+   * });
+   *
+   * setErrorHandler((err) => $("#display").text(err.message));
+   *
+   * button.on("click", () => {
+   *   display
+   *     .text("Hold on! I'm about to use XHR")
+   *     .wait(500)
+   *     .do(async (el) => {
+   *       const data = await fetchApiData();
+   *       el.text(data);
+   *     });
+   * });
+   *
+   * // Alternatively, pass the promisified function directly into another method.
+   * button.on("click", async () => {
+   *   display
+   *     .text("I betcha don't even know what XHR is!")
+   *     .wait(1000)
+   *     .text(fetchApiData());
+   * });
+   */
+  export function promisify(
+    fn: (...args: any[]) => void,
+    timeout?: number
+  ): (...args: any[]) => Promise<any>
 
   type ChildInput = string | HTMLElement | DomProxy | ChildInput[]
 
@@ -723,7 +900,7 @@ declare module "jessquery" {
 }
 
 interface Element {
-  setHTML(input: string, options?: SetHTMLOptions): void
+  setHTML(input: string, sanitizer?: Sanitizer): void
 }
 
 interface SanitizerConfig {
@@ -743,8 +920,4 @@ interface Sanitizer {
   sanitize(input: string): string
   getConfiguration(): SanitizerConfig
   getDefaultConfiguration(): SanitizerConfig
-}
-
-interface SetHTMLOptions {
-  sanitizer?: Sanitizer
 }

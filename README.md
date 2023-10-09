@@ -37,19 +37,19 @@ const onlyWarnIfLoadIsSlow = promisify((resolve) => {
     // Each proxy has full access to the DOM API-- useful for conditional logic.
     if (display.textContent === "") {
       resolve("Loading...")
-      // reject will automatically throw an error and call the error handler.
+      // With promisify, reject will automatically throw an error and call the default error handler.
     }
   }, 200)
 })
 
-// There's a default error handler that catches all errors and promise rejections
+// The default error handler catches all errors and promise rejections
 // But, you can override it if you want to do something else.
 setErrorHandler((err) => {
   sendErrorToAnalytics(err)
 })
 
 // Every promise is resolved automatically
-// The next function will never run until the previous one is finished.
+// The next function never runs until the previous one is finished.
 button.on("click", () => {
   display
     .text(onlyWarnIfLoadIsSlow()) // NEVER shows text UNLESS data doesn't load in 200ms
@@ -58,7 +58,8 @@ button.on("click", () => {
 })
 
 // Most things follow the DOM API closely
-// But, now you can chain them together, they will always execute in order!
+// But, now you can chain them together
+// They will always execute in order!
 const fadeIn = [{ opacity: 0 }, { opacity: 1 }] // WAAPI keyframes
 const fadeOut = [{ opacity: 1 }, { opacity: 0 }] // WAAPI keyframes
 const oneSecond = { duration: 1000 } // WAAPI options
@@ -191,14 +192,39 @@ This is the benefit of using proxies, but I'm curious if this will scale well as
 ### $()
 
 - **$(selector: string): DomProxy**
-  - Selects a single element.
-  - Example: `$("#button")`
+  - Finds the first element in the DOM that matches a CSS selector and returns it with some extra, useful methods.
+  - These methods can be chained together to create a sequence of actions that will be executed in order (including asynchronous tasks).
+  - Every method returns a DomProxy or DomProxyCollection object, which can be used to continue the chain.
+  - Example:
+
+```javascript
+$("#button")
+  .on("click", () => console.log("Clicked!"))
+  .css("color", "purple")
+  .wait(1000)
+  .css("color", "lightblue")
+  .text("Click me!")
+```
 
 ### $$()
 
 - **$$(selector: string): DomProxyCollection**
-  - Selects multiple elements.
+
+  - Finds all elements in the DOM that match a CSS selector and returns them with some extra, useful methods
+  - These methods can be chained together to create a sequence of actions that will be executed in order (including asynchronous tasks).
+  - Every method returns a DomProxy or DomProxyCollection object, which can be used to continue the chain.
+
+  - Example:
+
+```javascript
+$$('.buttons')
+  .on('click', () => console.log('Clicked!'))
+  .css('color', 'purple')
+  .wait(1000)
+  .css('color', 'lightblue')
+  .text('Click me!')
   - Example: `$$(".buttons")`
+```
 
 ### DomProxy
 
@@ -246,7 +272,20 @@ A representation of an HTML element enriched with extra methods for easier manip
 - **sanitize: (html: string, sanitizer?: (html: string) => string) => DomProxy**
 
   - Sanitizes a string of untusted HTML, then replaces the element with the new, freshly sanitized HTML. This helps protect you from XSS Attacks. It uses the setHTML API under the hood, so you can provide your own sanitizer if you want with a second argument.
-  - Example: `$('button').sanitize('<span>Click me!</span>')`
+  - Example:
+
+  ```javascript
+  const maliciousHTML =
+    '<span>Safe Content</span><script>alert("hacked!")</script>'
+  const customSanitizer = new Sanitizer({
+    allowElements: ["span"],
+  })
+  $("button").sanitize(maliciousHTML, customSanitizer)
+  // The button will only contain the 'Safe Content' span;
+  // Any scripts (or other unwanted tags) will be removed.
+  // Only span elements will be allowed.
+  ```
+
   - MDN Documentation: [setHTML](https://developer.mozilla.org/en-US/docs/Web/API/Element/setHTML)
 
 ##### DomProxy.text
@@ -752,15 +791,29 @@ Sets an error handler that will be called when an error occurs somewhere in Jess
   // Now, you'll get an annoying alert every time an error occurs like a good little developer
   ```
 
-### promisify(fn: (...args: any[]) => any): (...args: any[]) => Promise<any>
+### promisify(fn: (...args: any[]) => void, timeout?: number): (...args: any[]) => Promise<any>;
 
-The chain will automatically wait on promises, but not everything returns a promise. This method allows you to easily wrap any function in a promise so that it can be used in a DomProxy chain.
+Converts any function that uses callbacks into a function that returns a promise, allowing easy integration into DomProxy chains. This is particularly useful for things like setTimeout, setInterval, and any older APIs that use callbacks.
 
-If you want to use the element as an argument, you can use the `do` method with this promisified function. Either way, any errors are automatically handled by the default error handler.
+This works just like building a normal promise: call the resolve function when the function is successful, and call the reject function when it fails. If the function does not call either resolve or reject within the specified timeout, the promise will automatically reject. If you call the resolve function, the promise will resolve with the value you pass into it. If you call the reject function, the promise will reject with the value you pass into it.
 
-- **fn: (...args: any[]) => any**
+Every promise that rejects or error found inside of a promisified function will get routed through the default error handler (which you can set with the setErrorHandler function).
+
+To use this function in the middle of a chain:
+
+- You can use it to provide values to one of the DomProxy methods like text() or html().
+
+OR
+
+- You can use the DomProxy.do method to execute the function and use the result on the element or elements represented by the DomProxy or DomProxyCollection.
+
+- **fn: (...args: any[]) => void**
 
   - The function to promisify
+
+- **timeout?: number**
+
+  - The number of milliseconds to wait before automatically rejecting the promise. If this is not provided, the promise will never automatically reject.
 
 - Example:
 
