@@ -225,29 +225,33 @@ declare module "jessquery" {
     /**
      * Clone of the element to a new parent element in the DOM. The original element remains in its current location. If you want to move the element instead of cloning it, use `moveTo`.
      * @param parentSelector CSS selector for the parent element to which the cloned element will be added.
+     * @param options Optional configuration for the function behavior.
      * @param {"before" | "after" | inside} [options.position="inside"] If not selected, the element will be placed inside the parent element. If you want it right outside of the parent element, use 'before' or 'after'.
+     * @param {boolean} [options.all=false] If set to true, the element will be cloned or moved to all elements matching the parentSelector.
      * @returns This DomProxy
      * @example
-     * $('div').cloneTo('.target') // Clones and places inside .target (default behavior)
-     * $('div').cloneTo('.target', { position: 'before' }) // Cloned element will be placed before .target
-     * $('div').cloneTo('.target', { position: 'after' }) // Cloned element will be placed after .target
-     *
+     * $('div').cloneTo('.target') // Clones and places inside first .target element (default behavior)
+     * $('div').cloneTo('.target', { position: 'after' }) // Clones and places after first .target element
+     * $('div').cloneTo('.target', { all: true }) // Clones and places inside all .target elements
+     * $('div').cloneTo('.target', { all: true, position: 'before' }) // Clones and places before all .target elements
      */
     cloneTo: (
       parentSelector: string,
-      options?: { position: string }
+      options?: { position: string; all: boolean }
     ) => DomProxy
 
     /**
-     * Move the element to a new parent element in the DOM. The original element is moved from its current location. If you want to clone the element instead of moving it, use `cloneTo`.
+     * Move the element to a new parent element in the DOM. The original element is moved from its current location. If you want to clone the element instead of moving it, use `cloneTo`. The all option can technically be passed, but the element will simply be attached to the last parent in the collection as there is only one element.
      * @param parentSelector CSS selector for the parent element to which the element will be moved.
      * @param options Optional configuration for the function behavior.
      * @param {"before" | "after" | inside} [options.position="inside"] Determine where the element should be placed relative to the new parent's children. 'before' places it at the start; 'after' at the end; 'inside' as the first child.
      * @returns This DomProxy
      * @example
-     * $('div').moveTo('.target') // Moves and appends to .target (default behavior)
-     * $('div').moveTo('.target', { position: 'before' }) // Moves and prepends to .target
+     * $('div').moveTo('.target') // Moves element inside first .target element (default behavior)
+     * $('div').moveTo('.target', { position: 'before' }) // Moves element before first .target element
+     * $('div').moveTo('.target', { position: 'after' }) // Moves element after first .target element
      */
+    moveTo: (parentSelector: string, options?: { position: string }) => DomProxy
 
     /**
      * Replace the element(s) with new element(s). By default, the element is moved to the new location. To clone it instead, set the mode to 'clone'.
@@ -559,37 +563,37 @@ declare module "jessquery" {
     prepend: (children: ChildInput, sanitize?: boolean) => DomProxyCollection
 
     /**
-     * Move a clone of the elements to a new parent element in the DOM. The original elements remain in their current location.
+     * Clones all of the elements in the collection to a new parent element in the DOM. The original elements remain in their current location. If you want to move the elements instead of cloning them, use `moveTo`.
      * @param parentSelector CSS selector for the parent element to which the cloned elements will be added.
      * @param options Optional configuration for the function behavior.
+     * @param {"before" | "after" | inside} [options.position="inside"] If not selected, the elements will be placed inside the parent element. If you want them right outside of the parent element, use 'before' or 'after'.
      * @param {boolean} [options.all=false] If set to true, the elements will be cloned or moved to all elements matching the parentSelector.
-     * @param {"before" | "after"} [options.position="after"] Determine where the clone should be placed relative to the new parent's children. 'before' places it at the start; 'after' at the end.
      * @returns This DomProxyCollection
      * @example
-     * $$('.buttons').cloneTo('.target') // Clones and appends to .target (default behavior)
-     * $$('.buttons').cloneTo('.target', { position: 'before' }) // Clones and prepends to .target
-     * $$('.buttons').cloneTo('.target', { all: true }) // Clones and appends to all .target elements
+     * $$('.buttons').cloneTo('.target') // Clones and places inside first .target element (default behavior)
+     * $$('.buttons').cloneTo('.target', { position: 'after' }) // Clones and places after first .target element
+     * $$('.buttons').cloneTo('.target', { all: true }) // Clones and places inside all .target elements
+     * $$('.buttons').cloneTo('.target', { all: true, position: 'before' }) // Clones and places before all .target elements
      */
     cloneTo: (
       parentSelector: string,
-      options?: MoveOrCloneOptions
+      options?: { position: string; all: boolean }
     ) => DomProxyCollection
 
     /**
-     * Move the elements to a new parent element in the DOM. The original elements are moved from their current location.
+     * Moves all of the elements in the collection to a new parent element in the DOM. The original elements are moved from their current location. If you want to clone the elements instead of moving them, use `cloneTo`. The all option can technically be passed, but the elements will simply be attached to the last parent in the collection as the element cannot be in multiple places at once.
      * @param parentSelector CSS selector for the parent element to which the elements will be moved.
      * @param options Optional configuration for the function behavior.
-     * @param {boolean} [options.all=false] If set to true, the elements will be cloned or moved to all elements matching the parentSelector.
-     * @param {"before" | "after"} [options.position="after"] Determine where the elements should be placed relative to the new parent's children. 'before' places them at the start; 'after' at the end.
+     * @param {"before" | "after" | inside} [options.position="inside"] Determine where the elements should be placed relative to the new parent's children. 'before' places them at the start; 'after' at the end; 'inside' as the first child.
      * @returns This DomProxyCollection
      * @example
-     * $$('.buttons').moveTo('.target') // Moves and appends to .target (default behavior)
-     * $$('.buttons').moveTo('.target', { position: 'before' }) // Moves and prepends to .target
-     * $$('.buttons').moveTo('.target', { all: true }) // Moves and appends to all .target elements
+     * $$('.buttons').moveTo('.target') // Moves elements inside first .target element (default behavior)
+     * $$('.buttons').moveTo('.target', { position: 'before' }) // Moves elements before first .target element
+     * $$('.buttons').moveTo('.target', { position: 'after' }) // Moves elements after first .target element
      */
     moveTo: (
       parentSelector: string,
-      options?: MoveOrCloneOptions
+      options?: { position: string }
     ) => DomProxyCollection
 
     /**
@@ -612,6 +616,29 @@ declare module "jessquery" {
      * $$('.buttons').remove()
      */
     remove: () => DomProxyCollection
+
+    /** Switch to the parent of the elements in the middle of a chain
+     * @returns The parent DomProxyCollection
+     * @example
+     * $$('.buttons')
+     * .css('color', 'red')
+     * .parent()
+     * .css('color', 'blue')
+     * // the parent of the buttons will turn blue
+     * // the buttons themselves will remain red
+     */
+    parent: () => DomProxyCollection
+
+    /** Switch to the siblings of the elements in the middle of a chain
+     * @returns The sibling DomProxyCollection
+     * @example
+     * $$('.buttons')
+     * .css('color', 'red')
+     * .siblings()
+     * .css('color', 'blue')
+     * // All the siblings of the buttons will turn blue
+     */
+    siblings: () => DomProxyCollection
 
     /** Find descendants matching a sub-selector
      * @param subSelector The sub-selector

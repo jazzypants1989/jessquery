@@ -20,7 +20,9 @@
         document.getElementById("testContainer").appendChild(output)
 
         const toBeReplacedEls = $$(".toBeReplaced")
-        toBeReplacedEls.replaceWith($$(".replacementElement"))
+        toBeReplacedEls.replaceWith($$(".replacementElement"), {
+          mode: "clone",
+        })
 
         const replacedElements = document.querySelectorAll(
           ".replacementElement"

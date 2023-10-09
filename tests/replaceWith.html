@@ -24,7 +24,7 @@
 
         document.getElementById("testContainer").appendChild(output)
 
-        toBeReplacedEl.replaceWith(replacementEl)
+        toBeReplacedEl.replaceWith(replacementEl, { mode: "clone" })
 
         if (
           !document.getElementById("toBeReplaced") &&
