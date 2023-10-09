@@ -13,14 +13,16 @@
     <div class="replacementElement">Replacement Element 2</div>
 
     <script type="module">
-      import { $$ } from "../index.js"
+      import { $, $$ } from "../index.js"
 
       function replaceWithMultiElementTest() {
         const output = document.createElement("div")
         document.getElementById("testContainer").appendChild(output)
 
         const toBeReplacedEls = $$(".toBeReplaced")
-        toBeReplacedEls.replaceWith($$(".replacementElement"))
+        toBeReplacedEls.replaceWith($$(".replacementElement"), {
+          mode: "move",
+        }) // Diagnostic 1
 
         const replacedElements = document.querySelectorAll(
           ".replacementElement"

@@ -17,12 +17,12 @@
       const paragraphs = $$(".paragraph")
       paragraphs.css("color", "blue")
 
-      // 3. Dynamically append and prepend content
-      contentDiv.append(
-        '<p class="appended">This is an appended paragraph.</p>',
+      // 3. Dynamically attach and prepend content
+      contentDiv.attach(
+        '<p class="attached">This is an attached paragraph.</p>',
         true
       )
-      contentDiv.prepend(
+      contentDiv.attach(
         '<p class="prepended">This is a prepended paragraph.</p>',
         false
       )
@@ -30,8 +30,8 @@
       // Unsafe HTML, should get sanitized
       const unsafeHtml = '<img src="x" onerror="alert(\'XSS Attack\')">'
 
-      contentDiv.append(unsafeHtml, false) // will not get sanitized-- will trigger alert
-      contentDiv.append(unsafeHtml) // will get sanitized-- so only one alert will trigger
+      contentDiv.attach(unsafeHtml, { sanitize: false }) // will not get sanitized-- will trigger alert
+      contentDiv.attach(unsafeHtml) // will get sanitized-- so only one alert will trigger
     </script>
   </body>
 </html>

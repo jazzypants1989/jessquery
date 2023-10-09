@@ -178,76 +178,69 @@ declare module "jessquery" {
      */
     data: (key: string, value: string) => DomProxy
 
-    /** Appends children to the element. The first argument can be:
+    /**
+     * Attaches children to the element based on the provided options.
+     * The children can be:
      * - A string of HTML
      * - A CSS selector
      * - An HTMLElement
      * - A DomProxy
      * - An array of any of the above
      *
-     * If you don't know what append means and you feel dumb, don't worry. I constantly forget. Append means that the children will be added to the end of the element. If you want to add them to the beginning, use `prepend`.
+     * The position can be:
+     * - 'append' (default): Adds the children to the end of the element.
+     * - 'prepend': Adds the children to the beginning of the element.
+     * - 'before': Adds the children before the element.
+     * - 'after': Adds the children after the element.
      *
-     * The HTML is sanitized by default, so you don't have to worry about XSS attacks. If you want to disable sanitization, you can pass `false` as the second argument.
-     * @param children The children to append
-     * @param sanitize Whether or not to sanitize the HTML. Defaults to true.
+     * The HTML is sanitized by default, which helps prevent XSS attacks.
+     * If you want to disable sanitization, set the `sanitize` option to `false`.
+     *
+     * @param {...*} children - The children to attach. The last argument can be an options object.
+     * @param {Object} [options] - The options object.
+     * @param {('append'|'prepend'|'before'|'after')} [options.position='append'] - Where to attach the children.
+     * @param {boolean} [options.sanitize=true] - Whether or not to sanitize the HTML.
      * @returns This DomProxy
-     * @example
-     * $('button').append('<span>Click me!</span>')
-     * $('button').append($('.container'))
-     * $('button').append([$('.container'), '<span>Click me!</span>'])
-     * $('button').append('<image src="x" onerror="alert(\'hacked!\')">') // No XSS attack here!
-     * $('button').append('<image src="x" onerror="alert(\'hacked!\')">', false) // XSS attack here!
-     */
-    append: (children: ChildInput, sanitize?: boolean) => DomProxy
-
-    /** Prepends children to the element. The first argument can be:
-     * - A string of HTML
-     * - A CSS selector
-     * - An HTMLElement
-     * - A DomProxy
-     * - An array of any of the above
      *
-     * If don't know what prepend means and you feel dumb, don't worry. I constantly forget. Prepend means that the children will be added to the beginning of the element. If you want to add them to the end, use `append`.
-     *
-     * The HTML is sanitized by default, so you don't have to worry about XSS attacks. If you want to disable sanitization, you can pass `false` as the second argument.
-     * @param children The children to prepend
-     * @param sanitize Whether or not to sanitize the HTML. Defaults to true.
-     * @returns This DomProxy
      * @example
-     * $('button').prepend('<span>Click me!</span>')
-     * $('button').prepend($('.container'))
-     * $('button').prepend([$('.container'), '<span>Click me!</span>'])
-     * $('button').prepend('<image src="x" onerror="alert(\'hacked!\')">') // No XSS attack here!
-     * $('button').prepend('<image src="x" onerror="alert(\'hacked!\')">', false) // XSS attack here!
+     * $('button').attach('<span>Click me!</span>');
+     * $('button').attach($('.container'), { position: 'prepend' });
+     * $('button').attach([$('.container'), '<span>Click me!</span>'], { position: 'before' });
+     * $('button').attach('<image src="x" onerror="alert(\'hacked!\')">'); // No XSS attack here!
+     * $('button').attach('<image src="x" onerror="alert(\'hacked!\')">', { sanitize: false }); // XSS attack here!
+     *
+     * @see https://stackoverflow.com/questions/14846506/append-prepend-after-and-before
      */
-    prepend: (children: ChildInput, sanitize?: boolean) => DomProxy
+    attach: (...children: ChildInput[]) => DomProxy
 
     /**
-     * Clone of the element to a new parent element in the DOM. The original element remains in its current location. If you want to move the element instead of cloning it, use `moveTo`.
+     * Clone of the element to a new parent element in the DOM. By default, it is appended inside the new parent element, but you change change this with the `position` option. The original element remains in its current location. If you want to move the element instead of cloning it, use `moveTo`.
      * @param parentSelector CSS selector for the parent element to which the cloned element will be added.
-     * @param {"before" | "after" | inside} [options.position="inside"] If not selected, the element will be placed inside the parent element. If you want it right outside of the parent element, use 'before' or 'after'.
+     * @param options Optional configuration for the function behavior.
+     * @param {boolean} [options.all=false] If set to true, the element will be cloned or moved to all elements matching the parentSelector.
+     * @param {"before" | "after" | "prepend" | "append"} [options.position="append"] If not selected, the element will be placed inside the parent element after any existing children. If you want it right outside of the parent element, use 'before' or 'after'. If you want it to be the first child, use 'prepend'.
      * @returns This DomProxy
      * @example
-     * $('div').cloneTo('.target') // Clones and places inside .target (default behavior)
-     * $('div').cloneTo('.target', { position: 'before' }) // Cloned element will be placed before .target
-     * $('div').cloneTo('.target', { position: 'after' }) // Cloned element will be placed after .target
-     *
+     * $('button').cloneTo('.target') // Clones and appends to .target (default behavior)
+     * $('button').cloneTo('.target', { position: 'prepend' }) // Clones and prepends to .target as first child
+     * $('button').cloneTo('.target', { all: true }) // Clones and appends to all .target elements
+     * $('button').cloneTo('.target', { all: true, position: 'before' }) // Clones and adds element just before all .target elements
+     * @see https://stackoverflow.com/questions/14846506/append-prepend-after-and-before
      */
-    cloneTo: (
-      parentSelector: string,
-      options?: { position: string }
-    ) => DomProxy
+    cloneTo: (parentSelector: string, options?: MoveOrCloneOptions) => DomProxy
 
     /**
-     * Move the element to a new parent element in the DOM. The original element is moved from its current location. If you want to clone the element instead of moving it, use `cloneTo`.
+     * Move the element to a new parent element in the DOM. By default, it is appended inside the new parent element, but you change change this with the `position` option. The original element is removed from its current location. The `all` option is technically available, but it will simply use the last element in the collection. This is because you can only move an element to one place at a time. If you want to clone the element instead of moving it, use `cloneTo`.
      * @param parentSelector CSS selector for the parent element to which the element will be moved.
      * @param options Optional configuration for the function behavior.
-     * @param {"before" | "after" | inside} [options.position="inside"] Determine where the element should be placed relative to the new parent's children. 'before' places it at the start; 'after' at the end; 'inside' as the first child.
+     * @param {"before" | "after" | "prepend" | "append"} [options.position="append"] If not selected, the element will be placed inside the parent element after any existing children. If you want it right outside of the parent element, use 'before' or 'after'. If you want it to be the first child, use 'prepend'.
      * @returns This DomProxy
      * @example
-     * $('div').moveTo('.target') // Moves and appends to .target (default behavior)
-     * $('div').moveTo('.target', { position: 'before' }) // Moves and prepends to .target
+     * $('button').moveTo('.target') // Moves and appends to .target (default behavior)
+     * $('button').moveTo('.target', { position: 'prepend' }) // Moves and prepends to .target as first child
+     * @see https://stackoverflow.com/questions/14846506/append-prepend-after-and-before
      */
+    moveTo: (parentSelector: string, options?: MoveOrCloneOptions) => DomProxy
 
     /**
      * Replace the element(s) with new element(s). By default, the element is moved to the new location. To clone it instead, set the mode to 'clone'.
@@ -524,63 +517,55 @@ declare module "jessquery" {
      */
     data: (key: string, value: string) => DomProxyCollection
 
-    /** Append children to the elements. The first argument can be:
+    /**
+     * Attaches children to the elements based on the provided options.
+     * The children can be:
      * - A string of HTML
      * - A CSS selector
      * - An HTMLElement
      * - A DomProxy
      * - An array of any of the above
-     * @param children The children to append
-     * @param sanitize Whether or not to sanitize the HTML. Defaults to true.
-     * @returns This DomProxyCollection
-     *
-     * If you don't know what append means and you feel dumb, don't worry. I constantly forget. Append means that the children will be added to the end of the element. If you want to add them to the beginning, use `prepend`.
-     *
-     * The HTML is sanitized by default, so you don't have to worry about XSS attacks. If you want to disable sanitization, you can pass `false` as the second argument.
-     *
-     * @returns This DomProxyCollection
-     * @example
-     * $$('.buttons').append('<span>Click me!</span>')
-     * $$('.buttons').append($('.container'))
-     * $$('.buttons').append([$('.container'), '<span>Click me!</span>'])
-     * $$('.buttons').append('<image src="x" onerror="alert(\'hacked!\')">') // No XSS attack here!
-     * $$('.buttons').append('<image src="x" onerror="alert(\'hacked!\')">', false) // XSS attack here!
-     */
-    append: (children: ChildInput, sanitize?: boolean) => DomProxyCollection
-
-    /** Prepends children to the elements. The first argument can be:
-     * - A string of HTML
-     * - A CSS selector
-     * - An HTMLElement
-     * - A DomProxy
-     * - An array of any of the above
-     * @param children The children to prepend
-     *
-     * If don't know what prepend means and you feel dumb, don't worry. I constantly forget. Prepend means that the children will be added to the beginning of the element. If you want to add them to the end, use `append`.
-     *
-     * The HTML is sanitized by default, so you don't have to worry about XSS attacks. If you want to disable sanitization, you can pass `false` as the second argument.
-     *
+     * The position can be:
+     * - 'append' (default): Adds the children to the end of the element.
+     * - 'prepend': Adds the children to the beginning of the element.
+     * - 'before': Adds the children before the element.
+     * - 'after': Adds the children after the element.
+     * The HTML is sanitized by default, which helps prevent XSS attacks.
+     * If you want to disable sanitization, set the `sanitize` option to `false`.
+     * @param {...*} children - The children to attach. The last argument can be an options object.
+     * @param {Object} [options] - The options object.
+     * @param {('append'|'prepend'|'before'|'after')} [options.position='append'] - Where to attach the children.
+     * @param {boolean} [options.sanitize=true] - Whether or not to sanitize the HTML.
      * @returns This DomProxyCollection
      * @example
-     * $$('.buttons').prepend('<span>Click me!</span>')
-     * $$('.buttons').prepend($('.container'))
-     * $$('.buttons').prepend([$('.container'), '<span>Click me!</span>'])
-     * $$('.buttons').prepend('<image src="x" onerror="alert(\'hacked!\')">') // No XSS attack here!
-     * $$('.buttons').prepend('<image src="x" onerror="alert(\'hacked!\')">', false) // XSS attack here!
+     * $$('.buttons').attach('<span>Click me!</span>');
+     * $$('.buttons').attach($('.container'), { position: 'prepend' });
+     * $$('.buttons').attach([$('.container'), '<span>Click me!</span>'], { position: 'before' });
+     * $$('.buttons').attach('<image src="x" onerror="alert(\'hacked!\')">'); // No XSS attack here!
+     * $$('.buttons').attach('<image src="x" onerror="alert(\'hacked!\')">', { sanitize: false }); // XSS attack here!
+     * @see https://stackoverflow.com/questions/14846506/append-prepend-after-and-before
      */
-    prepend: (children: ChildInput, sanitize?: boolean) => DomProxyCollection
 
     /**
-     * Move a clone of the elements to a new parent element in the DOM. The original elements remain in their current location.
+     * Move a clone of the elements to a new parent element in the DOM. The original elements remain in their current location. By default, they are appended inside the new parent element, but you change change this with the `position` option. If you want to move the elements instead of cloning them, use `moveTo`.
      * @param parentSelector CSS selector for the parent element to which the cloned elements will be added.
      * @param options Optional configuration for the function behavior.
      * @param {boolean} [options.all=false] If set to true, the elements will be cloned or moved to all elements matching the parentSelector.
-     * @param {"before" | "after"} [options.position="after"] Determine where the clone should be placed relative to the new parent's children. 'before' places it at the start; 'after' at the end.
+     * @param {"before" | "after" | "prepend" | "append"} [options.position="append"] If not selected, the elements will be placed inside the parent element after any existing children. If you want them right outside of the parent element, use 'before' or 'after'. If you want them to be the first child, use 'prepend'.
      * @returns This DomProxyCollection
      * @example
-     * $$('.buttons').cloneTo('.target') // Clones and appends to .target (default behavior)
-     * $$('.buttons').cloneTo('.target', { position: 'before' }) // Clones and prepends to .target
-     * $$('.buttons').cloneTo('.target', { all: true }) // Clones and appends to all .target elements
+     * $$('.buttons').cloneTo('.target')
+     * // Clones and appends to .target (default behavior)
+     * @example
+     * $$('.buttons').cloneTo('.target', { position: 'prepend' })
+     * // Clones and prepends to .target as first child
+     * @example
+     * $$('.buttons').cloneTo('.target', { all: true })
+     * // Clones and appends to all .target elements
+     * @example
+     * $$('.buttons').cloneTo('.target', { all: true, position: 'before' })
+     * // Clones and adds elements just before all .target elements
+     * @see https://stackoverflow.com/questions/14846506/append-prepend-after-and-before
      */
     cloneTo: (
       parentSelector: string,
@@ -588,16 +573,17 @@ declare module "jessquery" {
     ) => DomProxyCollection
 
     /**
-     * Move the elements to a new parent element in the DOM. The original elements are moved from their current location.
+     * Move the elements to a new parent element in the DOM. By default, they are appended inside the new parent element, but you change change this with the `position` option. The original elements are removed from their current location. The `all` option is technically available, but it will simply use the last element in the collection. This is because you can only move an element to one place at a time. If you want to clone the elements instead of moving them, use `cloneTo`.
      * @param parentSelector CSS selector for the parent element to which the elements will be moved.
      * @param options Optional configuration for the function behavior.
-     * @param {boolean} [options.all=false] If set to true, the elements will be cloned or moved to all elements matching the parentSelector.
-     * @param {"before" | "after"} [options.position="after"] Determine where the elements should be placed relative to the new parent's children. 'before' places them at the start; 'after' at the end.
+     * @param {"before" | "after" | "prepend" | "append"} [options.position="append"] If not selected, the elements will be placed inside the parent element after any existing children. If you want them right outside of the parent element, use 'before' or 'after'. If you want them to be the first child, use 'prepend'.
      * @returns This DomProxyCollection
      * @example
-     * $$('.buttons').moveTo('.target') // Moves and appends to .target (default behavior)
-     * $$('.buttons').moveTo('.target', { position: 'before' }) // Moves and prepends to .target
-     * $$('.buttons').moveTo('.target', { all: true }) // Moves and appends to all .target elements
+     * $$('.buttons').moveTo('.target')
+     * // Moves and appends to .target (default behavior)
+     * @example
+     * $$('.buttons').moveTo('.target', { position: 'prepend' })
+     * // Moves and prepends to .target as first child
      */
     moveTo: (
       parentSelector: string,
@@ -605,7 +591,7 @@ declare module "jessquery" {
     ) => DomProxyCollection
 
     /**
-     * Replace the elements with new elements. By default, the elements are moved to the new location. To clone them instead, set the mode to 'clone'.
+     * Replace the elements with new elements. The elements will be moved to the new location by default. To clone them instead, set the mode to 'clone'.
      * @param replacements An array of elements that will replace the original elements.
      * @param mode Specify whether the original elements should be moved or cloned to their new location.
      * @returns This DomProxyCollection
@@ -728,6 +714,12 @@ declare module "jessquery" {
   export function setErrorHandler(handler: (err: Error) => void): void
 
   type ChildInput = string | HTMLElement | DomProxy | ChildInput[]
+
+  type MoveOrCloneOptions = {
+    mode?: "move" | "clone"
+    position?: "before" | "after" | "prepend" | "append"
+    all?: boolean
+  }
 }
 
 interface Element {
@@ -755,9 +747,4 @@ interface Sanitizer {
 
 interface SetHTMLOptions {
   sanitizer?: Sanitizer
-}
-
-type MoveOrCloneOptions = {
-  mode?: "move" | "clone"
-  position?: "before" | "after"
 }

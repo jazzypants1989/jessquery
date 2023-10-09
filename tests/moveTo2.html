@@ -28,7 +28,7 @@
         ) // Diagnostic 2
 
         const els = $$(".originalElement")
-        els.moveTo("#newParent", { all: true })
+        els.moveTo("#newParent")
 
         const afterMove = Array.from(
           document.querySelectorAll("#newParent .originalElement")

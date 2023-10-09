@@ -39,7 +39,10 @@
         .html("JK <em>LOL</em>! jQuery is FOREVER!")
 
       $$("input").on("input", (e) => {
-        $$("input").val(e.target.value)
+        // $$("input").css({ color: "red" }).val(e.target.value)
+        $$("input")
+          .css({ color: "red" })
+          .map((el) => (el.value = e.target.value))
       })
 
       console.log($$("input").length)

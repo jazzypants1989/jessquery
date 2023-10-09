@@ -1,5 +1,5 @@
 import { createApplyFunc, createChainExecutor, handlerMaker } from "./core.js"
-import { defaultErrorHandler, giveContext } from "./errors.js"
+import { giveContext } from "./errors.js"
 
 export function addMethods(type, selector, target) {
   let proxy = null
@@ -81,13 +81,9 @@ export function addMethods(type, selector, target) {
       toOneOrMany((el) => (el.dataset[key] = value))
     }, giveContext("data", selector)),
 
-    append: applyFunc((...children) => {
-      toOneOrMany((el) => insertChild(el, "append", ...children))
-    }, giveContext("append", selector)),
-
-    prepend: applyFunc((...children) => {
-      toOneOrMany((el) => insertChild(el, "prepend", ...children))
-    }, giveContext("prepend", selector)),
+    attach: applyFunc((...children) => {
+      toOneOrMany((el) => insertChild(el, ...children))
+    }, giveContext("attach", selector)),
 
     cloneTo: applyFunc((parentSelector, options) => {
       moveOrClone(target, parentSelector, { mode: "clone", ...options })
@@ -241,24 +237,18 @@ function getDOMElement(item, sanitize = true, all = false) {
     : document.querySelector(item) || null
 }
 
-function insertChild(element, operation, ...args) {
-  const sanitize = args[args.length - 1] === false ? false : true
-  const children = args.filter((arg) => arg !== false)
-  children.forEach((child) => {
-    const domElement = getDOMElement(child, sanitize)
-    domElement && element[operation](domElement)
-  })
+function insertChild(element, ...args) {
+  const options =
+    args[args.length - 1] instanceof Object &&
+    ("sanitize" || "position" || "all" in args[args.length - 1])
+      ? args.pop()
+      : {}
+
+  modifyDOM(element, args, options)
 }
 
 function moveOrClone(elements, parentSelector, options = {}) {
-  const {
-    mode = "move",
-    position = "inside",
-    sanitize = true,
-    all = false,
-  } = options
-
-  let parents = getDOMElement(parentSelector, sanitize, all)
+  let parents = getDOMElement(parentSelector, options.sanitize, options.all)
 
   if (!Array.isArray(parents)) {
     parents = [parents]
@@ -266,33 +256,55 @@ function moveOrClone(elements, parentSelector, options = {}) {
 
   if (!parents.length) return
 
-  const operation = mode === "clone" ? (el) => el.cloneNode(true) : (el) => el
   const children = Array.isArray(elements) ? elements : [elements].flat()
 
-  children.forEach((child) => {
-    parents.forEach((parent) => {
-      const domElement = operation(getDOMElement(child, sanitize))
-      if (position === "inside") {
-        parent.append(domElement)
-      } else if (position === "before") {
-        parent.before(domElement)
-      } else if (position === "after") {
-        parent.after(domElement)
-      }
-    })
+  parents.forEach((parent) => {
+    modifyDOM(parent, children, options)
   })
 }
 
-function replaceWith(elements, replacements, mode = "move") {
-  elements.isSingle
-    ? elements.raw.replaceWith(replacements.raw)
-    : elements.raw.forEach((element, index) => {
-        const replacement =
-          mode === "clone"
-            ? replacements.raw[index].cloneNode(true)
-            : replacements.raw[index]
-        element.replaceWith(replacement)
-      })
+function modifyDOM(
+  parent,
+  children,
+  { position = "append", sanitize = true, mode = "move" } = {}
+) {
+  const operation = mode === "clone" ? (el) => el.cloneNode(true) : (el) => el
+
+  children.forEach((child) => {
+    const domElement = operation(getDOMElement(child, sanitize))
+    switch (position) {
+      case "append":
+        parent.append(domElement)
+        break
+      case "prepend":
+        parent.prepend(domElement)
+        break
+      case "before":
+        parent.before(domElement)
+        break
+      case "after":
+        parent.after(domElement)
+        break
+      default:
+        throw new Error(`Unsupported position: ${position}`)
+    }
+  })
+}
+
+function replaceWith(elements, replacements, options = {}) {
+  const handleReplacement = (element, replacement) => {
+    const newElement =
+      options.mode === "clone" ? replacement.cloneNode(true) : replacement
+    element.replaceWith(newElement)
+  }
+
+  if (elements.isSingle) {
+    handleReplacement(elements.raw, replacements.raw)
+  } else {
+    elements.raw.forEach((element, index) =>
+      handleReplacement(element, replacements.raw[index])
+    )
+  }
 }
 
 function animate(elements, keyframes, options) {

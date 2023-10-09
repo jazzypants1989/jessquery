@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Promisify XHR Example</title>
+    <style>
+      #display {
+        padding: 10px;
+        border: 1px solid black;
+      }
+    </style>
+  </head>
+  <body>
+    <button id="button">Fetch Data</button>
+    <div id="display"></div>
+
+    <script type="module">
+      // Adjust paths according to your setup
+      import { promisify, $, setErrorHandler } from "../index.js"
+
+      const fetchApiData = promisify((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        xhr.open("GET", "https://jsonplaceholder.typicode.com/todos/1")
+        xhr.onload = () => resolve(xhr.responseText)
+        xhr.onerror = () => reject(xhr.statusText)
+        xhr.send()
+      })
+
+      setErrorHandler((err) => {
+        $("#display").text(err.message)
+      })
+
+      const display = $("#display")
+      const button = $("#button")
+
+      //   button.on("click", async () => {
+      //     display.wait(500).text("about to use XHR").text(fetchApiData())
+      //   })
+
+      button.on("click", async () => {
+        display
+          .wait(500)
+          .text("about to use XHR")
+          .do(async (el) => {
+            const data = await fetchApiData()
+            el.text(data)
+          })
+      })
+    </script>
+  </body>
+</html>
