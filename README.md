@@ -4,7 +4,7 @@
 
 The key thing that is lost when working without jQuery is the ability to easily compose multiple actions in a readable, logical way. So, I made sure that all these methods can be chained together-- just like with jQuery! Each function will wait for the previous one to finish before continuing the chain. This makes it easy to do things like wait for an animation to finish before removing an element from the DOM.
 
-The main difference? jQuery is 80kb before gzip and around 30kb after compression. jessquery is 5kb before gzip-- 1.97kb after compression! So, you get most of the convenience at a fraction of the cost.
+The main difference? jQuery is 80kb before gzip and around 30kb after compression. jessquery is 5kb before gzip-- 2.02kb after compression! So, you get most of the convenience at a fraction of the cost.
 
 ## Usage
 
@@ -101,19 +101,18 @@ Or, since it's so small, you can just use a CDN like the good, old days. The big
 3. All custom methods can be chained together.
 4. _ALL_ DOM API's can be used, but they **MUST COME LAST** in the chain. You can always start a new chain if you need to.
 5. All chains are begun in the order they are found in the script, but they await any microtasks or promises found before continuing.
-6. Each chain gets its own queue, so you can have multiple chains operating on the same element at the same time.
-7. Each chain is executed concurrently, so you can have multiple chains operating on the same element at the same time.
-8. Synchronous tasks are always executed immediately unless they are preceded by an async task. In that case, they will be added to the queue and executed in order.
+6. Synchronous tasks are always executed immediately unless they are preceded by an async task. In that case, they will be added to the queue and executed in order.
+7. Each chain gets its own queue but they are all executed concurrently, so you can have multiple chains operating on the same element at the same time.
 
-If anything gets hard, just use the `wait` method to let the DOM catch up while you re-evaulate your life choices. 😅
+If anything gets hard, just use the `wait` method to let the DOM catch up while you re-evaluate your life choices. 😅
 
 ## Demo and Key Concepts
 
-Here's a [Stackblitz Playground](https://stackblitz.com/edit/jessquery?file=main.js) if you want to try it out. It works slightly differently from jQuery, but it makes sense once you understand the rules. If you ever used [PrototypeJS](http://prototypejs.org/doc/latest/dom/dollar-dollar/), this should be vaguely familiar to you.
+Here's a [Stackblitz Playground](https://stackblitz.com/edit/jessquery?file=main.js) if you want to try it out. It works slightly differently from jQuery, but it makes sense once you understand the rules. It's a bit more like [PrototypeJS](http://prototypejs.org/doc/latest/dom/dollar-dollar/) mixed with the async flow of something like [RxJS](https://rxjs.dev/guide/overview).
 
-The magic sauce here is that everything is a [proxy](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy), so you can still use the full DOM API if your use case isn't covered by one of the methods. The NodeList that you get from `$$` is automatically turned into an array for you. So, you can map over the DomProxyCollection and operate on each element. Or, if you forget about the `.css` operator and use `.style` instead when using `$`, it will just work.
+The magic sauce here is that everything is a [proxy](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy), so you can still use the full DOM API if your use case isn't covered by one of the methods. So, if you forget about the `.css` operator and use `.style` instead when using `$`, it will just work. The NodeList that you get from `$$` is automatically turned into an array so you can use array methods on it like `.map` or `.filter`.
 
-This might get problematic in large applications as proxies bring a small performance overhead, but I'm probably just being paranoid. I welcome anyone to do some tests! 😅
+This is the benefit of using proxies, but I'm curious if this will scale well as they bring a tiny bit of overhead. This might get problematic in large applications, but I'm probably just being paranoid. I welcome anyone to do some tests! 😅
 
 ## Interfaces
 
@@ -266,17 +265,161 @@ A representation of an HTML element enriched with extra methods for easier manip
   - Example: `$('button').prepend('<image src="x" onerror="alert(\'hacked!\')">')` // No XSS attack here!
   - Example: `$('button').prepend('<image src="x" onerror="alert(\'hacked!\')">', false)` // XSS attack here!
 
-- **appendTo(parent: DomProxy): DomProxy**
+    /\*\*
 
-  - Append the element to a single parent element in the DOM. So, the element will be removed from its current parent and added to the end of the new parent. If you want to add it to the beginning, use `prependTo`.
+    - Clone of the element to a new parent element in the DOM. The original element remains in its current location. If you want to move the element instead of cloning it, use `moveTo`.
+    - @param parentSelector CSS selector for the parent element to which the cloned element will be added.
+    - @param options Optional configuration for the function behavior.
+    - @param {"before" | "after" | inside} [options.position="inside"] If not selected, the element will be placed inside the parent element. If you want it right outside of the parent element, use 'before' or 'after'.
+    - @param {boolean} [options.all=false] If set to true, the element will be cloned or moved to all elements matching the parentSelector.
+    - @returns This DomProxy
+    - @example
+    - $('div').cloneTo('.target') // Clones and places inside first .target element (default behavior)
+    - $('div').cloneTo('.target', { position: 'after' }) // Clones and places after first .target element
+    - $('div').cloneTo('.target', { all: true }) // Clones and places inside all .target elements
+    - $('div').cloneTo('.target', { all: true, position: 'before' }) // Clones and places before all .target elements
 
-  - Example: `$('button').appendTo($('.container'))`
+      \*/
+      cloneTo: (
+      parentSelector: string,
+      options?: { position: string; all: boolean }
+      ) => DomProxy
 
-- **prependTo(parent: DomProxy): DomProxy**
+    /\*\*
 
-  - Prepend the element to a single parent element in the DOM. So, the element will be removed from its current parent and added to the beginning of the new parent. If you want to add it to the end, use `appendTo`.
+    - Move the element to a new parent element in the DOM. The original element is moved from its current location. If you want to clone the element instead of moving it, use `cloneTo`. The all option can technically be passed, but the element will simply be attached to the last parent in the collection as there is only one element.
+    - @param parentSelector CSS selector for the parent element to which the element will be moved.
+    - @param options Optional configuration for the function behavior.
+    - @param {"before" | "after" | inside} [options.position="inside"] Determine where the element should be placed relative to the new parent's children. 'before' places it at the start; 'after' at the end; 'inside' as the first child.
+    - @returns This DomProxy
+    - @example
+    - $('div').moveTo('.target') // Moves element inside first .target element (default behavior)
+    - $('div').moveTo('.target', { position: 'before' }) // Moves element before first .target element
+    - $('div').moveTo('.target', { position: 'after' }) // Moves element after first .target element
+      \*/
+      moveTo: (parentSelector: string, options?: { position: string }) => DomProxy
 
-  - Example: `$('button').prependTo($('.container'))`
+    /\*\*
+
+    - Replace the element(s) with new element(s). By default, the element is moved to the new location. To clone it instead, set the mode to 'clone'.
+    - @param replacements An array of elements that will replace the original elements.
+    - @param mode Specify whether the original elements should be moved or cloned to their new location.
+    - @returns This DomProxy
+    - @example
+    - $('div').replaceWith([newElement])
+    - $('div').replaceWith([newElement], 'clone')
+      \*/
+      replaceWith: (
+      replacements: Array<HTMLElement>,
+      mode?: "move" | "clone"
+      ) => DomProxy
+
+    /\*\* Remove the element from the DOM entirely
+
+    - @returns This DomProxy
+    - @example
+    - $('button').remove()
+      \*/
+      remove: () => DomProxy
+
+    /\*\* Animate the element using the WAAPI
+
+    - @param keyframes The keyframes to animate
+    - @param options The animation options
+    - @returns This DomProxy
+    - @example
+    - $('button').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 })
+    - @see https://developer.mozilla.org/en-US/docs/Web/API/Element/animate
+      \*/
+      animate: (
+      keyframes: Keyframe[] | PropertyIndexedKeyframes,
+      options: KeyframeAnimationOptions
+      ) => DomProxy
+
+    /\*\* Sets a timeout for the given number of milliseconds and waits for it to resolve before continuing the chain
+
+    - @param ms The number of milliseconds to wait
+    - @returns This DomProxy
+    - @example
+    - $('button').css('color', 'red').wait(1000).css('color', 'blue')
+      \*/
+      wait: (ms: number) => DomProxy
+
+    /\*\* Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too)
+
+    - @param fn The async callback. This can receive the element as an argument.
+    - @returns This DomProxy
+    - @example
+    - $('button')
+    - .css('color', 'red')
+    - .do(async (el) => { // The element is passed as an argument
+    - const response = await fetch('/api')
+    - const data = await response.json()
+    - el.text(data.message) // All the methods are still available
+    - })
+    - .css('color', 'blue')
+      \*/
+      do: (fn: (el: DomProxy) => Promise<void>) => DomProxy
+
+    /\*\* Switch to the parent of the element in the middle of a chain
+
+    - @returns The parent DomProxy
+    - @example
+    - $('button')
+    - .css('color', 'red')
+    - .parent()
+    - .css('color', 'blue')
+    - // the parent of the button will turn blue
+    - // the button itself will remain red
+      \*/
+      parent: () => DomProxy
+
+    /\*\* Switch to the siblings of the element in the middle of a chain
+
+    - @returns The sibling DomProxyCollection
+    - @example
+    - $('button')
+    - .css('color', 'red')
+    - .siblings()
+    - .css('color', 'blue')
+    - // All the siblings of the button will turn blue
+    - // The button itself will remain red
+      \*/
+      siblings: () => DomProxyCollection
+
+    /\*\* Find descendants matching a sub-selector
+
+    - @param subSelector The sub-selector
+    - @returns This DomProxy
+    - @example
+    - $('.container').find('.buttons')
+      \*/
+      find: (subSelector: string) => DomProxyCollection
+
+    /\*\* Get the closest ancestor matching a selector
+
+    - @param ancestorSelector The ancestor selector
+    - @returns This DomProxy
+    - @example
+    - $('.buttons').closest('.container')
+      \*/
+      closest: (ancestorSelector: string) => DomProxy
+      }
+
+- **cloneTo(parentSelector: string, options?: { position: string; all: boolean }): DomProxy**
+
+  - Clone of the element to a new parent element in the DOM. The original element remains in its current location. If you want to move the element instead of cloning it, use `moveTo`.
+  - Example: `$('div').cloneTo('.target')` // Clones and places inside first .target element (default behavior)
+  - Example: `$('div').cloneTo('.target', { position: 'after' })` // Clones and places after first .target element
+  - Example: `$('div').cloneTo('.target', { all: true })` // Clones and places inside all .target elements
+  - Example: `$('div').cloneTo('.target', { all: true, position: 'before' })` // Clones and places before all .target elements
+
+- **moveTo(parentSelector: string, options?: { position: string }): DomProxy**
+
+  - Move the element to a new parent element in the DOM. The original element is moved from its current location. If you want to clone the element instead of moving it, use `cloneTo`. The all option can technically be passed, but the element will simply be attached to the last parent in the collection as there is only one element.
+  - Example: `$('div').moveTo('.target')` // Moves element inside first .target element (default behavior)
+  - Example: `$('div').moveTo('.target', { position: 'before' })` // Moves element before first .target element
+  - Example: `$('div').moveTo('.target', { position: 'after' })` // Moves element after first .target element
 
 - **remove(): DomProxy**
 
@@ -293,6 +436,25 @@ A representation of an HTML element enriched with extra methods for easier manip
 
   - Waits for a specified number of milliseconds before continuing the chain.
   - Example: `$('button').wait(1000)`
+
+- **do(fn: (el: DomProxy) => Promise<void>): DomProxy**
+
+  - Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too).
+  - Example: `$('button').do(async (el) => { // The element is passed as an argument
+  const response = await fetch('/api')
+  const data = await response.json()
+  el.text(data.message) // All the methods are still available
+})`
+
+- **parent(): DomProxy**
+
+  - Switch to the parent of the element in the middle of a chain.
+  - Example: `$('button').parent().css('color', 'blue')` // the parent of the button will turn blue. The button itself will remain red.
+
+- **siblings(): DomProxyCollection**
+
+  - Switch to the siblings of the element in the middle of a chain.
+  - Example: `$('button').siblings().css('color', 'blue')` // All the siblings of the button will turn blue. The button itself will remain red.
 
 - **find(subSelector: string): DomProxyCollection**
 
@@ -441,17 +603,26 @@ A collection of DomProxy instances with similar enhanced methods for bulk action
   - Example: `$$('button').prepend('<image src="x" onerror="alert(\'hacked!\')">')` // No XSS attack here!
   - Example: `$$('button').prepend('<image src="x" onerror="alert(\'hacked!\')">', false)` // XSS attack here!
 
-- **appendTo(parent: DomProxy): DomProxyCollection**
+- **cloneTo(parentSelector: string, options?: { position: string; all: boolean }): DomProxyCollection**
 
-  - Append the elements to a single parent element in the DOM. So, the elements will be removed from their current parent and added to the end of the new parent. If you want to add them to the beginning, use `prependTo`.
+  - Clone of the elements to a new parent element in the DOM. The original elements remain in their current location. If you want to move the elements instead of cloning them, use `moveTo`.
+  - Example: `$$('div').cloneTo('.target')` // Clones and places inside first .target element (default behavior)
+  - Example: `$$('div').cloneTo('.target', { position: 'after' })` // Clones and places after first .target element
+  - Example: `$$('div').cloneTo('.target', { all: true })` // Clones and places inside all .target elements
+  - Example: `$$('div').cloneTo('.target', { all: true, position: 'before' })` // Clones and places before all .target elements
 
-  - Example: `$$('button').appendTo($('.container'))`
+- **moveTo(parentSelector: string, options?: { position: string }): DomProxyCollection**
 
-- **prependTo(parent: DomProxy): DomProxyCollection**
+  - Move the elements to a new parent element in the DOM. The original elements are moved from their current location. If you want to clone the elements instead of moving them, use `cloneTo`. The all option can technically be passed, but the elements will simply be attached to the last parent in the collection as there is only one element.
+  - Example: `$$('div').moveTo('.target')` // Moves elements inside first .target element (default behavior)
+  - Example: `$$('div').moveTo('.target', { position: 'before' })` // Moves elements before first .target element
+  - Example: `$$('div').moveTo('.target', { position: 'after' })` // Moves elements after first .target element
 
-  - Prepend the elements to a single parent element in the DOM. So, the elements will be removed from their current parent and added to the beginning of the new parent. If you want to add them to the end, use `appendTo`.
+- **replaceWith(replacements: Array<HTMLElement>, mode?: "move" | "clone"): DomProxyCollection**
 
-  - Example: `$$('button').prependTo($('.container'))`
+  - Replace the elements with new elements. By default, the elements are moved to the new location. To clone them instead, set the mode to 'clone'.
+  - Example: `$$('div').replaceWith([newElement])`
+  - Example: `$$('div').replaceWith([newElement], 'clone')`
 
 - **remove(): DomProxyCollection**
 
@@ -468,6 +639,15 @@ A collection of DomProxy instances with similar enhanced methods for bulk action
 
   - Waits for a specified number of milliseconds before continuing the chain.
   - Example: `$$('button').wait(1000)`
+
+- **do(fn: (el: DomProxy) => Promise<void>): DomProxyCollection**
+
+  - Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too).
+  - Example: `$$('button').do(async (el) => { // The element is passed as an argument
+  const response = await fetch('/api')
+  const data = await response.json()
+  el.text(data.message) // All the methods are still available
+})`
 
 - **find(subSelector: string): DomProxyCollection**
 
