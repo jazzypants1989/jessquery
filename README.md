@@ -776,7 +776,7 @@ A collection of DomProxy instances with similar enhanced methods for bulk action
   - Gets the closest ancestors for each element in the collection matching a selector.
   - Example: `$$('.buttons').closest('.container')`
 
-### setErrorHandler(handler: (err: Error) => void): void
+### setErrorHandler
 
 Sets an error handler that will be called when an error occurs somewhere in JessQuery. The default behavior is to just log it to the console. You can override this behavior with this method to do something else (or nothing... no judgement here! 😉)
 
@@ -791,7 +791,7 @@ Sets an error handler that will be called when an error occurs somewhere in Jess
   // Now, you'll get an annoying alert every time an error occurs like a good little developer
   ```
 
-### promisify(fn: (...args: any[]) => void, timeout?: number): (...args: any[]) => Promise<any>;
+### promisify
 
 Converts any function that uses callbacks into a function that returns a promise, allowing easy integration into DomProxy chains. This is particularly useful for things like setTimeout, setInterval, and any older APIs that use callbacks.
 
