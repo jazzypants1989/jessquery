@@ -34,16 +34,7 @@ declare module "jessquery" {
    * - {@link DomProxy.siblings} - Switch to the siblings of the element in the middle of a chain
    * - {@link DomProxy.pick} - Switch to the descendants of the element that match a selector in the middle of a chain
    */
-  export interface DomProxy<T extends HTMLElement = HTMLElement>
-    extends Omit<
-      HTMLElement,
-      | "animate"
-      | "closest"
-      | "replaceWith"
-      | "remove"
-      | "parentElement"
-      | "children"
-    > {
+  export type DomProxy<T extends HTMLElement = HTMLElement> = T & {
     /** Add an event listener to the element
      * @param ev The event name
      * @param fn The event listener

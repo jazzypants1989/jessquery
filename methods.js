@@ -155,7 +155,7 @@ export function addMethods(type, selector, target) {
       return addMethods("$$", selector, elements)
     },
 
-    find: (subSelector) => {
+    pick: (subSelector) => {
       const elements = isSingle
         ? target.querySelectorAll(subSelector)
         : Array.from(target).map((el) => el.querySelectorAll(subSelector))

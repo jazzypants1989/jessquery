@@ -4,14 +4,14 @@
 
 Feel like a 🦕 for still using jQuery? Wish that it didn't use up so much of your bundle size like a 🐖? Want something a little more 🆕✨?
 
-Rekindle your love for method chaining, now in a lightweight, predictable package. Seamlessly handle asynchronous tasks, customize error behaviors, and ensure actions flow smoothly one after the other. And, the best part? 🏎️💨
+Rekindle your love for method chaining-- now in a lightweight, type-safe package! `jessquery` helps you seamlessly handle asynchronous tasks, customize error behaviors, and ensure your DOM operations always execute in order. And, the best part? 🏎️💨
 
 | Library   | Size before gzip | Size after gzip |
 | --------- | ---------------- | --------------- |
 | jQuery    | 88.3kb           | 31.7kb          |
-| jessquery | 5.22kb           | 2.07kb          |
+| jessquery | 5.27kb           | 2.07kb          |
 
-https://deno.bundlejs.com/badge?q=jessquery@2.1.0&treeshake=[*]
+![It's only 2.07kb! I swear! This badge proves it.](https://deno.bundlejs.com/badge?q=jessquery%402.1.2&treeshake=%5B*%5D)
 
 ## Usage
 
