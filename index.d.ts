@@ -833,7 +833,6 @@ declare module "jessquery" {
    *    .text('Click me!')
    */
   export function $<S extends string>(selector: S): DomProxy<ElementForTag<S>>
-
   export function $<T extends HTMLElement>(selector: string): DomProxy<T>
 
   /** Finds all elements in the DOM that match a CSS selector and returns them with some extra, useful methods.
@@ -854,7 +853,6 @@ declare module "jessquery" {
   export function $$<S extends string>(
     selector: S
   ): DomProxyCollection<ElementForTag<S>>
-
   export function $$<T extends HTMLElement>(
     selector: string
   ): DomProxyCollection<T>
