@@ -38,6 +38,8 @@
         .find(".truth")
         .html("JK <em>LOL</em>! jQuery is FOREVER!")
 
+      $("h2").css("color", "red").parent().find("*").css("color", "blue")
+
       $$("input").on("input", (e) => {
         // $$("input").css({ color: "red" }).val(e.target.value)
         $$("input")

@@ -124,21 +124,21 @@ export function addMethods(type, selector, target) {
     parent: () => {
       const elements = isSingle
         ? target.parentElement
-        : target.map((el) => el.parentElement)
+        : Array.from(target).map((el) => el.parentElement)
       return addMethods("$", selector, elements)
     },
 
     closest: (subSelector) => {
       const elements = isSingle
         ? target.closest(subSelector)
-        : target.map((el) => el.closest(subSelector))
+        : Array.from(target).map((el) => el.closest(subSelector))
       return addMethods("$", subSelector, elements)
     },
 
     children: () => {
       const elements = isSingle
         ? target.children
-        : target.map((el) => el.children)
+        : Array.from(target).map((el) => el.children)
       return addMethods("$$", selector, elements)
     },
 
@@ -158,7 +158,7 @@ export function addMethods(type, selector, target) {
     find: (subSelector) => {
       const elements = isSingle
         ? target.querySelectorAll(subSelector)
-        : target.map((el) => el.querySelectorAll(subSelector))
+        : Array.from(target).map((el) => el.querySelectorAll(subSelector))
       return addMethods("$$", subSelector, elements)
     },
   }

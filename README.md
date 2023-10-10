@@ -9,7 +9,9 @@ Rekindle your love for method chaining, now in a lightweight, predictable packag
 | Library   | Size before gzip | Size after gzip |
 | --------- | ---------------- | --------------- |
 | jQuery    | 88.3kb           | 31.7kb          |
-| jessquery | 5.25kb           | 2.07kb          |
+| jessquery | 5.22kb           | 2.07kb          |
+
+https://deno.bundlejs.com/badge?q=jessquery@2.1.0&treeshake=[*]
 
 ## Usage
 
@@ -157,7 +159,7 @@ This is the benefit of using proxies, but I'm curious if this will scale well as
     - [DomProxy.parent](#DomProxyparent)
     - [DomProxy.siblings](#DomProxysiblings)
     - [DomProxy.children](#DomProxychildren)
-    - [DomProxy.find](#DomProxyfind)
+    - [DomProxy.pick](#DomProxypick)
     - [DomProxy.closest](#DomProxyclosest)
 - [DomProxyCollection](#DomProxyCollection)
   - [DomProxyCollection Methods](#DomProxyCollection-Methods)
@@ -189,7 +191,7 @@ This is the benefit of using proxies, but I'm curious if this will scale well as
     - [DomProxyCollection.parent](#DomProxyCollectionparent)
     - [DomProxyCollection.siblings](#DomProxyCollectionsiblings)
     - [DomProxyCollection.children](#DomProxyCollectionchildren)
-    - [DomProxyCollection.find](#DomProxyCollectionfind)
+    - [DomProxyCollection.pick](#DomProxyCollectionpick)
     - [DomProxyCollection.closest](#DomProxyCollectionclosest)
 - [setErrorHandler](#setErrorHandler)
 - [promisify](#promisify)
@@ -222,18 +224,17 @@ $("#button")
   - Example:
 
 ```javascript
-$$('.buttons')
-  .on('click', () => console.log('Clicked!'))
-  .css('color', 'purple')
+$$(".buttons")
+  .on("click", () => console.log("Clicked!"))
+  .css("color", "purple")
   .wait(1000)
-  .css('color', 'lightblue')
-  .text('Click me!')
-  - Example: `$$(".buttons")`
+  .css("color", "lightblue")
+  .text("Click me!")
 ```
 
 ### DomProxy
 
-A representation of an HTML element enriched with extra methods for easier manipulation.
+A proxy covering a single HTML element that allows you to chain methods sequentially (including asynchronous tasks) and then execute them all at once.
 
 #### DomProxy Methods
 
@@ -473,50 +474,61 @@ A representation of an HTML element enriched with extra methods for easier manip
 - **do(fn: (el: DomProxy) => Promise<void>): DomProxy**
 
   - Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too).
-  - Example: `$('button').do(async (el) => { // The element is passed as an argument
-  const response = await fetch('/api')
-  const data = await response.json()
-  el.text(data.message) // All the methods are still available
-})`
+  - Can receive the element as an argument, and you can still use all the proxy methods inside the function.
+
+  - Example:
+
+  ```javascript
+  $("button").do(async (el) => {
+    const response = await fetch("https://api.github.com/users/jazzypants1989")
+    const data = await response.json()
+    el.text(data.name)
+  })
+  ```
 
 ##### DomProxy.parent
 
 - **parent(): DomProxy**
 
   - Switch to the parent of the element in the middle of a chain.
-  - Example: `$('button').parent().css('color', 'blue')` // the parent of the button will turn blue. The button itself will remain red.
+  - Example: `$('button').css('color', 'red').parent().css('color', 'blue')`
+  - Expectation: The parent of the button will turn blue. The button itself will remain red.
 
 ##### DomProxy.siblings
 
 - **siblings(): DomProxyCollection**
 
   - Switch to the siblings of the element in the middle of a chain.
-  - Example: `$('button').siblings().css('color', 'blue')` // All the siblings of the button will turn blue. The button itself will remain red.
+  - Example: `$('button').css('color', 'red').siblings().css('color', 'blue')`
+  - Expectation: The siblings of the button will turn blue. The button itself will remain red.
 
 ##### DomProxy.children
 
 - **children(): DomProxyCollection**
 
   - Switch to the children of the element in the middle of a chain.
-  - Example: `$('.container').children().css('color', 'blue')` // the children of the container will turn blue. The container itself will remain red.
+  - Example: `$('button').css('color', 'red').children().css('color', 'blue')`
+  - Expectation: The children of the button will turn blue. The button itself will remain red.
 
-##### DomProxy.find
+##### DomProxy.pick
 
-- **find(subSelector: string): DomProxyCollection**
+- **pick(subSelector: string): DomProxyCollection**
 
-  - Finds descendants matching a sub-selector.
-  - Example: `$('.container').find('.buttons')`
+  - Picks descendants matching a sub-selector.
+  - Example: `$('.container').css('color', 'red').pick('.buttons').css('color', 'blue')`
+  - Expectation: The descendants of the container will turn blue. The container itself will remain red.
 
 ##### DomProxy.closest
 
 - **closest(ancestorSelector: string): DomProxy**
 
   - Gets the closest ancestor matching a selector.
-  - Example: `$('.buttons').closest('.container')`
+  - Example: `$('.buttons').css('color', 'red').closest('.container').css('color', 'blue')`
+  - Expectation: The container will turn blue. The buttons will remain red.
 
 ### DomProxyCollection
 
-A collection of DomProxy instances with similar enhanced methods for bulk actions.
+A proxy covering a collection of HTML elements that allows you to chain methods sequentially (including asynchronous tasks) and then execute them all at once.
 
 #### DomProxyCollection Methods
 
@@ -751,35 +763,40 @@ A collection of DomProxy instances with similar enhanced methods for bulk action
 - **parent(): DomProxyCollection**
 
   - Switch to the parents of the elements in the middle of a chain.
-  - Example: `$$('button').parent().css('color', 'blue')` // the parents of the buttons will turn blue. The buttons themselves will remain red.
+  - Example: `$$('button').css('color', 'red').parent().css('color', 'blue')`
+  - Expectation: The parents of the buttons will turn blue. The buttons themselves will remain red.
 
 ##### DomProxyCollection.siblings
 
 - **siblings(): DomProxyCollection**
 
   - Switch to the siblings of the elements in the middle of a chain.
-  - Example: `$$('button').siblings().css('color', 'blue')` // All the siblings of the buttons will turn blue. The buttons themselves will remain red.
+  - Example: `$$('button').css('color', 'red').siblings().css('color', 'blue')`
+  - Expectation: The siblings of the buttons will turn blue. The buttons themselves will remain red.
 
 ##### DomProxyCollection.children
 
 - **children(): DomProxyCollection**
 
   - Switch to the children of the elements in the middle of a chain.
-  - Example: `$$('.container').children().css('color', 'blue')` // the children of the container will turn blue. The container itself will remain red.
+  - Example: `$$('.container').css('color', 'red').children().css('color', 'blue')`
+  - Expectation: The children of the container will turn blue. The container itself will remain red.
 
-##### DomProxyCollection.find
+##### DomProxyCollection.pick
 
-- **find(subSelector: string): DomProxyCollection**
+- **pick(subSelector: string): DomProxyCollection**
 
-  - Finds descendants matching a sub-selector.
-  - Example: `$$('.container').find('.buttons')`
+  - Picks descendants matching a sub-selector.
+  - Example: `$$('.container').css('color', 'red').pick('.buttons').css('color', 'blue')`
+  - Expectation: The buttons will turn blue. The container will remain red.
 
 ##### DomProxyCollection.closest
 
 - **closest(ancestorSelector: string): DomProxyCollection**
 
   - Gets the closest ancestors for each element in the collection matching a selector.
-  - Example: `$$('.buttons').closest('.container')`
+  - Example: `$$('.buttons').css('color', 'red').closest('.container').css('color', 'blue')`
+  - Expectation: The containers will turn blue. The buttons will remain red.
 
 ### setErrorHandler
 
