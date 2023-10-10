@@ -35,10 +35,10 @@
       $("#counter").text("Click me!").on("click", increment)
 
       $$("div .container")
-        .find(".truth")
+        .pick(".truth")
         .html("JK <em>LOL</em>! jQuery is FOREVER!")
 
-      $("h2").css("color", "red").parent().find("*").css("color", "blue")
+      $("h2").css("color", "red").parent().pick("*").css("color", "blue")
 
       $$("input").on("input", (e) => {
         // $$("input").css({ color: "red" }).val(e.target.value)

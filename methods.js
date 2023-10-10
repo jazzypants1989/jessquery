@@ -95,18 +95,22 @@ export function addMethods(type, selector, target) {
       moveOrClone(target, parentSelector, { mode: "move", ...options })
     }, giveContext("moveTo", selector)),
 
-    replaceWith: applyFunc((replacements, mode = "move") => {
-      replaceWith(target, replacements, mode)
-    }, giveContext("replaceWith", selector)),
+    become: applyFunc((replacements, mode = "move") => {
+      become(target, replacements, mode)
+    }, giveContext("become", selector)),
 
-    remove: applyFunc(() => {
+    purge: applyFunc(() => {
       toOneOrMany((el) => el.remove())
-    }, giveContext("remove", selector)),
+    }, giveContext("purge", selector)),
 
-    animate: applyFunc(
+    transition: applyFunc(
       (keyframes, options) =>
-        animate(Array.isArray(target) ? target : [target], keyframes, options),
-      giveContext("animate", selector)
+        transition(
+          Array.isArray(target) ? target : [target],
+          keyframes,
+          options
+        ),
+      giveContext("transition", selector)
     ),
 
     wait: applyFunc(
@@ -128,14 +132,14 @@ export function addMethods(type, selector, target) {
       return addMethods("$", selector, elements)
     },
 
-    closest: (subSelector) => {
+    ancestor: (subSelector) => {
       const elements = isSingle
         ? target.closest(subSelector)
         : Array.from(target).map((el) => el.closest(subSelector))
       return addMethods("$", subSelector, elements)
     },
 
-    children: () => {
+    kids: () => {
       const elements = isSingle
         ? target.children
         : Array.from(target).map((el) => el.children)
@@ -248,7 +252,7 @@ function moveOrClone(elements, parentSelector, options = {}) {
   })
 }
 
-function replaceWith(elements, replacements, options = {}) {
+function become(elements, replacements, options = {}) {
   const handleReplacement = (element, replacement) => {
     const newElement =
       options.mode === "clone" ? replacement.cloneNode(true) : replacement
@@ -264,7 +268,7 @@ function replaceWith(elements, replacements, options = {}) {
   }
 }
 
-function animate(elements, keyframes, options) {
+function transition(elements, keyframes, options) {
   const animations = elements.map((element) =>
     element.animate(keyframes, options)
   )

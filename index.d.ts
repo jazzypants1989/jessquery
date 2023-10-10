@@ -23,13 +23,13 @@ declare module "jessquery" {
    * - {@link DomProxy.attach} - Attaches children to the element based on the provided options.
    * - {@link DomProxy.cloneTo} - Clone of the element to a new parent element in the DOM. By default, it is appended inside the new parent element, but you change change this with the `position` option. The original element remains in its current location. If you want to move the element instead of cloning it, use {@link DomProxy.moveTo}.
    * - {@link DomProxy.moveTo} - Move the element to a new parent element in the DOM. By default, it is appended inside the new parent element, but you change change this with the `position` option. The original element is removed from its current location. The `all` option is technically available, but it will simply use the last element in the collection. This is because you can only move an element to one place at a time. If you want to clone the element instead of moving it, use {@link DomProxy.cloneTo}.
-   * - {@link DomProxy.replaceWith} - Replace the element with a new element. By default, the element is moved to the new location. To clone it instead, set the mode to 'clone'.
-   * - {@link DomProxy.remove} - Remove the element from the DOM entirely
-   * - {@link DomProxy.animate} - Animate the element using the WAAPI
+   * - {@link DomProxy.become} - Replace the element with a new element. By default, the element is moved to the new location. To clone it instead, set the mode to 'clone'.
+   * - {@link DomProxy.purge} - Remove the element from the DOM entirely
+   * - {@link DomProxy.transition} - Animate the element using the WAAPI
    * - {@link DomProxy.wait} - Sets a timeout for the given number of milliseconds and waits for it to resolve before continuing the chain
    * - {@link DomProxy.do} - Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too)
    * - {@link DomProxy.parent} - Switch to the parent of the element in the middle of a chain
-   * - {@link DomProxy.closest} - Switch to the closest ancestor matching a selector in the middle of a chain
+   * - {@link DomProxy.ancestor} - Switch to the closest ancestor matching a selector in the middle of a chain
    * - {@link DomProxy.children} - Switch to the children of the element in the middle of a chain
    * - {@link DomProxy.siblings} - Switch to the siblings of the element in the middle of a chain
    * - {@link DomProxy.pick} - Switch to the descendants of the element that match a selector in the middle of a chain
@@ -288,35 +288,35 @@ declare module "jessquery" {
     ) => DomProxy<T>
 
     /**
-     * Replace the element(s) with new element(s). By default, the element is moved to the new location. To clone it instead, set the mode to 'clone'.
+     * Replace the element(s) with new element(s). By default, the element is moved to the new location. To clone it instead, set the mode to 'clone'. Under the hood, this is a light wrapper around `replaceWith` that has the option to use `cloneNode`.
      * @param replacements An array of elements that will replace the original elements.
      * @param mode Specify whether the original elements should be moved or cloned to their new location.
      * @returns This {@link DomProxy}
      * @example
-     * $('div').replaceWith([newElement])
-     * $('div').replaceWith([newElement], 'clone')
+     * $('div').become([newElement])
+     * $('div').become([newElement], 'clone')
      */
-    replaceWith: (
+    become: (
       replacements: Array<HTMLElement>,
       mode?: "move" | "clone"
     ) => DomProxy<T>
 
-    /** Remove the element from the DOM entirely
+    /** Remove the element from the DOM entirely. This is a light wrapper around `remove`.
      * @returns This {@link DomProxy}
      * @example
-     * $('button').remove()
+     * $('button').purge()
      */
-    remove: () => DomProxy<T>
+    purge: () => DomProxy<T>
 
     /** Animate the element using the WAAPI
      * @param keyframes The keyframes to animate
      * @param options The animation options
      * @returns This {@link DomProxy}
      * @example
-     * $('button').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 })
+     * $('button').transition([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 })
      * @see https://developer.mozilla.org/en-US/docs/Web/API/Element/animate
      */
-    animate: (
+    transition: (
       keyframes: Keyframe[] | PropertyIndexedKeyframes,
       options: KeyframeAnimationOptions
     ) => DomProxy<T>
@@ -356,25 +356,25 @@ declare module "jessquery" {
      */
     parent: () => DomProxy<T>
 
-    /** Switch to the closest ancestor matching a selector in the middle of a chain
+    /** Switch to the closest ancestor matching a selector in the middle of a chain. Uses the native `closest` method.
      * @param ancestorSelector The ancestor selector
      * @returns A new {@link DomProxy} from the ancestor element
      * @example
-     * $('.buttons').closest('.container')
+     * $('.buttons').ancestor('.container')
      */
-    closest: (ancestorSelector: string) => DomProxy<T>
+    ancestor: (ancestorSelector: string) => DomProxy<T>
 
     /** Switch to the children of the element in the middle of a chain
      * @returns A new {@link DomProxyCollection} created from the children of the element
      * @example
      * $('.container')
      * .css('color', 'red')
-     * .children()
+     * .kids()
      * .css('color', 'blue')
      * // All the children of the container will turn blue
      * // The container itself will remain red
      */
-    children: () => DomProxyCollection<T>
+    kids: () => DomProxyCollection<T>
 
     /** Switch to the siblings of the element in the middle of a chain
      * @returns A new {@link DomProxyCollection} created from the siblings of the element
@@ -421,14 +421,14 @@ declare module "jessquery" {
    * - {@link DomProxyCollection.attach} - Attaches children to the elements based on the provided options.
    * - {@link DomProxyCollection.cloneTo} - Clones the elements to a new parent element in the DOM. By default, it is appended inside the new parent element, but you change change this with the `position` option. The original elements remain in their current location. If you want to move the elements instead of cloning them, use {@link DomProxyCollection.moveTo}.
    * - {@link DomProxyCollection.moveTo} - Moves the elements to a new parent element in the DOM. By default, it is appended inside the new parent element, but you change change this with the `position` option. The original elements are removed from their current location. The `all` option is technically available, but it will simply use the last element in the collection. This is because you can only move an element to one place at a time. If you want to clone the elements instead of moving them, use {@link DomProxyCollection.cloneTo}.
-   * - {@link DomProxyCollection.replaceWith} - Replaces the elements with new elements. By default, the elements are moved to the new location. To clone them instead, set the mode to 'clone'.
-   * - {@link DomProxyCollection.remove} - Remove the elements from the DOM entirely
-   * - {@link DomProxyCollection.animate} - Animate the elements using the WAAPI
+   * - {@link DomProxyCollection.become} - Replaces the elements with new elements. By default, the elements are moved to the new location. To clone them instead, set the mode to 'clone'.
+   * - {@link DomProxyCollection.purge} - Remove the elements from the DOM entirely
+   * - {@link DomProxyCollection.transition} - Animate the elements using the WAAPI
    * - {@link DomProxyCollection.wait} - Sets a timeout for the given number of milliseconds and waits for it to resolve before continuing the chain
    * - {@link DomProxyCollection.do} - Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too)
    * - {@link DomProxyCollection.parent} - Switch to the parent of the elements in the middle of a chain
-   * - {@link DomProxyCollection.closest} - Switch to the closest ancestor matching a selector in the middle of a chain
-   * - {@link DomProxyCollection.children} - Switch to the children of the elements in the middle of a chain
+   * - {@link DomProxyCollection.ancestor} - Switch to the closest ancestor matching a selector in the middle of a chain
+   * - {@link DomProxyCollection.kids} - Switch to the children of the elements in the middle of a chain
    * - {@link DomProxyCollection.siblings} - Switch to the siblings of the elements in the middle of a chain
    * - {@link DomProxyCollection.pick} - Switch to the descendants of the elements that match a selector in the middle of a chain
    */
@@ -699,15 +699,15 @@ declare module "jessquery" {
     ) => DomProxyCollection<T>
 
     /**
-     * Replace the elements with new elements. The elements will be moved to the new location by default. To clone them instead, set the mode to 'clone'.
+     * Replace the elements with different elements from elsewhere in the DOM. The new elements will be moved from their original location by default. To clone them instead, set the mode to 'clone'. Under the hood, this is a light wrapper around `replaceWith` that has the option to use `cloneNode`.
      * @param replacements An array of elements that will replace the original elements.
      * @param mode Specify whether the original elements should be moved or cloned to their new location.
      * @returns This {@link DomProxyCollection}
      * @example
-     * $$('.buttons').replaceWith([newElement])
-     * $$('.buttons').replaceWith([newElement], 'clone')
+     * $$('.buttons').become([newElements])
+     * $$('.buttons').become([newElements], 'clone')
      */
-    replaceWith: (
+    become: (
       replacements: Array<HTMLElement>,
       mode?: "move" | "clone"
     ) => DomProxyCollection<T>
@@ -715,19 +715,19 @@ declare module "jessquery" {
     /** Remove the elements from the DOM
      * @returns This {@link DomProxyCollection}
      * @example
-     * $$('.buttons').remove()
+     * $$('.buttons').purge()
      */
-    remove: () => DomProxyCollection<T>
+    purge: () => DomProxyCollection<T>
 
     /** Animate the elements using the WAAPI
      * @param keyframes The keyframes to animate
      * @param options The animation options
      * @returns This {@link DomProxyCollection}
      * @example
-     * $$('.buttons').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 })
+     * $$('.buttons').transition([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 })
      * @see https://developer.mozilla.org/en-US/docs/Web/API/Element/animate
      */
-    animate(
+    transition(
       keyframes: Keyframe[] | PropertyIndexedKeyframes,
       options: KeyframeAnimationOptions
     ): DomProxyCollection<T>
@@ -767,17 +767,25 @@ declare module "jessquery" {
      */
     parents: () => DomProxyCollection<T>
 
+    /** Switch to the closest ancestor matching a selector in the middle of a chain. Uses the native `closest` method.
+     * @param ancestorSelector The ancestor selector
+     * @returns This {@link DomProxyCollection}
+     * @example
+     * $$('.buttons').ancestor('.container')
+     */
+    ancestor: (ancestorSelector: string) => DomProxyCollection<T>
+
     /** Switch to the children of the elements in the middle of a chain
      * @returns The child DomProxyCollection
      * @example
      * $$('.container')
      * .css('color', 'red')
-     * .children()
+     * .kids()
      * .css('color', 'blue')
      * // All the children of the containers will turn blue
      * // The containers themselves will remain red
      */
-    children: () => DomProxyCollection<T>
+    kids: () => DomProxyCollection<T>
 
     /** Switch to the siblings of the elements in the middle of a chain
      * @returns The sibling DomProxyCollection
@@ -790,14 +798,6 @@ declare module "jessquery" {
      * // The buttons themselves will remain red
      */
     siblings: () => DomProxyCollection<T>
-
-    /** Get the closest ancestor matching a selector
-     * @param ancestorSelector The ancestor selector
-     * @returns This {@link DomProxyCollection}
-     * @example
-     * $$('.buttons').closest('.container')
-     */
-    closest: (ancestorSelector: string) => DomProxyCollection<T>
 
     /** Switch to the descendants of the elements that match a selector in the middle of a chain
      * @param subSelector The sub-selector

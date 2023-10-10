@@ -1,7 +1,7 @@
 {
   "name": "jessquery",
   "type": "module",
-  "version": "2.1.3",
+  "version": "2.1.4",
   "description": "Modern JavaScript is pretty good, but typing document.querySelector() is a pain. This is a tiny library that makes DOM manipulation easy. jQuery is around 30kb, while this is only around 5kb (2kb gzipped). Lots of JSDoc comments so it's self-documenting and works great with TypeScript.",
   "exports": {
     ".": {

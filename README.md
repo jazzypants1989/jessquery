@@ -64,7 +64,7 @@ button.on("click", () => {
     .css("background-color", "red") // This won't happen until the fetch is done.
 })
 
-// Most things follow the DOM API closely
+// Most things follow the DOM API closely with slightly different names.
 // But, now you can chain them together
 // They will always execute in order!
 const fadeIn = [{ opacity: 0 }, { opacity: 1 }] // WAAPI keyframes
@@ -77,11 +77,11 @@ buttons
     "These buttons will animate in 2 seconds. They will fade in and out twice then disappear."
   )
   .wait(2000)
-  .animate(fadeIn, oneSecond)
-  .animate(fadeOut, oneSecond)
-  .animate(fadeIn, oneSecond)
-  .animate(fadeOut, oneSecond)
-  .remove()
+  .transition(fadeIn, oneSecond)
+  .transition(fadeOut, oneSecond)
+  .transition(fadeIn, oneSecond)
+  .transition(fadeOut, oneSecond)
+  .purge()
 ```
 
 ## Installation
@@ -123,6 +123,16 @@ The magic sauce here is that everything is a [proxy](https://developer.mozilla.o
 
 This is the benefit of using proxies, but I'm curious if this will scale well as they bring a tiny bit of overhead. This might get problematic in large applications, but I'm probably just being paranoid. I welcome anyone to do some tests! 😅
 
+## TypeScript
+
+Everything is fully type-safe, but there's no way for the `$` and `$$` functions to infer the type of the element you're selecting unless it's a tag name. Things like `$$('input')` will always be fully inferred even if you map over the individual elements in the collection-- in that case, each element would automatically become an `HTMLInputElement`. However, if you select a class or id, the type will always be `HTMLElement` unless you specify the type yourself like this:
+
+```typescript
+const button = $<HTMLButtonElement>(".button")
+
+const coolInputs = $$<HTMLInputElement>(".cool-inputs")
+```
+
 ## Interfaces
 
 ### Table of Contents
@@ -151,16 +161,16 @@ This is the benefit of using proxies, but I'm curious if this will scale well as
     - [DomProxy.attach](#DomProxyattach)
     - [DomProxy.cloneTo](#DomProxycloneTo)
     - [DomProxy.moveTo](#DomProxymoveTo)
-    - [DomProxy.replaceWith](#DomProxyreplaceWith)
-    - [DomProxy.remove](#DomProxyremove)
-    - [DomProxy.animate](#DomProxyanimate)
+    - [DomProxy.become](#DomProxybecome)
+    - [DomProxy.purge](#DomProxypurge)
+    - [DomProxy.transition](#DomProxytransition)
     - [DomProxy.wait](#DomProxywait)
     - [DomProxy.do](#DomProxydo)
     - [DomProxy.parent](#DomProxyparent)
+    - [DomProxy.ancestor](#DomProxyancestor)
     - [DomProxy.siblings](#DomProxysiblings)
-    - [DomProxy.children](#DomProxychildren)
+    - [DomProxy.kids](#DomProxykids)
     - [DomProxy.pick](#DomProxypick)
-    - [DomProxy.closest](#DomProxyclosest)
 - [DomProxyCollection](#DomProxyCollection)
   - [DomProxyCollection Methods](#DomProxyCollection-Methods)
     - [DomProxyCollection.on](#DomProxyCollectionon)
@@ -183,16 +193,16 @@ This is the benefit of using proxies, but I'm curious if this will scale well as
     - [DomProxyCollection.attach](#DomProxyCollectionattach)
     - [DomProxyCollection.cloneTo](#DomProxyCollectioncloneTo)
     - [DomProxyCollection.moveTo](#DomProxyCollectionmoveTo)
-    - [DomProxyCollection.replaceWith](#DomProxyCollectionreplaceWith)
-    - [DomProxyCollection.remove](#DomProxyCollectionremove)
-    - [DomProxyCollection.animate](#DomProxyCollectionanimate)
+    - [DomProxyCollection.become](#DomProxyCollectionbecome)
+    - [DomProxyCollection.purge](#DomProxyCollectionpurge)
+    - [DomProxyCollection.transition](#DomProxyCollectiontransition)
     - [DomProxyCollection.wait](#DomProxyCollectionwait)
     - [DomProxyCollection.do](#DomProxyCollectiondo)
     - [DomProxyCollection.parent](#DomProxyCollectionparent)
+    - [DomProxyCollection.ancestor](#DomProxyCollectionancestor)
     - [DomProxyCollection.siblings](#DomProxyCollectionsiblings)
-    - [DomProxyCollection.children](#DomProxyCollectionchildren)
+    - [DomProxyCollection.kids](#DomProxyCollectionkids)
     - [DomProxyCollection.pick](#DomProxyCollectionpick)
-    - [DomProxyCollection.closest](#DomProxyCollectionclosest)
 - [setErrorHandler](#setErrorHandler)
 - [promisify](#promisify)
 
@@ -439,27 +449,27 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
   - Example: `$('div').moveTo('.target')` // Moves inside first .target element (default behavior)
   - Example: `$('div').moveTo('.target', { position: 'after' })` // Moves after first .target element
 
-##### DomProxy.replaceWith
+##### DomProxy.become
 
-- **replaceWith(replacements: Array<HTMLElement>, mode?: "move" | "clone"): DomProxy**
+- **become(replacements: Array<HTMLElement>, mode?: "move" | "clone"): DomProxy**
 
-  - Replace the element with a new element. By default, the new element is moved to the replaced element's location. To clone it instead, set the mode to 'clone'.
-  - Example: `$('div').replaceWith(newElement)`
-  - Example: `$('div').replaceWith(newElement, 'clone')`
+  - Replace the element with a new element. By default, the new element is moved to the replaced element's location. To clone it instead, set the mode to 'clone'. Under the hood, this is a light wrapper around `replaceWith` that has the option to use `cloneNode`.
+  - Example: `$('div').become(newElement)`
+  - Example: `$('div').become(newElement, 'clone')`
 
-##### DomProxy.remove
+##### DomProxy.purge
 
-- **remove(): DomProxy**
+- **purge(): DomProxy**
 
   - Removes the element from the DOM entirely.
-  - Example: `$('button').remove()`
+  - Example: `$('button').purge()`
 
-##### DomProxy.animate
+##### DomProxy.transition
 
-- **animate(keyframes: Keyframe[] | PropertyIndexedKeyframes, options: KeyframeAnimationOptions): DomProxy**
+- **transition(keyframes: Keyframe[] | PropertyIndexedKeyframes, options: KeyframeAnimationOptions): DomProxy**
 
   - Animates the element using the WAAPI.
-  - Example: `$('button').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 })`
+  - Example: `$('button').transition([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 })`
   - [MDN Documentation](https://developer.mozilla.org/en-US/docs/Web/API/Element/animate)
 
 ##### DomProxy.wait
@@ -494,6 +504,14 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
   - Example: `$('button').css('color', 'red').parent().css('color', 'blue')`
   - Expectation: The parent of the button will turn blue. The button itself will remain red.
 
+##### DomProxy.ancestor
+
+- **ancestor(ancestorSelector: string): DomProxy**
+
+- Gets the closest ancestor matching a selector. Uses the `closest` API under the hood.
+- Example: `$('.buttons').css('color', 'red').ancestor('.container').css('color', 'blue')`
+- Expectation: The container will turn blue. The buttons will remain red.
+
 ##### DomProxy.siblings
 
 - **siblings(): DomProxyCollection**
@@ -517,14 +535,6 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
   - Picks descendants matching a sub-selector.
   - Example: `$('.container').css('color', 'red').pick('.buttons').css('color', 'blue')`
   - Expectation: The descendants of the container will turn blue. The container itself will remain red.
-
-##### DomProxy.closest
-
-- **closest(ancestorSelector: string): DomProxy**
-
-  - Gets the closest ancestor matching a selector.
-  - Example: `$('.buttons').css('color', 'red').closest('.container').css('color', 'blue')`
-  - Expectation: The container will turn blue. The buttons will remain red.
 
 ### DomProxyCollection
 
@@ -717,27 +727,27 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
   - Example: `$$('div').moveTo('.target', { position: 'before' })` // Moves elements before first .target element
   - Example: `$$('div').moveTo('.target', { position: 'after' })` // Moves elements after first .target element
 
-##### DomProxyCollection.replaceWith
+##### DomProxyCollection.become
 
-- **replaceWith(replacements: Array<HTMLElement>, mode?: "move" | "clone"): DomProxyCollection**
+- **become(replacements: Array<HTMLElement>, mode?: "move" | "clone"): DomProxyCollection**
 
-  - Replace the elements with new elements. By default, the new elements are moved from their old location. To clone them instead, set the mode to 'clone'.
-  - Example: `$$('div').replaceWith([newElement])`
-  - Example: `$$('div').replaceWith([newElement], 'clone')`
+  - Replace the elements with new elements. By default, the new elements are moved from their old location. To clone them instead, set the mode to 'clone'. Under the hood, this is a light wrapper around `replaceWith` that has the option to use `cloneNode`.
+  - Example: `$$('div').become([newElement])`
+  - Example: `$$('div').become([newElement], 'clone')`
 
-##### DomProxyCollection.remove
+##### DomProxyCollection.purge
 
-- **remove(): DomProxyCollection**
+- **purge(): DomProxyCollection**
 
   - Removes the elements from the DOM.
-  - Example: `$$('.buttons').remove()`
+  - Example: `$$('.buttons').purge()`
 
-##### DomProxyCollection.animate
+##### DomProxyCollection.transition
 
-- **animate(keyframes: Keyframe[] | PropertyIndexedKeyframes, options: KeyframeAnimationOptions): DomProxyCollection**
+- **transition(keyframes: Keyframe[] | PropertyIndexedKeyframes, options: KeyframeAnimationOptions): DomProxyCollection**
 
   - Animates the elements using the WAAPI.
-  - Example: `$$('.buttons').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 })`
+  - Example: `$$('.buttons').transition([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 })`
   - [MDN Documentation](https://developer.mozilla.org/en-US/docs/Web/API/Element/animate)
 
 ##### DomProxyCollection.wait
@@ -766,6 +776,14 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
   - Example: `$$('button').css('color', 'red').parent().css('color', 'blue')`
   - Expectation: The parents of the buttons will turn blue. The buttons themselves will remain red.
 
+##### DomProxyCollection.ancestor
+
+- **ancestor(ancestorSelector: string): DomProxyCollection**
+
+  - Gets the closest ancestors for each element in the collection matching a selector.
+  - Example: `$$('.buttons').css('color', 'red').ancestor('.container').css('color', 'blue')`
+  - Expectation: The containers will turn blue. The buttons will remain red.
+
 ##### DomProxyCollection.siblings
 
 - **siblings(): DomProxyCollection**
@@ -774,12 +792,12 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
   - Example: `$$('button').css('color', 'red').siblings().css('color', 'blue')`
   - Expectation: The siblings of the buttons will turn blue. The buttons themselves will remain red.
 
-##### DomProxyCollection.children
+##### DomProxyCollection.kids
 
-- **children(): DomProxyCollection**
+- **kids(): DomProxyCollection**
 
   - Switch to the children of the elements in the middle of a chain.
-  - Example: `$$('.container').css('color', 'red').children().css('color', 'blue')`
+  - Example: `$$('.container').css('color', 'red').kids().css('color', 'blue')`
   - Expectation: The children of the container will turn blue. The container itself will remain red.
 
 ##### DomProxyCollection.pick
@@ -789,14 +807,6 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
   - Picks descendants matching a sub-selector.
   - Example: `$$('.container').css('color', 'red').pick('.buttons').css('color', 'blue')`
   - Expectation: The buttons will turn blue. The container will remain red.
-
-##### DomProxyCollection.closest
-
-- **closest(ancestorSelector: string): DomProxyCollection**
-
-  - Gets the closest ancestors for each element in the collection matching a selector.
-  - Example: `$$('.buttons').css('color', 'red').closest('.container').css('color', 'blue')`
-  - Expectation: The containers will turn blue. The buttons will remain red.
 
 ### setErrorHandler
 
@@ -815,19 +825,11 @@ Sets an error handler that will be called when an error occurs somewhere in Jess
 
 ### promisify
 
-Converts any function that uses callbacks into a function that returns a promise, allowing easy integration into DomProxy chains. This is particularly useful for things like setTimeout, setInterval, and any older APIs that use callbacks.
+Wraps a function in a promise, allowing easy integration into DomProxy chains.. This is particularly useful for things like setTimeout, setInterval, and any older APIs that use callbacks. This works just like building a normal promise: call the resolve function when the function is successful, and call the reject function when it fails. The value that you pass will get passed to whatever method you use to consume the promise.
 
-This works just like building a normal promise: call the resolve function when the function is successful, and call the reject function when it fails. If the function does not call either resolve or reject within the specified timeout, the promise will automatically reject. If you call the resolve function, the promise will resolve with the value you pass into it. If you call the reject function, the promise will reject with the value you pass into it.
+If the function does not call either resolve or reject within the specified timeout, the promise will automatically reject. Every promise that rejects and any error found inside of a promisified function will get routed through the default error handler (which you can set with the [setErrorHandler](#seterrorhandler) function).
 
-Every promise that rejects or error found inside of a promisified function will get routed through the default error handler (which you can set with the setErrorHandler function).
-
-To use this function in the middle of a chain:
-
-- You can use it to provide values to one of the DomProxy methods like text() or html().
-
-OR
-
-- You can use the DomProxy.do method to execute the function and use the result on the element or elements represented by the DomProxy or DomProxyCollection.
+The easiest way the function that you get from this method is to use it to provide values to one of the `DomProxy` methods like text() or html(), but you can also use the [DomProxy.do](#domproxydo) / [DomProxyCollection.do](#domproxycollectiondo) method to execute the function and use the result on the element / elements represented by them.
 
 - **fn: (...args: any[]) => void**
 
@@ -835,7 +837,7 @@ OR
 
 - **timeout?: number**
 
-  - The number of milliseconds to wait before automatically rejecting the promise. If this is not provided, the promise will never automatically reject.
+  - The number of milliseconds to wait before automatically rejecting the promise. If this is not provided, it will be set to 5000ms.
 
 - Example:
 

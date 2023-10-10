@@ -1,6 +1,6 @@
 import { defaultErrorHandler } from "./errors.js"
 
-export function promisify(fn, timeout = 2000) {
+export function promisify(fn, timeout = 5000) {
   return function (...args) {
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
