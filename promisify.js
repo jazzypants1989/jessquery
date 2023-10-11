@@ -4,8 +4,8 @@ export function promisify(fn, timeout = 5000) {
   return function (...args) {
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
-        clearTimeout(timer) // Clear the timer here
-        reject(new Error("Automatic rejection due to inaction."))
+        clearTimeout(timer)
+        reject(new Error("Promisify timeout."))
       }, timeout)
 
       try {

@@ -50,14 +50,14 @@
       buttons
         .addClass("btn")
         .text(
-          "these buttons will animate in 5 seconds. It will fade in and out twice then disappear."
+          "this text will animate in 5 seconds. It will fade in and out twice then disappear."
         )
         .wait(5000)
-        .animate(fadeIn, oneSecond)
-        .animate(fadeOut, oneSecond)
-        .animate(fadeIn, oneSecond)
-        .animate(fadeOut, oneSecond)
-        .remove()
+        .transition(fadeIn, oneSecond)
+        .transition(fadeOut, oneSecond)
+        .transition(fadeIn, oneSecond)
+        .transition(fadeOut, oneSecond)
+        .purge()
     </script>
   </body>
 </html>

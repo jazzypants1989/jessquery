@@ -11,43 +11,84 @@
       import { $, $$ } from "../index.js"
 
       $("#app").sanitize(`<div class="container">
-        <h1>jQuery is for old people.</h1>
-        <div class="card">
-          <button id="counter" type="button"></button>
-        </div>
-        <h2 class="truth">This will disappear.</h2>
-        <h3 class="truth">I love you.</h3>
-      </div>
-      <input type="text" />
-      <div>
-        <input type="text" />
-        <h4 class="truth">Why are you still reading this?</h4>
-      </div>`)
+              <h1>jQuery is for old people.</h1>
+              <div class="card">
+                <button id="counter" type="button"></button>
+              </div>
+              <h2 class="truth">This will disappear.</h2>
+              <h3 class="truth">I love you.</h3>
+            </div>
+            <input type="text" />
+            <div class="container" id="parentTwo">
+              <input id="myFavorite" type="text" />
+              <h4 class="truth">Why are you still reading this?</h4>
+            </div>`)
 
       let count = 0
 
-      function increment() {
+      const counter = $("#counter")
+
+      counter.text(count).on("click", () => {
         count++
-
-        $("#counter").html(count.toString())
-      }
-
-      $("#counter").text("Click me!").on("click", increment)
-
-      $$("div .container")
-        .pick(".truth")
-        .html("JK <em>LOL</em>! jQuery is FOREVER!")
-
-      $("h2").css("color", "red").parent().pick("*").css("color", "blue")
-
-      $$("input").on("input", (e) => {
-        // $$("input").css({ color: "red" }).val(e.target.value)
-        $$("input")
-          .css({ color: "red" })
-          .map((el) => (el.value = e.target.value))
+        counter.text(count)
       })
 
-      console.log($$("input").length)
+      $(".container")
+        .first()
+        .css("backgroundColor", "lightblue")
+        .next()
+        .next()
+        .css("color", "green")
+        .prev()
+        .prev()
+        .css("color", "purple")
+        .parent()
+        .css({
+          backgroundColor: "lightgreen",
+          border: "1px solid black",
+          padding: "10px",
+          margin: "10px",
+        })
+        .pick("button")
+        .css({
+          width: "100px",
+          height: "100px",
+          borderRadius: "50%",
+          border: "none",
+          backgroundColor: "red",
+          color: "white",
+          fontSize: "2rem",
+          cursor: "pointer",
+        })
+        .wait(2000)
+        .css("color", "black")
+        .parent()
+        .parent()
+        .pickAll(".truth")
+        .text("jQuery is forever!")
+        .css("textAlign", "center")
+        .wait(2000)
+        .do((el) => {
+          el.css("color", "white")
+          el.css("backgroundColor", "black")
+        })
+        .wait(2000)
+        .css("backgroundColor", "lightblue")
+        .css("color", "black")
+
+      let inputs = $$("input")
+
+      inputs.on("input", (e) => {
+        inputs.do((el) => {
+          el.val(e.target.value)
+        })
+      })
+
+      $("#myFavorite")
+        .val("I love jQuery")
+        .on("mouseover", () => {
+          $("#myFavorite").val("Don't change me!")
+        })
     </script>
   </body>
 </html>

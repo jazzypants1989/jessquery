@@ -26,13 +26,18 @@ declare module "jessquery" {
    * - {@link DomProxy.become} - Replace the element with a new element. By default, the element is moved to the new location. To clone it instead, set the mode to 'clone'.
    * - {@link DomProxy.purge} - Remove the element from the DOM entirely
    * - {@link DomProxy.transition} - Animate the element using the WAAPI
-   * - {@link DomProxy.wait} - Sets a timeout for the given number of milliseconds and waits for it to resolve before continuing the chain
    * - {@link DomProxy.do} - Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too)
-   * - {@link DomProxy.parent} - Switch to the parent of the element in the middle of a chain
+   * - {@link DomProxy.wait} - Sets a timeout for the given number of milliseconds and waits for it to resolve before continuing the chain
+   * - {@link DomProxy.next} - Switch to the nextElementSibling in the middle of a chain
+   * - {@link DomProxy.prev} - Switch to the previousElementSibling in the middle of a chain
+   * - {@link DomProxy.first} - Switch to the firstChild of the element in the middle of a chain
+   * - {@link DomProxy.last} - Switch to the lastChild of the element in the middle of a chain
+   * - {@link DomProxy.parent} - Switch to the parentElement in the middle of a chain
    * - {@link DomProxy.ancestor} - Switch to the closest ancestor matching a selector in the middle of a chain
-   * - {@link DomProxy.children} - Switch to the children of the element in the middle of a chain
-   * - {@link DomProxy.siblings} - Switch to the siblings of the element in the middle of a chain
-   * - {@link DomProxy.pick} - Switch to the descendants of the element that match a selector in the middle of a chain
+   * - {@link DomProxy.pick} - Switch to the first descendant matching a selector in the middle of a chain
+   * - {@link DomProxy.pickAll} - Switch to a collection of all the descendants that match a selector in the middle of a chain
+   * - {@link DomProxy.kids} - Switch to a collection of all the children of the element in the middle of a chain
+   * - {@link DomProxy.siblings} - Switch to a collection of all the siblings of the element in the middle of a chain
    */
   export type DomProxy<T extends HTMLElement = HTMLElement> = T & {
     /** Add an event listener to the element
@@ -321,14 +326,6 @@ declare module "jessquery" {
       options: KeyframeAnimationOptions
     ) => DomProxy<T>
 
-    /** Sets a timeout for the given number of milliseconds and waits for it to resolve before continuing the chain
-     * @param ms The number of milliseconds to wait
-     * @returns This {@link DomProxy}
-     * @example
-     * $('button').css('color', 'red').wait(1000).css('color', 'blue')
-     */
-    wait: (ms: number) => DomProxy<T>
-
     /** Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too)
      * @param fn The async callback. This can receive the element as an argument.
      * @returns This {@link DomProxy}
@@ -344,7 +341,59 @@ declare module "jessquery" {
      */
     do: (fn: (el: DomProxy<T>) => Promise<void>) => DomProxy<T>
 
-    /** Switch to the parent of the element in the middle of a chain
+    /** Sets a timeout for the given number of milliseconds and waits for it to resolve before continuing the chain
+     * @param ms The number of milliseconds to wait
+     * @returns This {@link DomProxy}
+     * @example
+     * $('button').css('color', 'red').wait(1000).css('color', 'blue')
+     */
+    wait: (ms: number) => DomProxy<T>
+
+    /** Switch to the nextElementSibling in the middle of a chain
+     * @returns A new {@link DomProxy} from the next element
+     * @example
+     * $('button')
+     * .css('color', 'red')
+     * .next()
+     * .css('color', 'blue')
+     * // the next button will turn blue
+     * // the original button will remain red
+     */
+    next: () => DomProxy<T>
+
+    /** Switch to the previousElementSibling in the middle of a chain
+     * @returns A new {@link DomProxy} from the previous element
+     * @example
+     * $('button')
+     * .css('color', 'red')
+     * .prev()
+     * .css('color', 'blue')
+     * // the previous button will turn blue
+     * // the original button will remain red
+     */
+    prev: () => DomProxy<T>
+
+    /** Switch to the firstChild of the element in the middle of a chain
+     * @returns A new {@link DomProxy} from the firstChild element
+     * @example
+     * $('container')
+     * .css('color', 'red')
+     * .first()
+     * .css('color', 'blue')
+     */
+    first: () => DomProxy<T>
+
+    /** Switch to the lastChild of the element in the middle of a chain
+     * @returns A new {@link DomProxy} from the lastChild element
+     * @example
+     * $('container')
+     * .css('color', 'red')
+     * .lastChild()
+     * .css('color', 'blue')
+     */
+    last: () => DomProxy<T>
+
+    /** Switch to the parentElement in the middle of a chain
      * @returns A new {@link DomProxy} from the parent element
      * @example
      * $('button')
@@ -363,6 +412,23 @@ declare module "jessquery" {
      * $('.buttons').ancestor('.container')
      */
     ancestor: (ancestorSelector: string) => DomProxy<T>
+
+    /** Switch to the first element that matches a selector in the middle of a chain
+     * @param subSelector The sub-selector
+     * @returns A new {@link DomProxy} created from the first element matching the sub-selector
+     * @example
+     * $('.container').pick('.buttons')
+     * // Switches to the first element with the class 'buttons' inside the container
+     */
+    pick: (subSelector: string) => DomProxy<T>
+
+    /** Switch to a collection of all of the descendants of the element that match a selector in the middle of a chain
+     * @param subSelector The sub-selector
+     * @returns A new {@link DomProxyCollection} created from the descendants matching the sub-selector
+     * @example
+     * $('.container').pick('.buttons')
+     */
+    pickAll: (subSelector: string) => DomProxyCollection<T>
 
     /** Switch to the children of the element in the middle of a chain
      * @returns A new {@link DomProxyCollection} created from the children of the element
@@ -387,14 +453,6 @@ declare module "jessquery" {
      * // The button itself will remain red
      */
     siblings: () => DomProxyCollection<T>
-
-    /** Switch to the descendants of the element that match a selector in the middle of a chain
-     * @param subSelector The sub-selector
-     * @returns A new {@link DomProxyCollection} created from the descendants matching the sub-selector
-     * @example
-     * $('.container').pick('.buttons')
-     */
-    pick: (subSelector: string) => DomProxyCollection<T>
   }
 
   /**
@@ -732,14 +790,6 @@ declare module "jessquery" {
       options: KeyframeAnimationOptions
     ): DomProxyCollection<T>
 
-    /** Await a timeout before continuing the chain
-     * @param ms The number of milliseconds to wait
-     * @returns This {@link DomProxyCollection}
-     * @example
-     * $$('.buttons').css('color', 'red').wait(1000).css('color', 'blue')
-     */
-    wait: (ms: number) => DomProxyCollection<T>
-
     /** Execute an asynchronous function and wait for it to resolve before continuing the chain (can be synchronous too)
      * @param fn The async callback. This can receive the element as an argument.
      * @returns This {@link DomProxyCollection}
@@ -753,7 +803,15 @@ declare module "jessquery" {
      * })
      * .css('color', 'blue')
      */
-    do: (fn: (el: DomProxy) => Promise<void>) => DomProxyCollection<T>
+    do: (fn: (el: DomProxy) => Promise<void> | void) => DomProxyCollection<T>
+
+    /** Await a timeout before continuing the chain
+     * @param ms The number of milliseconds to wait
+     * @returns This {@link DomProxyCollection}
+     * @example
+     * $$('.buttons').css('color', 'red').wait(1000).css('color', 'blue')
+     */
+    wait: (ms: number) => DomProxyCollection<T>
 
     /** Switch to the parents of the elements in the middle of a chain
      * @returns The parent DomProxyCollection
@@ -774,6 +832,22 @@ declare module "jessquery" {
      * $$('.buttons').ancestor('.container')
      */
     ancestor: (ancestorSelector: string) => DomProxyCollection<T>
+
+    /** Switch to the first descendants of the elements that match a selector in the middle of a chain
+     * @param subSelector The sub-selector
+     * @returns This {@link DomProxyCollection}
+     * @example
+     * $$('.container').pick('.buttons')
+     */
+    pick: (subSelector: string) => DomProxyCollection<T>
+
+    /** Switch to a collection of all of the descendants of the elements that match a selector in the middle of a chain
+     * @param subSelector The sub-selector
+     * @returns This {@link DomProxyCollection}
+     * @example
+     * $$('.container').pickAll('.buttons')
+     */
+    pickAll: (subSelector: string) => DomProxyCollection<T>
 
     /** Switch to the children of the elements in the middle of a chain
      * @returns The child DomProxyCollection
@@ -798,14 +872,6 @@ declare module "jessquery" {
      * // The buttons themselves will remain red
      */
     siblings: () => DomProxyCollection<T>
-
-    /** Switch to the descendants of the elements that match a selector in the middle of a chain
-     * @param subSelector The sub-selector
-     * @returns This {@link DomProxyCollection}
-     * @example
-     * $$('.container').pick('.buttons')
-     */
-    pick: (subSelector: string) => DomProxyCollection<T>
   }
 
   /** Finds the first element in the DOM that matches a CSS selector and returns it with some extra, useful methods.

@@ -3,31 +3,53 @@ import { giveContext } from "./errors.js"
 
 export function addMethods(type, selector, target) {
   let proxy = null
+  let isSingle = type === "$"
 
-  const isSingle = type === "$"
   const toOneOrMany = (func) => {
     return isSingle ? func(target) : target.forEach((el) => func(el))
   }
+  const switchTarget = (newTarget) => {
+    if (!newTarget) throw new Error(`No element found.`) // Should we just return null?
+    target = newTarget
+    proxy = updateProxy(target)
+    return proxy
+  }
 
-  const addToLocalQueue = createChainExecutor()
-  const applyFunc = createApplyFunc(addToLocalQueue, () => proxy)
+  const addToQueue = createChainExecutor()
+  const applyFunc = createApplyFunc(addToQueue, () => proxy)
 
   const customMethods = {
-    on: applyFunc((ev, fn) => {
-      toOneOrMany((el) => el.addEventListener(ev, fn))
-    }, giveContext("on", selector)),
+    on: applyFunc(
+      (ev, fn) => {
+        toOneOrMany((el) => el.addEventListener(ev, fn))
+      },
+      giveContext("on", selector),
+      true
+    ),
 
-    once: applyFunc((ev, fn) => {
-      toOneOrMany((el) => el.addEventListener(ev, fn, { once: true }))
-    }, giveContext("once", selector)),
+    once: applyFunc(
+      (ev, fn) => {
+        toOneOrMany((el) => el.addEventListener(ev, fn, { once: true }))
+      },
+      giveContext("once", selector),
+      true
+    ),
 
-    off: applyFunc((ev, fn) => {
-      toOneOrMany((el) => el.removeEventListener(ev, fn))
-    }, giveContext("off", selector)),
+    off: applyFunc(
+      (ev, fn) => {
+        toOneOrMany((el) => el.removeEventListener(ev, fn))
+      },
+      giveContext("off", selector),
+      true
+    ),
 
-    delegate: applyFunc((event, subSelector, handler) => {
-      toOneOrMany((el) => delegate(el, event, subSelector, handler))
-    }, giveContext("delegate", selector)),
+    delegate: applyFunc(
+      (event, subSelector, handler) => {
+        toOneOrMany((el) => delegate(el, event, subSelector, handler))
+      },
+      giveContext("delegate", selector),
+      true
+    ),
 
     html: applyFunc((newHtml) => {
       toOneOrMany((el) => (el.innerHTML = newHtml))
@@ -113,66 +135,72 @@ export function addMethods(type, selector, target) {
       giveContext("transition", selector)
     ),
 
-    wait: applyFunc(
-      (duration) => wait(duration),
-      giveContext("wait", selector)
-    ),
-
     do: applyFunc((fn) => {
       toOneOrMany((el) => {
-        const wrappedElement = addMethods("$", selector, el)
+        const wrappedElement = addMethods(type, selector, el)
         fn(wrappedElement)
       })
     }, giveContext("do", selector)),
 
-    parent: () => {
-      const elements = isSingle
-        ? target.parentElement
-        : Array.from(target).map((el) => el.parentElement)
-      return addMethods("$", selector, elements)
-    },
+    wait: applyFunc(
+      (duration) => new Promise((resolve) => setTimeout(resolve, duration)),
+      giveContext("wait", selector)
+    ),
 
-    ancestor: (subSelector) => {
-      const elements = isSingle
-        ? target.closest(subSelector)
-        : Array.from(target).map((el) => el.closest(subSelector))
-      return addMethods("$", subSelector, elements)
-    },
+    parent: applyFunc(() => {
+      return switchTarget(target.parentElement)
+    }, giveContext("parent", selector)),
 
-    kids: () => {
-      const elements = isSingle
-        ? target.children
-        : Array.from(target).map((el) => el.children)
-      return addMethods("$$", selector, elements)
-    },
+    ancestor: applyFunc((selector) => {
+      return switchTarget(target.closest(selector) || null)
+    }, giveContext("ancestor", selector)),
 
-    siblings: () => {
-      const elements = isSingle
-        ? Array.from(target.parentElement.children).filter(
-            (el) => el !== target
-          )
-        : target.map((el) =>
-            Array.from(el.parentElement.children).filter(
-              (child) => child !== el
-            )
-          )
-      return addMethods("$$", selector, elements)
-    },
+    kids: applyFunc(() => {
+      const childrenArray = target.children ? Array.from(target.children) : []
+      switchTarget(childrenArray)
+    }, giveContext("kids", selector)),
 
-    pick: (subSelector) => {
-      const elements = isSingle
-        ? target.querySelectorAll(subSelector)
-        : Array.from(target).map((el) => el.querySelectorAll(subSelector))
-      return addMethods("$$", subSelector, elements)
-    },
+    siblings: applyFunc(() => {
+      const siblingsArray = Array.from(target.parentElement.children).filter(
+        (child) => child !== target
+      )
+      siblingsArray.length ? switchTarget(siblingsArray) : switchTarget(null)
+    }, giveContext("siblings", selector)),
+
+    next: applyFunc(() => {
+      switchTarget(target.nextElementSibling)
+    }, giveContext("next", selector)),
+
+    prev: applyFunc(() => {
+      switchTarget(target.previousElementSibling)
+    }, giveContext("prev", selector)),
+
+    first: applyFunc(() => {
+      switchTarget(target.firstElementChild)
+    }, giveContext("first", selector)),
+
+    last: applyFunc(() => {
+      switchTarget(target.lastElementChild)
+    }, giveContext("last", selector)),
+
+    pick: applyFunc((selector) => {
+      switchTarget(target.querySelector(selector))
+    }, giveContext("pick", selector)),
+
+    pickAll: applyFunc((selector) => {
+      switchTarget(Array.from(target.querySelectorAll(selector)))
+    }, giveContext("pickAll", selector)),
   }
 
-  const handler = handlerMaker(target, customMethods)
-  proxy = new Proxy(customMethods, handler)
+  function updateProxy(newTarget) {
+    const handler = handlerMaker(newTarget, customMethods)
+    const proxy = new Proxy(customMethods, handler)
+    proxy.raw = newTarget
+    isSingle = !(newTarget instanceof Array)
+    return proxy
+  }
 
-  proxy.isSingle = isSingle
-  proxy.raw = target
-
+  proxy = updateProxy(target)
   return proxy
 }
 
@@ -273,10 +301,6 @@ function transition(elements, keyframes, options) {
     element.animate(keyframes, options)
   )
   return Promise.all(animations.map((animation) => animation.finished))
-}
-
-function wait(duration) {
-  return new Promise((resolve) => setTimeout(resolve, duration))
 }
 
 function modifyDOM(
