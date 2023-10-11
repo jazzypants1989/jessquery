@@ -2,50 +2,48 @@ import { defaultErrorHandler } from "./errors.js"
 
 const isThenable = (value) => value && typeof value.then === "function"
 
-let eventsQueue = []
+let priorityEvent = false
+
+export function prioritize(fn, args) {
+  priorityEvent = true
+  fn(...args)
+  priorityEvent = false
+}
 
 export function createChainExecutor() {
   const queue = []
-  let isWaiting = false
+  let isProcessing = false
 
   async function runQueue() {
-    if ((eventsQueue.length === 0 && queue.length === 0) || isWaiting) return
+    if (isProcessing) return
+    isProcessing = true
 
-    try {
-      const fn = eventsQueue.length > 0 ? eventsQueue.shift() : queue.shift()
-      const result = fn()
-
-      if (isThenable(result)) {
-        isWaiting = true
-        await result
-        isWaiting = false
-      }
-    } catch (error) {
-      defaultErrorHandler(error)
-    } finally {
-      runQueue()
+    while (queue.length) {
+      const fn = queue.shift()
+      await fn()
     }
+
+    isProcessing = false
   }
 
-  function addToQueue(fn, isEvent = false) {
-    if (isEvent) {
-      eventsQueue.push(fn)
+  function addToQueue(fn) {
+    if (priorityEvent) {
+      fn()
     } else {
       queue.push(fn)
-    }
-
-    if (!isWaiting) {
-      runQueue()
+      if (!isProcessing) {
+        runQueue()
+      }
     }
   }
 
   return addToQueue
 }
 
-export function createApplyFunc(addToQueue, getProxy) {
-  return function applyFunc(fn, context, isEvent = false) {
+export function createApplyFunc(addToLocalQueue, proxy) {
+  return function applyFunc(fn, context) {
     return (...args) => {
-      addToQueue(async () => {
+      addToLocalQueue(async () => {
         try {
           const resolvedArgs = []
           for (const arg of args) {
@@ -58,8 +56,8 @@ export function createApplyFunc(addToQueue, getProxy) {
         } catch (error) {
           defaultErrorHandler(error, context)
         }
-      }, isEvent)
-      return getProxy()
+      })
+      return proxy()
     }
   }
 }

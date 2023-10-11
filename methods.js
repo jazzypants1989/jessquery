@@ -1,4 +1,9 @@
-import { createApplyFunc, createChainExecutor, handlerMaker } from "./core.js"
+import {
+  createApplyFunc,
+  createChainExecutor,
+  handlerMaker,
+  prioritize,
+} from "./core.js"
 import { giveContext } from "./errors.js"
 
 export function addMethods(type, selector, target) {
@@ -19,37 +24,39 @@ export function addMethods(type, selector, target) {
   const applyFunc = createApplyFunc(addToQueue, () => proxy)
 
   const customMethods = {
-    on: applyFunc(
-      (ev, fn) => {
-        toOneOrMany((el) => el.addEventListener(ev, fn))
-      },
-      giveContext("on", selector),
-      true
-    ),
+    on: applyFunc((ev, fn) => {
+      toOneOrMany((el) => {
+        el.addEventListener(ev, (...args) => {
+          prioritize(fn, args)
+        })
+      })
+    }, giveContext("on", selector)),
 
-    once: applyFunc(
-      (ev, fn) => {
-        toOneOrMany((el) => el.addEventListener(ev, fn, { once: true }))
-      },
-      giveContext("once", selector),
-      true
-    ),
+    once: applyFunc((ev, fn) => {
+      toOneOrMany((el) => {
+        el.addEventListener(
+          ev,
+          (...args) => {
+            prioritize(fn, args)
+          },
+          { once: true }
+        )
+      })
+    }, giveContext("once", selector)),
 
-    off: applyFunc(
-      (ev, fn) => {
-        toOneOrMany((el) => el.removeEventListener(ev, fn))
-      },
-      giveContext("off", selector),
-      true
-    ),
+    delegate: applyFunc((event, subSelector, handler) => {
+      toOneOrMany((el) => {
+        el.addEventListener(event, (e) => {
+          if (e.target.matches(subSelector)) {
+            prioritize(handler, [e])
+          }
+        })
+      })
+    }, giveContext("delegate", selector)),
 
-    delegate: applyFunc(
-      (event, subSelector, handler) => {
-        toOneOrMany((el) => delegate(el, event, subSelector, handler))
-      },
-      giveContext("delegate", selector),
-      true
-    ),
+    off: applyFunc((ev, fn) => {
+      toOneOrMany((el) => el.removeEventListener(ev, fn))
+    }, giveContext("off", selector)),
 
     html: applyFunc((newHtml) => {
       toOneOrMany((el) => (el.innerHTML = newHtml))
@@ -204,12 +211,6 @@ export function addMethods(type, selector, target) {
   return proxy
 }
 
-function delegate(element, event, subSelector, handler) {
-  element.addEventListener(event, (e) => {
-    if (e.target.matches(subSelector)) handler.call(e.target, e)
-  })
-}
-
 function setFormElementValue(element, value) {
   if (element instanceof HTMLInputElement) {
     const inputTypes = {
@@ -286,6 +287,8 @@ function become(elements, replacements, options = {}) {
       options.mode === "clone" ? replacement.cloneNode(true) : replacement
     element.replaceWith(newElement)
   }
+
+  console.log(elements)
 
   if (elements.isSingle) {
     handleReplacement(elements.raw, replacements.raw)

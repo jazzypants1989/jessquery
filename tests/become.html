@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ReplaceWith Test</title>
+    <title>Become Test</title>
   </head>
   <body>
     <div id="testContainer"></div>
@@ -13,7 +13,7 @@
     <script type="module">
       import { $, $$ } from "../index.js"
 
-      function replaceWithTest() {
+      function becomeTest() {
         const output = document.createElement("div")
 
         const toBeReplacedEl = $("#toBeReplaced")
@@ -24,22 +24,22 @@
 
         document.getElementById("testContainer").appendChild(output)
 
-        toBeReplacedEl.replaceWith(replacementEl, { mode: "clone" }) // Diagnostic 1
+        toBeReplacedEl.become(replacementEl) // Diagnostic 1
 
         if (
           !document.getElementById("toBeReplaced") &&
           document.getElementById("replacementElement")
         ) {
           output.style.color = "green"
-          output.textContent = "replaceWith test PASSED"
+          output.textContent = "become test PASSED"
         } else {
           output.style.color = "red"
-          output.textContent = "replaceWith test FAILED"
+          output.textContent = "become test FAILED"
         }
       }
 
       // Add an event listener to ensure the DOM is fully loaded before running the code.
-      document.addEventListener("DOMContentLoaded", replaceWithTest)
+      document.addEventListener("DOMContentLoaded", becomeTest)
     </script>
   </body>
 </html>

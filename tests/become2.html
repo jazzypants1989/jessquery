@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ReplaceWith Multi-Element Test</title>
+    <title>Become Multi-Element Test</title>
   </head>
   <body>
     <div id="testContainer"></div>
@@ -15,12 +15,12 @@
     <script type="module">
       import { $, $$ } from "../index.js"
 
-      function replaceWithMultiElementTest() {
+      function becomeMultiElementTest() {
         const output = document.createElement("div")
         document.getElementById("testContainer").appendChild(output)
 
         const toBeReplacedEls = $$(".toBeReplaced")
-        toBeReplacedEls.replaceWith($$(".replacementElement"), {
+        toBeReplacedEls.become($$(".replacementElement"), {
           mode: "move",
         }) // Diagnostic 1
 
@@ -33,14 +33,14 @@
           !document.querySelectorAll(".toBeReplaced").length
         ) {
           output.style.color = "green"
-          output.textContent = "replaceWith multi-element test PASSED"
+          output.textContent = "become multi-element test PASSED"
         } else {
           output.style.color = "red"
-          output.textContent = "replaceWith multi-element test FAILED"
+          output.textContent = "become multi-element test FAILED"
         }
       }
 
-      replaceWithMultiElementTest()
+      becomeMultiElementTest()
     </script>
   </body>
 </html>
