@@ -13,57 +13,9 @@ Rekindle your love for method chaining-- now in a lightweight, type-safe package
 
 ![It's only 2.36kb! I swear! This badge proves it.](https://deno.bundlejs.com/badge?q=jessquery%402.1.2&treeshake=%5B*%5D)
 
-## Usage
+## Basic Usage
 
 ```javascript
-import { $, $$, promisify, setErrorHandler, prioritize } from "jessquery"
-
-// Use $ to select a single element.
-const display = $(".display")
-const button = $("#button")
-
-// Use $$ to select multiple elements.
-const buttons = $$(".buttons")
-
-// These elements are now wrapped in a proxy with extra methods.
-// They each have an internal queue that always executes in order.
-// So, the chains are not only convenient and readable, but they're also predictable.
-
-// You can even do async stuff!
-async function fetchData() {
-  await new Promise((resolve) => setTimeout(resolve, 2000))
-  const response = await fetch("https://api.github.com/users/jazzypants1989")
-  const data = await response.json()
-  return data.name
-}
-
-// promisify is for setTimeout/anything async that doesn't return a promise.
-// (You can also just return a promise yourself if you want.)
-const onlyWarnIfLoadIsSlow = promisify((resolve) => {
-  setTimeout(() => {
-    // Each proxy has full access to the DOM API-- useful for conditional logic.
-    if (display.textContent === "") {
-      resolve("Loading...")
-      // With promisify, reject will automatically throw an error and call the default error handler.
-    }
-  }, 200)
-})
-
-// The default error handler catches all errors and promise rejections
-// But, you can override it if you want to do something else.
-setErrorHandler((err) => {
-  sendErrorToAnalytics(err)
-})
-
-// Every promise is resolved automatically
-// The next function never runs until the previous one is finished.
-button.on("click", () => {
-  display
-    .text(onlyWarnIfLoadIsSlow()) // NEVER shows text UNLESS data doesn't load in 200ms
-    .text(fetchData()) // You don't have to await anything. It will just work!
-    .css("background-color", "red") // This won't happen until the fetch is done.
-})
-
 // Most things follow the DOM API closely with slightly different names.
 // But, now you can chain them together
 // They will always execute in order!
@@ -74,25 +26,18 @@ const oneSecond = { duration: 1000 } // WAAPI options
 buttons
   .addClass("btn")
   .wait(1000)
-  .text(
-    "These buttons will animate in 2 seconds. They will fade in and out twice then disappear."
+  .attach(
+    `<p>
+      "These buttons will animate in 2 seconds. They will fade in and out twice
+      then disappear."
+    </p>`
   )
   .wait(2000)
   .transition(fadeIn, oneSecond)
   .transition(fadeOut, oneSecond)
   .transition(fadeIn, oneSecond)
   .transition(fadeOut, oneSecond)
-  .purge()
-
-// You can even prioritize certain functions to run first! (please don't abuse this)
-prioritize(() => {
-  buttons.text("This function will run first!")
-})
-
-// OR last
-defer(() => {
-  buttons.text("This function will run last!")
-})
+  .purge() // or .remove(). At the end of the chain, you can use any DOM API method.
 ```
 
 ## Installation
@@ -148,6 +93,63 @@ const button = $<HTMLButtonElement>(".button")
 const coolInputs = $$<HTMLInputElement>(".cool-inputs")
 ```
 
+## Advanced Usage
+
+```javascript
+import { $, $$, promisify, setErrorHandler, prioritize } from "jessquery"
+
+// Use $ to select a single element.
+const display = $(".display")
+const button = $("#button")
+
+// Use $$ to select multiple elements.
+const buttons = $$(".buttons")
+
+// These elements are now wrapped in a proxy with extra methods.
+// They each have an internal queue that always executes in order.
+// So, the chains are not only convenient and readable, but they're also predictable.
+
+// You can even do async stuff!
+async function fetchData() {
+  await new Promise((resolve) => setTimeout(resolve, 2000))
+  const response = await fetch("https://api.github.com/users/jazzypants1989")
+  const data = await response.json()
+  return data.name
+}
+
+// promisify is for setTimeout/anything async that doesn't return a promise.
+// (You can also just return a promise yourself if you want.)
+const onlyWarnIfLoadIsSlow = promisify((resolve) => {
+  setTimeout(() => {
+    // Each proxy has full access to the DOM API-- useful for conditional logic.
+    if (display.textContent === "") {
+      resolve("Loading...")
+      // Promisify is great for when you forget to cover all conditions like this troubling example,
+      // The next function will try to wait (five seconds by default).
+      // If it still hasn't resolved, the chain will keep moving (while passing an error to the error handler).
+    }
+  }, 200)
+})
+
+// The default error handler catches all errors and promise rejections
+// All we do is log it to the console, but you can use setErrorHandler to override this.
+setErrorHandler((err) => {
+  sendErrorToAnalytics(err)
+})
+
+// Every promise is resolved automatically
+// The next function never runs until the previous one is finished.
+button.on("click", () => {
+  display
+    .text(onlyWarnIfLoadIsSlow()) // NEVER shows text UNLESS data doesn't load in 200ms
+    .text(fetchData()) // You don't have to await anything. It will just work!
+    .css("background-color", "red") // This won't happen until the fetch is done.
+})
+
+// There's also internal `fromJSON` and `fromHTML` methods which automatically handle fetching and parsing.
+// I just wanted to show off the `promisify` method and how you don't have to await anything.
+```
+
 ## Interfaces
 
 ### Table of Contents
@@ -178,14 +180,22 @@ const coolInputs = $$<HTMLInputElement>(".cool-inputs")
     - [DomProxy.moveTo](#DomProxymoveTo)
     - [DomProxy.become](#DomProxybecome)
     - [DomProxy.purge](#DomProxypurge)
+    - [DomProxy.fromJSON](#DomProxyfromJSON)
+    - [DomProxy.fromHTML](#DomProxyfromHTML)
+    - [DomProxy.do](#DomProxydo)
+    - [DomProxy.defer](#DomProxydefer)
     - [DomProxy.transition](#DomProxytransition)
     - [DomProxy.wait](#DomProxywait)
-    - [DomProxy.do](#DomProxydo)
+    - [DomProxy.next](#DomProxynext)
+    - [DomProxy.prev](#DomProxyprev)
+    - [DomProxy.first](#DomProxyfirst)
+    - [DomProxy.last](#DomProxylast)
     - [DomProxy.parent](#DomProxyparent)
     - [DomProxy.ancestor](#DomProxyancestor)
+    - [DomProxy.pick](#DomProxypick)
+    - [DomProxy.pickAll](#DomProxypickAll)
     - [DomProxy.siblings](#DomProxysiblings)
     - [DomProxy.kids](#DomProxykids)
-    - [DomProxy.pick](#DomProxypick)
 - [DomProxyCollection](#DomProxyCollection)
   - [DomProxyCollection Methods](#DomProxyCollection-Methods)
     - [DomProxyCollection.on](#DomProxyCollectionon)
@@ -210,14 +220,22 @@ const coolInputs = $$<HTMLInputElement>(".cool-inputs")
     - [DomProxyCollection.moveTo](#DomProxyCollectionmoveTo)
     - [DomProxyCollection.become](#DomProxyCollectionbecome)
     - [DomProxyCollection.purge](#DomProxyCollectionpurge)
+    - [DomProxyCollection.fromJSON](#DomProxyCollectionfromJSON)
+    - [DomProxyCollection.fromHTML](#DomProxyCollectionfromHTML)
+    - [DomProxyCollection.do](#DomProxyCollectiondo)
+    - [DomProxyCollection.defer](#DomProxyCollectiondefer)
     - [DomProxyCollection.transition](#DomProxyCollectiontransition)
     - [DomProxyCollection.wait](#DomProxyCollectionwait)
-    - [DomProxyCollection.do](#DomProxyCollectiondo)
+    - [DomProxyCollection.next](#DomProxyCollectionnext)
+    - [DomProxyCollection.prev](#DomProxyCollectionprev)
+    - [DomProxyCollection.first](#DomProxyCollectionfirst)
+    - [DomProxyCollection.last](#DomProxyCollectionlast)
     - [DomProxyCollection.parent](#DomProxyCollectionparent)
     - [DomProxyCollection.ancestor](#DomProxyCollectionancestor)
+    - [DomProxyCollection.pick](#DomProxyCollectionpick)
+    - [DomProxyCollection.pickAll](#DomProxyCollectionpickAll)
     - [DomProxyCollection.siblings](#DomProxyCollectionsiblings)
     - [DomProxyCollection.kids](#DomProxyCollectionkids)
-    - [DomProxyCollection.pick](#DomProxyCollectionpick)
 - [setErrorHandler](#setErrorHandler)
 - [promisify](#promisify)
 
@@ -466,11 +484,26 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
 
 ##### DomProxy.become
 
-- **become(replacements: Array<HTMLElement>, mode?: "move" | "clone"): DomProxy**
+- **become(replacement: HTMLElement | Array<HTMLElement> | DomProxy, options?: { mode?: "move" | "clone"; match?: "cycle" | "remove" }): DomProxy**
 
-  - Replace the element with a new element. By default, the new element is moved to the replaced element's location. To clone it instead, set the mode to 'clone'. Under the hood, this is a light wrapper around `replaceWith` that has the option to use `cloneNode`.
-  - Example: `$('div').become(newElement)`
-  - Example: `$('div').become(newElement, 'clone')`
+  - The become method is used to replace a single element with a different element from elsewhere in the DOM.
+  - Under the hood, it utilizes the native `replaceWith` method but adds extra layers of functionality.
+  - The replacement can be a simple HTMLElement, an array of HTMLElements, or another DomProxy instance.
+  - Mode:
+    - _clone_ (default) - This makes a copy of the replacement element to use for the DomProxy. This clone includes the element, its attributes, and all its child nodes, but does not include event listeners. The original element is left untouched.
+    - _move_ - This moves the replacement element to the original element's position. The original element is removed from the DOM. This is the same as calling `replaceWith` directly.
+  - Match: The `options.match` parameter mainly influences behavior when used with $$, but its default value is 'cycle'. For a single `$` operation, this is mostly irrelevant.
+  - Example: `$('div').become(newElement, {mode: "move"})`
+  - Expectation: Replaces div with newElement, literally moving it to the original div's position.
+
+  - Example: `$('div').become(newElement, {mode: "clone"})`
+  - Expectation: Replaces div with a deep clone of newElement, leaving the original newElement untouched.
+
+  - Example: `$('#button').become($$('.otherButtons'))`
+  - Expectation: Takes another DomProxy as the replacement. The first element of the DomProxy is chosen for the replacement.
+
+  - Example: `$('div').become(newElement || null, {mode: "move", match: "remove"})`
+  - Expectation: Replaces the div with newElement. If newElement is null, the div is removed due to the 'remove' match setting.
 
 ##### DomProxy.purge
 
@@ -479,20 +512,55 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
   - Removes the element from the DOM entirely.
   - Example: `$('button').purge()`
 
-##### DomProxy.transition
+##### DomProxy.fromJSON
 
-- **transition(keyframes: Keyframe[] | PropertyIndexedKeyframes, options: KeyframeAnimationOptions): DomProxy**
+- **fromJSON(url: string, transformFunc: (el: DomProxy, json: any) => void, options?: FetchOptions): DomProxy**
 
-  - Animates the element using the WAAPI.
-  - Example: `$('button').transition([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 })`
-  - [MDN Documentation](https://developer.mozilla.org/en-US/docs/Web/API/Element/animate)
+  - Fetches a JSON resource from the provided URL and applies a transformation function which uses the fetched JSON and the proxy's target element as arguments.
+  - The transform function can be used to set the text, html, or any other property of the element.
+  - The options object can be used to set a fallback message while the fetch is in progress, an error message if the fetch fails, and a callback to execute when the fetch is complete.
+  - Example:
 
-##### DomProxy.wait
+  ```javascript
+  $("#item").fromJSON("/api/data", (element, json) => {
+    element.text(json.value)
+  })
+  ```
 
-- **wait(ms: number): DomProxy**
+  - Example:
 
-  - Waits for a specified number of milliseconds before continuing the chain.
-  - Example: `$('button').wait(1000)`
+  ```javascript
+  $("#item").fromJSON("/api/data", (element, json) => {
+    element.html(`<span>${json.description}</span>`)
+  })
+  ```
+
+  - Example:
+
+  ```javascript
+  $('#news-item').fromJSON('/api/news-item', (element, json) => {
+     { title, summary } = json;
+
+    element.html(`<h1>${title}</h1>
+                  <p>${summary}</p>`);
+  },
+  {
+    error: 'Failed to load news item',
+    fallback: 'Loading news item...'
+    onComplete: () => console.log('News item loaded')
+  }
+  ```
+
+##### DomProxy.fromHTML
+
+- **fromHTML(url: string, options?: FetchOptions): DomProxy**
+
+  - Fetches an HTML resource from the provided URL and inserts it into the proxy's target element.
+  - The options object can be used to set a fallback message while the fetch is in progress, an error message if the fetch fails, and a callback to execute when the fetch is complete.
+  - The HTML is sanitized by default, which helps prevent XSS attacks.
+  - Example: `$('#template').fromHTML('/template.html')`
+  - Example: `$('#update').fromHTML('/update.html', { fallback: 'Loading update...', error: 'Failed to load update!' })`
+  - Example: `$('#content').fromHTML('/malicious-content.html', { sanitize: false })`
 
 ##### DomProxy.do
 
@@ -511,6 +579,85 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
   })
   ```
 
+##### DomProxy.defer
+
+- **defer(fn: (el: DomProxy) => void): DomProxy**
+
+  - Schedules a function for deferred execution on the element.
+
+  - This will push the operation to the very end of the internal event loop.
+
+  - Usually, everything will happen in sequence anyways. Given the predictability of each queue, `defer` has limited use cases and should be used sparingly. The whole point of JessQuery is to make things predictable, so you should just put the function at the end of the chain if you can.
+
+  - Example Use Cases:
+
+    1. **Logging**: Ensure that a log or telemetry event is recorded at the very end of a complex operation. This shouldn't be necessary. `do` will almost always work just fine.
+
+    2. **Deferred Cleanup**: Delay cleanup or restoration of the DOM state after multiple operations. Again, just put the cleanup at the end of the chain, and it will usually happen after everything else. But... this is here if you need it.
+
+  - Honestly, I'm not sure if this even makes much sense. I just spent a bunch of time building a crazy queue system, and I feel like I need to expose it. If you have any ideas for how to make this more useful, please open an issue or PR.
+
+  - Example:
+
+  ```javascript
+  $("#id")
+    .html("<p>Step 1</p>")
+    .data("step", "1")
+    .do((el) => {
+      el.text(somethingComplex())
+    })
+    .defer((el) => {
+      console.log("Operation complete!")
+    })
+  ```
+
+##### DomProxy.transition
+
+- **transition(keyframes: Keyframe[] | PropertyIndexedKeyframes, options: KeyframeAnimationOptions): DomProxy**
+
+  - Animates the element using the WAAPI.
+  - Example: `$('button').transition([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 })`
+  - [MDN Documentation](https://developer.mozilla.org/en-US/docs/Web/API/Element/animate)
+
+##### DomProxy.wait
+
+- **wait(ms: number): DomProxy**
+
+  - Waits for a specified number of milliseconds before continuing the chain.
+  - Example: `$('button').wait(1000)`
+
+##### DomProxy.next
+
+- **next(): DomProxy**
+
+  - Switch to the next sibling of the element in the middle of a chain.
+  - Example: `$('button').css('color', 'red').next().css('color', 'blue')`
+  - Expectation: The next sibling of the button will turn blue. The button itself will remain red.
+
+##### DomProxy.prev
+
+- **prev(): DomProxy**
+
+  - Switch to the previous sibling of the element in the middle of a chain.
+  - Example: `$('button').css('color', 'red').prev().css('color', 'blue')`
+  - Expectation: The previous sibling of the button will turn blue. The button itself will remain red.
+
+##### DomProxy.first
+
+- **first(): DomProxy**
+
+  - Switch to the first child of the element in the middle of a chain.
+  - Example: `$('button').css('color', 'red').first().css('color', 'blue')`
+  - Expectation: The first child of the button will turn blue. The button itself will remain red.
+
+##### DomProxy.last
+
+- **last(): DomProxy**
+
+  - Switch to the last child of the element in the middle of a chain.
+  - Example: `$('button').css('color', 'red').last().css('color', 'blue')`
+  - Expectation: The last child of the button will turn blue. The button itself will remain red.
+
 ##### DomProxy.parent
 
 - **parent(): DomProxy**
@@ -527,6 +674,22 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
 - Example: `$('.buttons').css('color', 'red').ancestor('.container').css('color', 'blue')`
 - Expectation: The container will turn blue. The buttons will remain red.
 
+##### DomProxy.pick
+
+- **pick(subSelector: string): DomProxy**
+
+  - Gets the first descendant matching a sub-selector.
+  - Example: `$('.container').css('color', 'red').pick('.buttons').css('color', 'blue')`
+  - Expectation: The descendants of the container will turn blue. The container itself will remain red.
+
+##### DomProxy.pickAll
+
+- **pickAll(subSelector: string): DomProxyCollection**
+
+  - Gets all descendants matching a sub-selector.
+  - Example: `$('.container').css('color', 'red').pickAll('.buttons').css('color', 'blue')`
+  - Expectation: The descendants of the container will turn blue. The container itself will remain red.
+
 ##### DomProxy.siblings
 
 - **siblings(): DomProxyCollection**
@@ -542,14 +705,6 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
   - Switch to the children of the element in the middle of a chain.
   - Example: `$('button').css('color', 'red').children().css('color', 'blue')`
   - Expectation: The children of the button will turn blue. The button itself will remain red.
-
-##### DomProxy.pick
-
-- **pick(subSelector: string): DomProxyCollection**
-
-  - Picks descendants matching a sub-selector.
-  - Example: `$('.container').css('color', 'red').pick('.buttons').css('color', 'blue')`
-  - Expectation: The descendants of the container will turn blue. The container itself will remain red.
 
 ### DomProxyCollection
 
@@ -744,11 +899,26 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 
 ##### DomProxyCollection.become
 
-- **become(replacements: Array<HTMLElement>, mode?: "move" | "clone"): DomProxyCollection**
+- **become(replacement: HTMLElement | Array<HTMLElement> | DomProxy, options?: { mode?: "move" | "clone"; match?: "cycle" | "remove" }): DomProxyCollection**
 
-  - Replace the elements with new elements. By default, the new elements are moved from their old location. To clone them instead, set the mode to 'clone'. Under the hood, this is a light wrapper around `replaceWith` that has the option to use `cloneNode`.
-  - Example: `$$('div').become([newElement])`
-  - Example: `$$('div').become([newElement], 'clone')`
+  - The become method is used to replace a single element with a different element from elsewhere in the DOM.
+  - Under the hood, it utilizes the native `replaceWith` method but adds extra layers of functionality.
+  - The replacement can be a simple HTMLElement, an array of HTMLElements, or another DomProxy instance.
+  - Mode:
+    - _clone_ (default) - This makes a copy of the replacement element to use for the DomProxy. This clone includes the element, its attributes, and all its child nodes, but does not include event listeners. The original element is left untouched.
+    - _move_ - This moves the replacement element to the original element's position. The original element is removed from the DOM. This is the same as calling `replaceWith` directly.
+  - Match: The `options.match` parameter mainly influences behavior when used with $$, but its default value is 'cycle'. For a single `$` operation, this is mostly irrelevant.
+  - Example: `$$('div').become(newElement, {mode: "move"})`
+  - Expectation: Replaces div with newElement, literally moving it to the original div's position.
+
+  - Example: `$$('div').become(newElement, {mode: "clone"})`
+  - Expectation: Replaces div with a deep clone of newElement, leaving the original newElement untouched.
+
+  - Example: `$$('.buttons').become($$('.otherButtons'))`
+  - Expectation: Takes another DomProxy as the replacement. The first element of the DomProxy is chosen for the replacement.
+
+  - Example: `$$('div').become(newElement || null, {mode: "move", match: "remove"})`
+  - Expectation: Replaces the div with newElement. If newElement is null, the div is removed due to the 'remove' match setting.
 
 ##### DomProxyCollection.purge
 
@@ -756,6 +926,99 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 
   - Removes the elements from the DOM.
   - Example: `$$('.buttons').purge()`
+
+##### DomProxyCollection.fromJSON
+
+- **fromJSON(url: string, transformFunc: (el: DomProxy, json: any) => void, options?: FetchOptions): DomProxyCollection**
+
+  - Fetches a JSON resource from the provided URL and applies a transformation function which uses the fetched JSON and the proxy's target element as arguments.
+  - The transform function can be used to set the text, html, or any other property of the element.
+  - The options object can be used to set a fallback message while the fetch is in progress, an error message if the fetch fails, and a callback to execute when the fetch is complete.
+  - Example:
+
+  ```javascript
+  $$(".item").fromJSON("/api/data", (element, json) => {
+    element.text(json.value)
+  })
+  ```
+
+  - Example:
+
+  ```javascript
+  $$(".item").fromJSON("/api/data", (element, json) => {
+    element.html(`<span>${json.description}</span>`)
+  })
+  ```
+
+  - Example:
+
+  ```javascript
+  $$('.news-item').fromJSON('/api/news-item', (element, json) => {
+     { title, summary } = json;
+
+    element.html(`<h1>${title}</h1>
+                  <p>${summary}</p>`);
+  },
+  {
+    error: 'Failed to load news item',
+    fallback: 'Loading news item...'
+    onComplete: () => console.log('News item loaded')
+  }
+  ```
+
+##### DomProxyCollection.fromHTML
+
+- **fromHTML(url: string, options?: FetchOptions): DomProxyCollection**
+
+  - Fetches an HTML resource from the provided URL and inserts it into the proxy's target element.
+  - The options object can be used to set a fallback message while the fetch is in progress, an error message if the fetch fails, and a callback to execute when the fetch is complete.
+  - The HTML is sanitized by default, which helps prevent XSS attacks.
+  - Example: `$$('.template').fromHTML('/template.html')`
+  - Example: `$$('.update').fromHTML('/update.html', { fallback: 'Loading update...', error: 'Failed to load update!' })`
+  - Example: `$$('.content').fromHTML('/malicious-content.html', { sanitize: false })`
+
+##### DomProxyCollection.do
+
+- **do(fn: (el: DomProxy) => Promise<void>): DomProxyCollection**
+
+  - Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too).
+  - Example: `$$('button').do(async (el) => { // The elements are passed as an argument
+  const response = await fetch('/api')
+  const data = await response.json()
+  el.text(data.message) // All the methods are still available
+})`
+
+##### DomProxyCollection.defer
+
+- **defer(fn: (el: DomProxy) => void): DomProxyCollection**
+
+  - Schedules a function for deferred execution on the elements.
+
+  - This will push the operation to the very end of the internal event loop.
+
+  - Usually, everything will happen in sequence anyways. Given the predictability of each queue, `defer` has limited use cases and should be used sparingly. The whole point of JessQuery is to make things predictable, so you should just put the function at the end of the chain if you can.
+
+  - Example Use Cases:
+
+    1. **Logging**: Ensure that a log or telemetry event is recorded at the very end of a complex operation. This shouldn't be necessary. `do` will almost always work just fine.
+
+    2. **Deferred Cleanup**: Delay cleanup or restoration of the DOM state after multiple operations. Again, just put the cleanup at the end of the chain, and it will usually happen after everything else. But... this is here if you need it.
+
+  - Honestly, I'm not sure if this even makes much sense. I just spent a bunch of time building a crazy queue system, and I feel like I need to expose it. If you have any ideas for how to make this more useful, please open an issue or PR.
+
+  - Example:
+
+  ```javascript
+  $$(".item")
+    .html("<p>Step 1</p>")
+    .data("step", "1")
+    .do((el) => {
+      el.text(somethingComplex())
+    })
+    .defer((el) => {
+      console.log("Operation complete!")
+    })
+  ```
 
 ##### DomProxyCollection.transition
 
@@ -772,16 +1035,37 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
   - Waits for a specified number of milliseconds before continuing the chain.
   - Example: `$$('button').wait(1000)`
 
-##### DomProxyCollection.do
+##### DomProxyCollection.next
 
-- **do(fn: (el: DomProxy) => Promise<void>): DomProxyCollection**
+- **next(): DomProxyCollection**
 
-  - Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too).
-  - Example: `$$('button').do(async (el) => { // The elements are passed as an argument
-  const response = await fetch('/api')
-  const data = await response.json()
-  el.text(data.message) // All the methods are still available
-})`
+  - Switch to the next siblings of the elements in the middle of a chain.
+  - Example: `$$('button').css('color', 'red').next().css('color', 'blue')`
+  - Expectation: The next siblings of the buttons will turn blue. The buttons themselves will remain red.
+
+##### DomProxyCollection.prev
+
+- **prev(): DomProxyCollection**
+
+  - Switch to the previous siblings of the elements in the middle of a chain.
+  - Example: `$$('button').css('color', 'red').prev().css('color', 'blue')`
+  - Expectation: The previous siblings of the buttons will turn blue. The buttons themselves will remain red.
+
+##### DomProxyCollection.first
+
+- **first(): DomProxyCollection**
+
+  - Switch to the first children of the elements in the middle of a chain.
+  - Example: `$$('button').css('color', 'red').first().css('color', 'blue')`
+  - Expectation: The first children of the buttons will turn blue. The buttons themselves will remain red.
+
+##### DomProxyCollection.last
+
+- **last(): DomProxyCollection**
+
+  - Switch to the last children of the elements in the middle of a chain.
+  - Example: `$$('button').css('color', 'red').last().css('color', 'blue')`
+  - Expectation: The last children of the buttons will turn blue. The buttons themselves will remain red.
 
 ##### DomProxyCollection.parent
 
@@ -795,9 +1079,25 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 
 - **ancestor(ancestorSelector: string): DomProxyCollection**
 
-  - Gets the closest ancestors for each element in the collection matching a selector.
+  - Switch to the closest ancestors matching a selector. Uses the `closest` API under the hood.
   - Example: `$$('.buttons').css('color', 'red').ancestor('.container').css('color', 'blue')`
   - Expectation: The containers will turn blue. The buttons will remain red.
+
+##### DomProxyCollection.pick
+
+- **pick(subSelector: string): DomProxyCollection**
+
+  - Switch to the first descendants matching a sub-selector.
+  - Example: `$$('.container').css('color', 'red').pick('.buttons').css('color', 'blue')`
+  - Expectation: The buttons will turn blue. The container will remain red.
+
+##### DomProxyCollection.pickAll
+
+- **pickAll(subSelector: string): DomProxyCollection**
+
+  - Switch to all descendants matching a sub-selector.
+  - Example: `$$('.container').css('color', 'red').pickAll('.buttons').css('color', 'blue')`
+  - Expectation: The buttons will turn blue. The container will remain red.
 
 ##### DomProxyCollection.siblings
 
@@ -814,14 +1114,6 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
   - Switch to the children of the elements in the middle of a chain.
   - Example: `$$('.container').css('color', 'red').kids().css('color', 'blue')`
   - Expectation: The children of the container will turn blue. The container itself will remain red.
-
-##### DomProxyCollection.pick
-
-- **pick(subSelector: string): DomProxyCollection**
-
-  - Picks descendants matching a sub-selector.
-  - Example: `$$('.container').css('color', 'red').pick('.buttons').css('color', 'blue')`
-  - Expectation: The buttons will turn blue. The container will remain red.
 
 ### setErrorHandler
 

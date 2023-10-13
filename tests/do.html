@@ -39,7 +39,7 @@
         document.getElementById("testContainer").appendChild(output)
 
         $(".testButton")
-          .later((el) => el.css({ color: "blue" }))
+          .defer((el) => el.css({ color: "blue" }))
           .text("HALF A SECOND OF GLORY") // Text is black
           .wait(500)
           .css({ color: "red" })

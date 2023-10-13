@@ -16,11 +16,3 @@ export function giveContext(methodName, selector) {
 
   return message
 }
-
-export function isFixed(isSingle, selector) {
-  return `This proxy is fixed. The target is still ${
-    isSingle ? "the" : "all of the"
-  } ${
-    isSingle ? "element" : "elements"
-  } matching ${selector}. You must create a new proxy.`
-}

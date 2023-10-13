@@ -94,7 +94,7 @@ export function become(
 
     if (replacement) {
       handleReplacement(element, replacement)
-    } else if (options.match === "ignore") {
+    } else if (options.match === "remove") {
       element.remove()
     }
   })

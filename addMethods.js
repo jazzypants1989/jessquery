@@ -1,5 +1,5 @@
 import { createApplyFunc, createQueue, handlerMaker } from "./core.js"
-import { giveContext, isFixed } from "./errors.js"
+import { giveContext } from "./errors.js"
 import {
   addStyleSheet,
   attach,
@@ -20,9 +20,10 @@ export function addMethods(type, selector, target, fixed = false) {
   }
 
   const switchTarget = (newTarget) => {
-    if (fixed) throw new Error(isFixed(isSingle, selector))
+    if (fixed)
+      throw new Error(`Proxy is fixed. Create new proxy to switch targets.`)
     if (!newTarget || (Array.isArray(newTarget) && newTarget.length === 0))
-      throw new Error(`No element found.`)
+      throw new Error(`No elements found.`)
     target = newTarget
     proxy = updateProxy(target)
     return proxy
@@ -142,37 +143,6 @@ export function addMethods(type, selector, target, fixed = false) {
       toOneOrMany((el) => el.remove())
     }, giveContext("purge", selector)),
 
-    transition: applyFunc(
-      (keyframes, options) =>
-        transition(
-          Array.isArray(target) ? target : [target],
-          keyframes,
-          options
-        ),
-      giveContext("transition", selector)
-    ),
-
-    do: applyFunc((fn) => {
-      toOneOrMany((el) => {
-        const wrappedElement = addMethods(type, selector, el)
-        fn(wrappedElement)
-      })
-    }, giveContext("do", selector)),
-
-    now: applyFunc((fn) => {
-      toOneOrMany((el) => {
-        const wrappedElement = addMethods(type, selector, el)
-        prioritize(fn, [wrappedElement])
-      })
-    }, giveContext("now", selector)),
-
-    later: applyFunc((fn) => {
-      toOneOrMany((el) => {
-        const wrappedElement = addMethods(type, selector, el)
-        defer(fn, [wrappedElement])
-      })
-    }, giveContext("later", selector)),
-
     fromJSON: applyFunc((url, transformFunc, options = {}) => {
       if (typeof transformFunc !== "function") {
         throw new TypeError("Expected transformFunc to be a function")
@@ -199,6 +169,30 @@ export function addMethods(type, selector, target, fixed = false) {
         }
       })
     }, giveContext("fromHTML", selector)),
+
+    do: applyFunc((fn) => {
+      toOneOrMany((el) => {
+        const wrappedElement = addMethods(type, selector, el)
+        fn(wrappedElement)
+      })
+    }, giveContext("do", selector)),
+
+    defer: applyFunc((fn) => {
+      toOneOrMany((el) => {
+        const wrappedElement = addMethods(type, selector, el)
+        defer(fn, [wrappedElement])
+      })
+    }, giveContext("defer", selector)),
+
+    transition: applyFunc(
+      (keyframes, options) =>
+        transition(
+          Array.isArray(target) ? target : [target],
+          keyframes,
+          options
+        ),
+      giveContext("transition", selector)
+    ),
 
     wait: applyFunc(
       (duration) => new Promise((resolve) => setTimeout(resolve, duration)),

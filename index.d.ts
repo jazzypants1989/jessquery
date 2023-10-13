@@ -22,15 +22,14 @@ declare module "jessquery" {
    * - {@link DomProxy.data} - Set a data attribute on the element.
    * - {@link DomProxy.attach} - Attaches children to the element based on the provided options.
    * - {@link DomProxy.cloneTo} - Clone of the element to a new parent element in the DOM. By default, it is appended inside the new parent element, but you change change this with the `position` option. The original element remains in its current location. If you want to move the element instead of cloning it, use {@link DomProxy.moveTo}.
-   * - {@link DomProxy.moveTo} - Move the element to a new parent element in the DOM. By default, it is appended inside the new parent element, but you change change this with the `position` option. The original element is removed from its current location. The `all` option is technically available, but it will simply use the last element in the collection. This is because you can only move an element to one place at a time. If you want to clone the element instead of moving it, use {@link DomProxy.cloneTo}.
+   * - {@link DomProxy.moveTo} - Move the element to a new parent element in the DOM. By default, it is appended inside the new parent element, but you change change this with the `position` option. The original element is removed from its current location. If you want to clone the element instead of moving it, use {@link DomProxy.cloneTo}.
    * - {@link DomProxy.become} - Replace the element with a new element. By default, the new element is permanentaly removed from its original location. To clone it instead, set the mode to 'clone'.
    * - {@link DomProxy.purge} - Remove the element from the DOM entirely
-   * - {@link DomProxy.transition} - Animate the element using the WAAPI
-   * - {@link DomProxy.do} - Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too)
-
-   * - {@link DomProxy.defer} - Schedules a function for deferred execution on the element. This will push the operation to the very end of the internal event loop.
    * - {@link DomProxy.fromJSON} - Fetches a JSON resource from the provided URL, applies a transformation function on it and the proxy's target element.
    * - {@link DomProxy.fromHTML} - Fetches an HTML resource from the provided URL and inserts it into the proxy's target element.
+   * - {@link DomProxy.do} - Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too)
+   * - {@link DomProxy.defer} - Schedules a function for deferred execution on the element. This will push the operation to the very end of the internal event loop.
+   * - {@link DomProxy.transition} - Animate the element using the WAAPI. The queue will wait for the animation to complete before continuing.
    * - {@link DomProxy.wait} - Sets a timeout for the given number of milliseconds and waits for it to resolve before continuing the chain
    * - {@link DomProxy.next} - Switch to the nextElementSibling in the middle of a chain
    * - {@link DomProxy.prev} - Switch to the previousElementSibling in the middle of a chain
@@ -297,42 +296,44 @@ declare module "jessquery" {
     ) => DomProxy<T>
 
     /**
-     * The $$.become method replaces the collection of elements wrapped by the DomProxyCollection instance. This is an enhanced, bulk-operation version of `$.become`.
+     * The become method is used to replace a single element with a different element from elsewhere in the DOM.
      *
-     * #### Mode Option
-     * - `"clone"`: Each replacement element is cloned. This is useful to keep the original elements intact.
-     * - `"move"`: Elements are moved to the new location as-is.
+     * Under the hood, it utilizes the native `replaceWith` method but adds extra layers of functionality. The replacement can be a simple HTMLElement, an array of HTMLElements, or another DomProxy instance.
      *
-     * #### Match Option
-     * - `"cycle"`: When the length of `replacements` is less than the collection length, it will cycle through `replacements` to fill the rest.
-     * - `"remove"`: If a replacement for a specific element isn't provided, that element will be removed.
+     * - **Mode**:
      *
-     * @param {Array<HTMLElement>|DomProxy} replacements - An array of HTMLElements or a DomProxy instance to replace the current collection of elements.
-     * @param {Object} [options] - An options object to control the mode and matching strategy.
-     * @param {"move"|"clone"} [options.mode="clone"] - Determines whether the replacement elements are cloned or moved.
-     * @param {"cycle"|"remove"} [options.match="cycle"] - Matching strategy for when the elements to be replaced outnumber the replacements.
-     * @returns {DomProxyCollection} - Returns the current DomProxyCollection for chaining.
+     * - *clone* (default) - This makes a copy of the replacement element to use for the DomProxy. This clone includes the element, its attributes, and all its child nodes, but does not include event listeners. The original element is left untouched.
      *
-     * @example
-     * // Replaces each button with elements from `newElements`, cycling through `newElements` if needed.
-     * $$('.buttons').become(newElements, { mode: "move", match: "cycle" })
+     * - *move* - This moves the replacement element to the original element's position. The original element is removed from the DOM. This is the same as calling `replaceWith` directly.
+     *
+     * - **Match**: The `options.match` parameter mainly influences behavior when used with $$, but its default value is 'cycle'. For a single `$` operation, this is mostly irrelevant.
+     *
+     * @param {HTMLElement|Array<HTMLElement>|DomProxy} replacements - Element(s) or DomProxy that will replace the current element.
+     * @param {Object} [options] - Replacement options.
+     * @param {"move"|"clone"} [options.mode="clone"] - Decides if the new element replaces the existing element as-is ('move') or as a deep clone ('clone').
+     * @param {"cycle"|"remove"} [options.match="cycle"] - Determines how multiple replacements are handled. Mostly relevant for $$ operations.
+     * @returns {DomProxy} - A DomProxy instance that wraps the new element(s), enabling chainable methods.
      *
      * @example
-     * // Replaces each button in the collection with a deep-clone of elements from `newElements`.
-     * $$('.buttons').become(newElements, { mode: "clone" })
+     * // Replaces div with newElement, literally moving it to the original div's position.
+     * $('div').become(newElement, {mode: "move"})
      *
      * @example
-     * // Replaces each button with elements from another DomProxy. If fewer, cycles through them.
-     * $$('.buttons').become($$('.otherButtons'))
+     * // Replaces div with a deep clone of newElement, leaving the original newElement untouched.
+     * $('div').become(newElement, {mode: "clone"})
      *
      * @example
-     * // Replaces each button with elements from `newElements`. If an element in the collection lacks a replacement, it is removed.
-     * $$('.buttons').become(newElements, { mode: "move", match: "remove" })
+     * // Takes another DomProxy as the replacement. The first element of the DomProxy is chosen for the replacement.
+     * $('#button').become($$('.otherButtons'))
+     *
+     * @example
+     * // Replaces the div with newElement. If newElement is null, the div is removed due to the 'remove' match setting.
+     * $('div').become(newElement || null, {mode: "move", match: "remove"})
      */
     become: (
-      replacements: Array<HTMLElement> | DomProxy,
+      replacements: HTMLElement | Array<HTMLElement> | DomProxy,
       options?: { mode?: "move" | "clone"; match?: "cycle" | "remove" }
-    ) => DomProxyCollection<T>
+    ) => DomProxy<T>
 
     /** Remove the element from the DOM entirely. This is a light wrapper around `remove`.
      * @returns This {@link DomProxy}
@@ -340,103 +341,6 @@ declare module "jessquery" {
      * $('button').purge()
      */
     purge: () => DomProxy<T>
-
-    /** Animate the element using the WAAPI
-     * @param keyframes The keyframes to animate
-     * @param options The animation options
-     * @returns This {@link DomProxy}
-     * @example
-     * $('button').transition([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 })
-     * @see https://developer.mozilla.org/en-US/docs/Web/API/Element/animate
-     */
-    transition: (
-      keyframes: Keyframe[] | PropertyIndexedKeyframes,
-      options: KeyframeAnimationOptions
-    ) => DomProxy<T>
-
-    /** Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too)
-     * @param fn The async callback. This can receive the element as an argument.
-     * @returns This {@link DomProxy}
-     * @example
-     * $('button')
-     * .css('color', 'red')
-     * .do(async (el) => { // The element is passed as an argument
-     *    const response = await fetch('/api')
-     *    const data = await response.json()
-     *    el.text(data.message) // All the methods are still available
-     * })
-     * .css('color', 'blue')
-     */
-    do: (fn: (el: DomProxy<T>) => Promise<void>) => DomProxy<T>
-
-    /**
-     * Executes a high-priority function on the element as soon as possible. Extremely limited and not recommended.
-     *
-     * The function is pushed into the priority queue, and it takes precedence over the main queue tasks but not currently running ones. As soon as the priority queue is reached in the internal event loop, the function will execute. As the queue is eagerly executing each function that is added, it is rare for this to be useful. It receives the element as an argument. It can be combined with the 'later' method to truly confuse any developer who has to maintain your code.
-     *
-     * JUST MAKE A NEW QUEUE WITH A NEW `$` or `$$` VARIABLE IF YOU NEED TO BEAT A RACE CONDITION. DON'T USE THIS!!
-     *
-     * #### Limitations
-     * - Not Synchronous: All funtions are already resolved as promises, so the microtask queue is already empty by the time this function executes.
-     * - Running Tasks: Won't pre-empt a currently executing task so it can't help you there either.
-     * - Queue Precedence: If priority queue already has items, those will be executed first. Why did I make this?
-     *
-     * @param {function(DomProxy): void} fn - The function to execute with high priority.
-     * @returns {DomProxy} - The DomProxy instance, allowing for method chaining.
-     *
-     * @example
-     * $('#id').fromJSON('/api/data', (element, json) => {
-     *    element.text(json.value);
-     * }).now((element) => {
-     *   element.css('color', 'red');
-     *   element.text('Loading...');
-     * }); // Why didn't you just do this before the fromJSON call?! If that fromJSON call executes too soon, the text will be overwritten. Don't use this!
-     *
-     * @example
-     * display
-     *    .later((el) => el.css("color", "blue"))
-     *    .text("HALF A SECOND OF GLORY") // Text is black
-     *    .wait(500).text("Hello, world!") // Text is red
-     *    .now((el) => el.css("color", "red")) // This is dumb.
-     *    .wait(500).text("Goodbye, world!") // Text is blue
-     * // Seriously, don't use this!
-     */
-    now: (fn: (element: DomProxy) => void) => DomProxy
-
-    /**
-     * Schedules a function for deferred execution on the element. This will push the operation to the very end of the internal event loop. Given the predictability of each queue, `defer` has limited use cases and should be used sparingly. The whole point of JessQuery is to make things predictable, so you should just put the function at the end of the chain if you can.
-     *
-     * #### Example Use Cases
-     * 1. **Logging**: Ensure that a log or telemetry event is recorded at the very end of a complex operation.
-     * 2. **Deferred Cleanup**: Delay cleanup or restoration of the DOM state after multiple operations.
-     *
-     * @param {function(DomProxy): void} fn - The function to be deferred for later execution.
-     * @returns {DomProxy} - The DomProxy instance, allowing for method chaining.
-     *
-     * @example
-     * // Logging at the end of a complex operation
-     * $('#id').html('<p>Step 1</p>').attr('data-step', '1').defer((el) => {
-     *   el.logTelemetry('Operation Completed');
-     * });
-     *
-     * @example
-     * // Deferred cleanup after complex manipulation
-     * $('#complexElement').modify().manipulate().animate().defer((el) => {
-     *   el.reset(); // Reset to initial state after all operations.
-     * });
-     *
-     * @example
-     * // Please limit the use of this method anywhere other than the end of a chain. That's confusing.
-     * // Only use it for race conditions or other edge cases.
-     * display
-     *    .defer((el) => el.css("color", "blue"))
-     *    .text("HALF A SECOND OF GLORY") // Text is black
-     *    .wait(500).text("Hello, world!") // Text is red
-     *    .css("color", "red"))
-     *    .wait(500).text("Goodbye, world!") // Text is blue
-     * // This is missing the point of JessQuery. Just put each method in sequence.
-     */
-    defer: (fn: (element: DomProxy) => void) => DomProxy
 
     /**
      * Fetches a JSON resource from the provided URL and applies a transformation function which uses the fetched JSON and the proxy's target element as arguments.
@@ -492,6 +396,86 @@ declare module "jessquery" {
      * $('#content').fromHTML('/malicious-content.html', { sanitize: false });
      */
     fromHTML: (url: string, options?: FetchOptions) => DomProxy<T>
+
+    /** Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too)
+     * @param fn The async callback. This can receive the element as an argument.
+     * @returns This {@link DomProxy}
+     * @example
+     * $('button')
+     * .css('color', 'red')
+     * .do(async (el) => { // The element is passed as an argument
+     *    const response = await fetch('/api')
+     *    const data = await response.json()
+     *    el.text(data.message) // All the methods are still available
+     * })
+     * .css('color', 'blue')
+     */
+    do: (fn: (el: DomProxy<T>) => Promise<void>) => DomProxy<T>
+
+    /**
+     * Schedules a function for deferred execution on the element. This will push the operation to the very end of the internal event loop.
+     *
+     * Usually, everything will happen in sequence anyways. Given the predictability of each queue, `defer` has limited use cases and should be used sparingly. The whole point of JessQuery is to make things predictable, so you should just put the function at the end of the chain if you can.
+     *
+     * #### Example Use Cases
+     * 1. **Logging**: Ensure that a log or telemetry event is recorded at the very end of a complex operation. This shouldn't be necessary. `do` will almost always work just fine.
+     * 2. **Deferred Cleanup**: Delay cleanup or restoration of the DOM state after multiple operations. Again, just put the cleanup at the end of the chain and it will usually happen after everything else. But... this is here if you need it.
+     *
+     * Honestly, I'm not sure if this even makes much sense. I just spent a bunch of time building a crazy queue system, and I feel like I need to expose it. If you have any ideas for how to make this more useful, please open an issue or PR.
+     *
+     * @param {function(DomProxy): void} fn - The function to be deferred for later execution. It will be passed the DomProxy instance as an argument.
+     * @returns {DomProxy} - The DomProxy instance, allowing for method chaining.
+     *
+     * @example
+     * // Logging Example
+     * $('#id')
+     *    .html('<p>Step 1</p>')
+     *    .data('step', '1')
+     *    .do((el) => {
+     *        el.text(somethingComplex());
+     *    })
+     *    .defer((el) => {
+     *       console.log('Operation complete!');
+     *    });
+     *
+     * @example
+     * // Deferred Cleanup Example
+     * $('#id')
+     *   .html('<p>Step 1</p>')
+     *   .data('step', '1')
+     *   .do((el) => {
+     *      el.text(somethingComplex());
+     * })
+     *   .defer((el) => {
+     *      el.html('<p>Step 2</p>'
+     *        .data('step', '2');
+     * });
+     *
+     * @example
+     * // Please limit the use of this method anywhere other than the end of a chain. That's confusing.
+     * // Only use it for race conditions or other edge cases.
+     * display
+     *    .defer((el) => el.css("color", "blue"))
+     *    .text("HALF A SECOND OF GLORY") // Text is black
+     *    .wait(500).text("Hello, world!") // Text is red
+     *    .css("color", "red"))
+     *    .wait(500).text("Goodbye, world!") // Text is blue
+     * // This is missing the point of JessQuery. Just put each method in sequence.
+     */
+    defer: (fn: (element: DomProxy) => void) => DomProxy
+
+    /** Animate the element using the WAAPI. The queue will wait for the animation to complete before continuing.
+     * @param keyframes The keyframes to animate
+     * @param options The animation options
+     * @returns This {@link DomProxy}
+     * @example
+     * $('button').transition([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 })
+     * @see https://developer.mozilla.org/en-US/docs/Web/API/Element/animate
+     */
+    transition: (
+      keyframes: Keyframe[] | PropertyIndexedKeyframes,
+      options: KeyframeAnimationOptions
+    ) => DomProxy<T>
 
     /** Sets a timeout for the given number of milliseconds and waits for it to resolve before continuing the chain
      * @param ms The number of milliseconds to wait
@@ -577,30 +561,6 @@ declare module "jessquery" {
      */
     ancestor: (ancestorSelector: string) => DomProxy<T>
 
-    /** Switch to the children of the element in the middle of a chain
-     * @returns A new {@link DomProxyCollection} created from the children of the element
-     * @example
-     * $('.container')
-     * .css('color', 'red')
-     * .kids()
-     * .css('color', 'blue')
-     * // All the children of the container will turn blue
-     * // The container itself will remain red
-     */
-    kids: () => DomProxyCollection<T>
-
-    /** Switch to the siblings of the element in the middle of a chain
-     * @returns A new {@link DomProxyCollection} created from the siblings of the element
-     * @example
-     * $('button')
-     * .css('color', 'red')
-     * .siblings()
-     * .css('color', 'blue')
-     * // All the siblings of the button will turn blue
-     * // The button itself will remain red
-     */
-    siblings: () => DomProxyCollection<T>
-
     /** Switch to the first descendant matching a selector in the middle of a chain.
      *
      * This will throw an error if the proxy was created as "fixed" (with a second argument of true).
@@ -621,6 +581,34 @@ declare module "jessquery" {
      * $('.container').pick('.buttons')
      */
     pickAll: (subSelector: string) => DomProxyCollection<T>
+
+    /** Switch to the children of the element in the middle of a chain
+     *
+     * This will throw an error if the proxy was created as "fixed" (with a second argument of true).
+     * @returns A new {@link DomProxyCollection} created from the children of the element
+     * @example
+     * $('.container')
+     * .css('color', 'red')
+     * .kids()
+     * .css('color', 'blue')
+     * // All the children of the container will turn blue
+     * // The container itself will remain red
+     */
+    kids: () => DomProxyCollection<T>
+
+    /** Switch to the siblings of the element in the middle of a chain
+     *
+     *This will throw an error if the proxy was created as "fixed" (with a second argument of true).
+     * @returns A new {@link DomProxyCollection} created from the siblings of the element
+     * @example
+     * $('button')
+     * .css('color', 'red')
+     * .siblings()
+     * .css('color', 'blue')
+     * // All the siblings of the button will turn blue
+     * // The button itself will remain red
+     */
+    siblings: () => DomProxyCollection<T>
   }
 
   /**
@@ -649,17 +637,22 @@ declare module "jessquery" {
    * - {@link DomProxyCollection.moveTo} - Moves the elements to a new parent element in the DOM. By default, it is appended inside the new parent element, but you change change this with the `position` option. The original elements are removed from their current location. The `all` option is technically available, but it will simply use the last element in the collection. This is because you can only move an element to one place at a time. If you want to clone the elements instead of moving them, use {@link DomProxyCollection.cloneTo}.
    * - {@link DomProxyCollection.become} - Replaces the elements with new elements. By default, the elements are moved to the new location. To clone them instead, set the mode to 'clone'.
    * - {@link DomProxyCollection.purge} - Remove the elements from the DOM entirely
-   * - {@link DomProxyCollection.transition} - Animate the elements using the WAAPI
-   * - {@link DomProxyCollection.wait} - Sets a timeout for the given number of milliseconds and waits for it to resolve before continuing the chain
-   * - {@link DomProxyCollection.do} - Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too)
-   * - {@link DomProxyCollection.defer} - Schedules a function for deferred execution on the elements. This will push the operation to the very end of the internal event loop.
    * - {@link DomProxyCollection.fromJSON} - Fetches a JSON resource from the provided URL and applies a transformation function which uses the fetched JSON and the proxy's target element as arguments.
    * - {@link DomProxyCollection.fromHTML} - Fetches an HTML resource from the provided URL and inserts it into the proxy's target element.
-   * - {@link DomProxyCollection.parent} - Switch to the parent of the elements in the middle of a chain
-   * - {@link DomProxyCollection.ancestor} - Switch to the closest ancestor matching a selector in the middle of a chain
-   * - {@link DomProxyCollection.kids} - Switch to the children of the elements in the middle of a chain
-   * - {@link DomProxyCollection.siblings} - Switch to the siblings of the elements in the middle of a chain
-   * - {@link DomProxyCollection.pick} - Switch to the descendants of the elements that match a selector in the middle of a chain
+   * - {@link DomProxyCollection.do} - Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too)
+   * - {@link DomProxyCollection.defer} - Schedules a function for deferred execution on the elements. This will push the operation to the very end of the internal event loop.
+   * - {@link DomProxyCollection.transition} - Animate the elements using the WAAPI. The queue will wait for the animation to complete before continuing.
+   * - {@link DomProxyCollection.wait} - Sets a timeout for the given number of milliseconds and waits for it to resolve before continuing the chain
+   * - {@link DomProxyCollection.next} - Switch to every existing nextElementSibling for each element in the collection
+   * - {@link DomProxyCollection.prev} - Switch to every existing previousElementSibling for each element in the collection
+   * - {@link DomProxyCollection.first} - Switch to every existing firstChild for each element in the collection
+   * - {@link DomProxyCollection.last} - Switch to every existing lastChild for each element in the collection
+   * - {@link DomProxyCollection.parent} - Switch to every existing parentElement for each element in the collection
+   * - {@link DomProxyCollection.ancestor} - Switch to the closest ancestor matching a selector for each element in the collection
+   * - {@link DomProxyCollection.pick} - Switch to a collection of the first descendant of each element that matches a selector in the middle of a chain
+   * - {@link DomProxyCollection.pickAll} - Switch to a collection of all of the descendants of the elements that match a selector in the middle of a chain
+   * - {@link DomProxyCollection.kids} - Switch to a collection of any existing children of the elements in the middle of a chain
+   * - {@link DomProxyCollection.siblings} - Switch to a collection of any existing siblings of the elements in the middle of a chain
    */
   export interface DomProxyCollection<T extends HTMLElement = HTMLElement>
     extends Array<T> {
@@ -928,44 +921,42 @@ declare module "jessquery" {
     ) => DomProxyCollection<T>
 
     /**
-     * The become method is used to replace a single element with a different element from elsewhere in the DOM.
+     * The $.become method replaces the collection of elements wrapped by the DomProxyCollection instance. This is an enhanced, bulk-operation version of `$.become`.
      *
-     * Under the hood, it utilizes the native `replaceWith` method but adds extra layers of functionality. The replacement can be a simple HTMLElement, an array of HTMLElements, or another DomProxy instance.
+     * #### Mode Option
+     * - `"clone"`: Each replacement element is cloned. This is useful to keep the original elements intact.
+     * - `"move"`: Elements are moved to the new location as-is.
      *
-     * - **Mode**:
+     * #### Match Option
+     * - `"cycle"`: When the length of `replacements` is less than the collection length, it will cycle through `replacements` to fill the rest.
+     * - `"remove"`: If a replacement for a specific element isn't provided, that element will be removed.
      *
-     * - *clone* (default) - This makes a copy of the replacement element to use for the DomProxy. This clone includes the element, its attributes, and all its child nodes, but does not include event listeners. The original element is left untouched.
-     *
-     * - *move* - This moves the replacement element to the original element's position. The original element is removed from the DOM. This is the same as calling `replaceWith` directly.
-     *
-     * - **Match**: The `options.match` parameter mainly influences behavior when used with $$, but its default value is 'cycle'. For a single `$` operation, this is mostly irrelevant.
-     *
-     * @param {HTMLElement|Array<HTMLElement>|DomProxy} replacements - Element(s) or DomProxy that will replace the current element.
-     * @param {Object} [options] - Replacement options.
-     * @param {"move"|"clone"} [options.mode="clone"] - Decides if the new element replaces the existing element as-is ('move') or as a deep clone ('clone').
-     * @param {"cycle"|"remove"} [options.match="cycle"] - Determines how multiple replacements are handled. Mostly relevant for $$ operations.
-     * @returns {DomProxy} - A DomProxy instance that wraps the new element(s), enabling chainable methods.
+     * @param {Array<HTMLElement>|DomProxy} replacements - An array of HTMLElements or a DomProxy instance to replace the current collection of elements.
+     * @param {Object} [options] - An options object to control the mode and matching strategy.
+     * @param {"move"|"clone"} [options.mode="clone"] - Determines whether the replacement elements are cloned or moved.
+     * @param {"cycle"|"remove"} [options.match="cycle"] - Matching strategy for when the elements to be replaced outnumber the replacements.
+     * @returns {DomProxyCollection} - Returns the current DomProxyCollection for chaining.
      *
      * @example
-     * // Replaces div with newElement, literally moving it to the original div's position.
-     * $('div').become(newElement, {mode: "move"})
+     * // Replaces each button with elements from `newElements`, cycling through `newElements` if needed.
+     * $$('.buttons').become(newElements, { mode: "move", match: "cycle" })
      *
      * @example
-     * // Replaces div with a deep clone of newElement, leaving the original newElement untouched.
-     * $('div').become(newElement, {mode: "clone"})
+     * // Replaces each button in the collection with a deep-clone of elements from `newElements`.
+     * $$('.buttons').become(newElements, { mode: "clone" })
      *
      * @example
-     * // Takes another DomProxy as the replacement. The first element of the DomProxy is chosen for the replacement.
-     * $('#button').become($$('.otherButtons'))
+     * // Replaces each button with elements from another DomProxy. If fewer, cycles through them.
+     * $$('.buttons').become($$('.otherButtons'))
      *
      * @example
-     * // Replaces the div with newElement. If newElement is null, the div is removed due to the 'remove' match setting.
-     * $('div').become(newElement || null, {mode: "move", match: "remove"})
+     * // Replaces each button with elements from `newElements`. If an element in the collection lacks a replacement, it is removed.
+     * $$('.buttons').become(newElements, { mode: "move", match: "remove" })
      */
     become: (
-      replacements: HTMLElement | Array<HTMLElement> | DomProxy,
+      replacements: Array<HTMLElement> | DomProxy,
       options?: { mode?: "move" | "clone"; match?: "cycle" | "remove" }
-    ) => DomProxy<T>
+    ) => DomProxyCollection<T>
 
     /** Remove the elements from the DOM
      * @returns This {@link DomProxyCollection}
@@ -973,34 +964,6 @@ declare module "jessquery" {
      * $$('.buttons').purge()
      */
     purge: () => DomProxyCollection<T>
-
-    /** Animate the elements using the WAAPI
-     * @param keyframes The keyframes to animate
-     * @param options The animation options
-     * @returns This {@link DomProxyCollection}
-     * @example
-     * $$('.buttons').transition([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 })
-     * @see https://developer.mozilla.org/en-US/docs/Web/API/Element/animate
-     */
-    transition(
-      keyframes: Keyframe[] | PropertyIndexedKeyframes,
-      options: KeyframeAnimationOptions
-    ): DomProxyCollection<T>
-
-    /** Execute an asynchronous function and wait for it to resolve before continuing the chain (can be synchronous too)
-     * @param fn The async callback. This can receive the element as an argument.
-     * @returns This {@link DomProxyCollection}
-     * @example
-     * $$('.buttons')
-     * .css('color', 'red')
-     * .do(async (el) => { // The element is passed as an argument
-     *   const response = await fetch('/api')
-     *  const data = await response.json()
-     * el.text(data.message) // All the methods are still available
-     * })
-     * .css('color', 'blue')
-     */
-    do: (fn: (el: DomProxy) => Promise<void> | void) => DomProxyCollection<T>
 
     /**
      * Fetches a JSON resource from the provided URL, applies a transformation function on it and the proxy's target elements.
@@ -1062,6 +1025,87 @@ declare module "jessquery" {
      */
     fromHTML: (url: string, options?: FetchOptions) => DomProxyCollection<T>
 
+    /** Execute an asynchronous function and wait for it to resolve before continuing the chain (can be synchronous too)
+     * @param fn The async callback. This can receive the element as an argument.
+     * @returns This {@link DomProxyCollection}
+     * @example
+     * $$('.buttons')
+     * .css('color', 'red')
+     * .do(async (el) => { // The element is passed as an argument
+     *   const response = await fetch('/api')
+     *  const data = await response.json()
+     * el.text(data.message) // All the methods are still available
+     * })
+     * .css('color', 'blue')
+     */
+    do: (
+      fn: (el: DomProxyCollection) => Promise<void> | void
+    ) => DomProxyCollection<T>
+
+    /** Schedules a function for deferred execution on the elements. This will push the operation to the very end of the internal event loop.
+     *
+     * Usually, everything will happen in sequence anyways. Given the predictability of each queue, `defer` has limited use cases and should be used sparingly. The whole point of JessQuery is to make things predictable, so you should just put the function at the end of the chain if you can.
+     *
+     * #### Example Use Cases Suggested by ChatGPT
+     * 1. **Logging**: Ensure that a log or telemetry event is recorded at the very end of a complex operation. This shouldn't be necessary. `do` will almost always work just fine.
+     * 2. **Deferred Cleanup**: Delay cleanup or restoration of the DOM state after multiple operations. Again, just put the cleanup at the end of the chain and it will usually happen after everything else. But... this is here if you need it.
+     *
+     * Honestly, I'm not sure if this even makes much sense. I just spent a bunch of time building a crazy queue system, and I feel like I need to expose it. If you have any ideas for how to make this more useful, please open an issue or PR.
+     *
+     * @param {function(DomProxy): void} fn - The function to be deferred for later execution. It will be passed the DomProxy instance as an argument.
+     * @returns {DomProxy} - The DomProxy instance, allowing for method chaining.
+     *
+     * @example
+     * // Logging Example
+     * $('#id')
+     *    .html('<p>Step 1</p>')
+     *    .data('step', '1')
+     *    .do((el) => {
+     *        el.text(somethingComplex());
+     *    })
+     *    .defer((el) => {
+     *       console.log('Operation complete!');
+     *    });
+     *
+     * @example
+     * // Deferred Cleanup Example
+     * $('#id')
+     *   .html('<p>Step 1</p>')
+     *   .data('step', '1')
+     *   .do((el) => {
+     *      el.text(somethingComplex());
+     * })
+     *   .defer((el) => {
+     *      el.html('<p>Step 2</p>'
+     *        .data('step', '2');
+     * });
+     *
+     * @example
+     * // Please limit the use of this method anywhere other than the end of a chain. That's confusing.
+     * // Only use it for race conditions or other edge cases.
+     * display
+     *    .defer((el) => el.css("color", "blue"))
+     *    .text("HALF A SECOND OF GLORY") // Text is black
+     *    .wait(500).text("Hello, world!") // Text is red
+     *    .css("color", "red"))
+     *    .wait(500).text("Goodbye, world!") // Text is blue
+     * // This is missing the point of JessQuery. Just put each method in sequence.
+     */
+    defer: (fn: (el: DomProxyCollection) => void) => DomProxyCollection<T>
+
+    /** Animate the elements using the WAAPI
+     * @param keyframes The keyframes to animate
+     * @param options The animation options
+     * @returns This {@link DomProxyCollection}
+     * @example
+     * $$('.buttons').transition([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 })
+     * @see https://developer.mozilla.org/en-US/docs/Web/API/Element/animate
+     */
+    transition(
+      keyframes: Keyframe[] | PropertyIndexedKeyframes,
+      options: KeyframeAnimationOptions
+    ): DomProxyCollection<T>
+
     /** Await a timeout before continuing the chain
      * @param ms The number of milliseconds to wait
      * @returns This {@link DomProxyCollection}
@@ -1070,6 +1114,62 @@ declare module "jessquery" {
      */
     wait: (ms: number) => DomProxyCollection<T>
 
+    /** Switch to the nextElementSibling of the elements in the middle of a chain.
+     *
+     * This will throw an error if the proxy was created as "fixed" (with a second argument of true).
+     * @returns The next DomProxyCollection
+     * @example
+     * $$('.buttons')
+     * .css('color', 'red')
+     * .next()
+     * .css('color', 'blue')
+     * // the next elements will turn blue
+     * // the buttons themselves will remain red
+     */
+    next: () => DomProxyCollection<T>
+
+    /** Switch to the previousElementSibling of the elements in the middle of a chain.
+     *
+     * This will throw an error if the proxy was created as "fixed" (with a second argument of true).
+     * @returns The previous DomProxyCollection
+     * @example
+     * $$('.buttons')
+     * .css('color', 'red')
+     * .prev()
+     * .css('color', 'blue')
+     * // the previous elements will turn blue
+     * // the buttons themselves will remain red
+     */
+    prev: () => DomProxyCollection<T>
+
+    /** Switch to the firstChild of the elements in the middle of a chain.
+     *
+     * This will throw an error if the proxy was created as "fixed" (with a second argument of true).
+     * @returns The first child DomProxyCollection
+     * @example
+     * $$('.container')
+     * .css('color', 'red')
+     * .first()
+     * .css('color', 'blue')
+     * // the first children will turn blue
+     * // the containers themselves will remain red
+     */
+    first: () => DomProxyCollection<T>
+
+    /** Switch to the lastChild of the elements in the middle of a chain.
+     *
+     * This will throw an error if the proxy was created as "fixed" (with a second argument of true).
+     * @returns The last child DomProxyCollection
+     * @example
+     * $$('.container')
+     * .css('color', 'red')
+     * .last()
+     * .css('color', 'blue')
+     * // the last children will turn blue
+     * // the containers themselves will remain red
+     */
+    last: () => DomProxyCollection<T>
+
     /** Switch to the parents of the elements in the middle of a chain.
      *
      * This will throw an error if the proxy was created as "fixed" (with a second argument of true).
@@ -1077,14 +1177,14 @@ declare module "jessquery" {
      * @example
      * $$('.buttons')
      * .css('color', 'red')
-     * .parents()
+     * .parent()
      * .css('color', 'blue')
      * // the parents of the buttons will turn blue
      * // the buttons themselves will remain red
      */
-    parents: () => DomProxyCollection<T>
+    parent: () => DomProxyCollection<T>
 
-    /** Switch to the closest ancestor matching a selector in the middle of a chain. Uses the native `closest` method.
+    /** Switch to the closest existing ancestor of each element that matches a selector in the middle of a chain. Uses the native `closest` method.
      *
      * This will throw an error if the proxy was created as "fixed" (with a second argument of true).
      * @param ancestorSelector The ancestor selector
@@ -1093,6 +1193,26 @@ declare module "jessquery" {
      * $$('.buttons').ancestor('.container')
      */
     ancestor: (ancestorSelector: string) => DomProxyCollection<T>
+
+    /** Switch to the first descendant of each of the elements that matches a selector  in the middle of a chain.
+     *
+     * This will throw an error if the proxy was created as "fixed" (with a second argument of true).
+     * @param subSelector The sub-selector
+     * @returns This {@link DomProxyCollection}
+     * @example
+     * $$('.container').pick('.buttons')
+     */
+    pick: (subSelector: string) => DomProxyCollection<T>
+
+    /** Switch to a collection of all of the descendants of each of the elements that match a selector in the middle of a chain
+     *
+     * This will throw an error if the proxy was created as "fixed" (with a second argument of true).
+     * @param subSelector The sub-selector
+     * @returns This {@link DomProxyCollection}
+     * @example
+     * $$('.container').pickAll('.buttons')
+     */
+    pickAll: (subSelector: string) => DomProxyCollection<T>
 
     /** Switch to the children of the elements in the middle of a chain.
      *
@@ -1121,26 +1241,6 @@ declare module "jessquery" {
      * // The buttons themselves will remain red
      */
     siblings: () => DomProxyCollection<T>
-
-    /** Switch to the first descendants of the elements that match a selector in the middle of a chain.
-     *
-     * This will throw an error if the proxy was created as "fixed" (with a second argument of true).
-     * @param subSelector The sub-selector
-     * @returns This {@link DomProxyCollection}
-     * @example
-     * $$('.container').pick('.buttons')
-     */
-    pick: (subSelector: string) => DomProxyCollection<T>
-
-    /** Switch to a collection of all of the descendants of the elements that match a selector in the middle of a chain
-     *
-     * This will throw an error if the proxy was created as "fixed" (with a second argument of true).
-     * @param subSelector The sub-selector
-     * @returns This {@link DomProxyCollection}
-     * @example
-     * $$('.container').pickAll('.buttons')
-     */
-    pickAll: (subSelector: string) => DomProxyCollection<T>
   }
 
   /**

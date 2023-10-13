@@ -29,7 +29,7 @@ export function promisify(
           resolve()
           defaultErrorHandler(
             new Error(
-              `Promise timed out after ${timeout}ms. You can pass a second argument to promisify to customize the timeout.`
+              `Promisify Timeout (second argument): ${timeout}ms exceeded.`
             ),
             meta
           )
