@@ -88,13 +88,13 @@ Generally, just try to keep each discrete chain of DOM operations for a single e
 
 ## Demo and Key Concepts
 
-`jessquery` works slightly differently from jQuery, but it makes sense once you understand the rules. The concurrent chaining makes things a bit more complex. The key is understanding that each `$` or `$$` call is representative of a single queue-- not necessarily the elements that are being manipulated. It's a bit like [PrototypeJS](http://prototypejs.org/doc/latest/dom/dollar-dollar/) mixed with the async flow of something like [RxJS](https://rxjs.dev/guide/overview).
+`jessquery` works slightly differently from jQuery, but it makes sense once you understand the rules. The concurrent chaining makes things a bit more complex. The key is understanding that each `$()` or `$$()` call is representative of a single queue-- not necessarily the elements that are being manipulated. It's a bit like [PrototypeJS](http://prototypejs.org/doc/latest/dom/dollar-dollar/) mixed with the async flow of something like [RxJS](https://rxjs.dev/guide/overview).
 
-The magic sauce here is that everything is a [proxy](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy), so you can still use the full DOM API if your use case isn't covered by one of the methods. So, if you forget about the `.css` operator and use `.style` instead when using `$`, it will just work. The NodeList that you get from `$$` is automatically turned into an array so you can use array methods on it like `.map` or `.filter`.
+The magic sauce here is that everything is a [proxy](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy), so you can still use the full DOM API if your use case isn't covered by one of the methods. So, if you forget about the `.css` operator and use `.style` instead when using `$()`, it will just work. The NodeList that you get from `$$()` is automatically turned into an array so you can use array methods on it like `.map()` or `.filter()`.
 
 This is the benefit of using proxies, but I'm curious if this will scale well as they bring a tiny bit of overhead. This might get problematic in large applications, but I'm probably just being paranoid. I welcome anyone to do some tests! 😅
 
-Here's a [Stackblitz Playground](https://stackblitz.com/edit/jessquery?file=main.js) if you want to try it out. The demo that will load in has an extremely long chain showing the mutability that a standard `DomProxy` exhibits. To see how an error is thrown when that proxy is `fixed` in place, simply add a `true` argument to the `$` call like this: `const container = $(".container", true)`.
+Here's a [Stackblitz Playground](https://stackblitz.com/edit/jessquery?file=main.js) if you want to try it out. The demo that will load in has an extremely long chain showing the mutability that a standard `DomProxy` exhibits. To see how an error is thrown when that proxy is `fixed` in place, simply add a `true` argument to the `$()` call like this: `const container = $(".container", true)`.
 
 ## TypeScript
 
@@ -537,7 +537,7 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
   - Mode:
     - _clone_ (default) - This makes a copy of the replacement element to use for the DomProxy. This clone includes the element, its attributes, and all its child nodes, but does not include event listeners. The original element is left untouched.
     - _move_ - This moves the replacement element to the original element's position. The original element is removed from the DOM. This is the same as calling `replaceWith` directly.
-  - Match: The `options.match` parameter mainly influences behavior when used with $$, but its default value is 'cycle'. For a single `$` operation, this is mostly irrelevant.
+  - Match: The `options.match` parameter mainly influences behavior when used with `$$()`, but its default value is 'cycle'. For a single `$()` operation, this is mostly irrelevant.
   - Example: `$('div').become(newElement, {mode: "move"})`
   - Expectation: Replaces div with newElement, literally moving it to the original div's position.
 
@@ -959,7 +959,7 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
   - Mode:
     - _clone_ (default) - This makes a copy of the replacement element to use for the DomProxy. This clone includes the element, its attributes, and all its child nodes, but does not include event listeners. The original element is left untouched.
     - _move_ - This moves the replacement element to the original element's position. The original element is removed from the DOM. This is the same as calling `replaceWith` directly.
-  - Match: The `options.match` parameter mainly influences behavior when used with $$, but its default value is 'cycle'. For a single `$` operation, this is mostly irrelevant.
+  - Match: The `options.match` parameter mainly influences behavior when used with `$$()`, but its default value is 'cycle'. For a single `$()` operation, this is mostly irrelevant.
   - Example: `$$('div').become(newElement, {mode: "move"})`
   - Expectation: Replaces div with newElement, literally moving it to the original div's position.
 
