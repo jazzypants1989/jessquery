@@ -109,7 +109,7 @@ const coolInputs = $$<HTMLInputElement>(".cool-inputs")
 ## Advanced Usage
 
 ```javascript
-import { $, $$, promisify, setErrorHandler, prioritize } from "jessquery"
+import { $, $$, promisify, setErrorHandler } from "jessquery"
 
 // Use $ to select a single element.
 const display = $(".display")
