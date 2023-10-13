@@ -1,11 +1,5 @@
 # jessquery
 
-[![npm version](https://badge.fury.io/js/jessquery.svg)](https://badge.fury.io/js/jessquery)
-[![Build Status](https://travis-ci.com/jazzypants1989/jessquery.svg?branch=master)](https://travis-ci.com/jazzypants1989/jessquery)
-[![codecov](https://codecov.io/gh/jazzypants1989/jessquery/branch/master/graph/badge.svg)](https://codecov.io/gh/jazzypants1989/jessquery)
-[![Bundle Size](https://deno.bundlejs.com/badge?q=jessquery)](https://deno.bundlejs.com/result?q=jessquery)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
 `jessquery` is a lightweight wrapper around the DOM API that offers the intuitive elegance of jQuery, but streamlined for the modern web.
 
 Feel like a 🦕 for still using jQuery? Wish that it didn't bloat up your bundle size like a 🐖? Want something 🆕 and ✨?
@@ -18,6 +12,7 @@ Rekindle your love for method chaining-- now in a lightweight, type-safe package
 | jessquery | 7.28kb           | 2.89kb          |
 
 ![It's only 2.89kb! I swear! This badge proves it.](https://deno.bundlejs.com/badge?q=jessquery@2.2.1)
+[![npm version](https://badge.fury.io/js/jessquery.svg)](https://badge.fury.io/js/jessquery)
 
 ## Basic Usage
 
