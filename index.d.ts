@@ -28,7 +28,7 @@ declare module "jessquery" {
    * - {@link DomProxy.transition} - Animate the element using the WAAPI
    * - {@link DomProxy.do} - Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too)
 
-   * - {@link DomProxy.defer} - De-prioritizes a function to the very end of the current queue. This is more reliable than {@link DomProxy.now} but should still be used sparingly. The whole point of JessQuery is to make things predictable, so just put the function at the end of the chain if you can.
+   * - {@link DomProxy.defer} - Schedules a function for deferred execution on the element. This will push the operation to the very end of the internal event loop.
    * - {@link DomProxy.fromJSON} - Fetches a JSON resource from the provided URL, applies a transformation function on it and the proxy's target element.
    * - {@link DomProxy.fromHTML} - Fetches an HTML resource from the provided URL and inserts it into the proxy's target element.
    * - {@link DomProxy.wait} - Sets a timeout for the given number of milliseconds and waits for it to resolve before continuing the chain
@@ -370,8 +370,41 @@ declare module "jessquery" {
     do: (fn: (el: DomProxy<T>) => Promise<void>) => DomProxy<T>
 
     /**
-     * Schedules a function for deferred execution on the element. This will push the operation to the very end of the internal event loop.
-     * - Given the predictability of each queue, `defer` has limited use cases.
+     * Executes a high-priority function on the element as soon as possible. Extremely limited and not recommended.
+     *
+     * The function is pushed into the priority queue, and it takes precedence over the main queue tasks but not currently running ones. As soon as the priority queue is reached in the internal event loop, the function will execute. As the queue is eagerly executing each function that is added, it is rare for this to be useful. It receives the element as an argument. It can be combined with the 'later' method to truly confuse any developer who has to maintain your code.
+     *
+     * JUST MAKE A NEW QUEUE WITH A NEW `$` or `$$` VARIABLE IF YOU NEED TO BEAT A RACE CONDITION. DON'T USE THIS!!
+     *
+     * #### Limitations
+     * - Not Synchronous: All funtions are already resolved as promises, so the microtask queue is already empty by the time this function executes.
+     * - Running Tasks: Won't pre-empt a currently executing task so it can't help you there either.
+     * - Queue Precedence: If priority queue already has items, those will be executed first. Why did I make this?
+     *
+     * @param {function(DomProxy): void} fn - The function to execute with high priority.
+     * @returns {DomProxy} - The DomProxy instance, allowing for method chaining.
+     *
+     * @example
+     * $('#id').fromJSON('/api/data', (element, json) => {
+     *    element.text(json.value);
+     * }).now((element) => {
+     *   element.css('color', 'red');
+     *   element.text('Loading...');
+     * }); // Why didn't you just do this before the fromJSON call?! If that fromJSON call executes too soon, the text will be overwritten. Don't use this!
+     *
+     * @example
+     * display
+     *    .later((el) => el.css("color", "blue"))
+     *    .text("HALF A SECOND OF GLORY") // Text is black
+     *    .wait(500).text("Hello, world!") // Text is red
+     *    .now((el) => el.css("color", "red")) // This is dumb.
+     *    .wait(500).text("Goodbye, world!") // Text is blue
+     * // Seriously, don't use this!
+     */
+    now: (fn: (element: DomProxy) => void) => DomProxy
+
+    /**
+     * Schedules a function for deferred execution on the element. This will push the operation to the very end of the internal event loop. Given the predictability of each queue, `defer` has limited use cases and should be used sparingly. The whole point of JessQuery is to make things predictable, so you should just put the function at the end of the chain if you can.
      *
      * #### Example Use Cases
      * 1. **Logging**: Ensure that a log or telemetry event is recorded at the very end of a complex operation.
@@ -391,6 +424,17 @@ declare module "jessquery" {
      * $('#complexElement').modify().manipulate().animate().defer((el) => {
      *   el.reset(); // Reset to initial state after all operations.
      * });
+     *
+     * @example
+     * // Please limit the use of this method anywhere other than the end of a chain. That's confusing.
+     * // Only use it for race conditions or other edge cases.
+     * display
+     *    .defer((el) => el.css("color", "blue"))
+     *    .text("HALF A SECOND OF GLORY") // Text is black
+     *    .wait(500).text("Hello, world!") // Text is red
+     *    .css("color", "red"))
+     *    .wait(500).text("Goodbye, world!") // Text is blue
+     * // This is missing the point of JessQuery. Just put each method in sequence.
      */
     defer: (fn: (element: DomProxy) => void) => DomProxy
 
@@ -608,6 +652,9 @@ declare module "jessquery" {
    * - {@link DomProxyCollection.transition} - Animate the elements using the WAAPI
    * - {@link DomProxyCollection.wait} - Sets a timeout for the given number of milliseconds and waits for it to resolve before continuing the chain
    * - {@link DomProxyCollection.do} - Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too)
+   * - {@link DomProxyCollection.defer} - Schedules a function for deferred execution on the elements. This will push the operation to the very end of the internal event loop.
+   * - {@link DomProxyCollection.fromJSON} - Fetches a JSON resource from the provided URL and applies a transformation function which uses the fetched JSON and the proxy's target element as arguments.
+   * - {@link DomProxyCollection.fromHTML} - Fetches an HTML resource from the provided URL and inserts it into the proxy's target element.
    * - {@link DomProxyCollection.parent} - Switch to the parent of the elements in the middle of a chain
    * - {@link DomProxyCollection.ancestor} - Switch to the closest ancestor matching a selector in the middle of a chain
    * - {@link DomProxyCollection.kids} - Switch to the children of the elements in the middle of a chain
