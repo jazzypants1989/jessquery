@@ -13,26 +13,49 @@
     <script type="module">
       import { $, $$ } from "../index.js"
 
-      async function doMethodTest() {
+      // async function doMethodTest() {
+      //   const output = document.createElement("div")
+      //   document.getElementById("testContainer").appendChild(output)
+
+      //   $$(".testButton").do(async (el) => {
+      //     // throw new Error("do method test FAILED")
+      //     await new Promise((resolve, reject) => {
+      //       setTimeout(() => {
+      //         resolve()
+      //       }, 1000)
+      //     })
+
+      //     el.style.color = "green"
+      //     el.textContent = "do method test PASSED"
+
+      //     // el.css({ color: "green" }).text("do method test PASSED")
+      //   })
+      // }
+
+      // doMethodTest()
+
+      async function nowMethodTest() {
         const output = document.createElement("div")
         document.getElementById("testContainer").appendChild(output)
 
-        $$(".testButton").do(async (el) => {
-          // throw new Error("do method test FAILED")
-          await new Promise((resolve, reject) => {
-            setTimeout(() => {
-              resolve()
-            }, 1000)
-          })
-
-          el.style.color = "green"
-          el.textContent = "do method test PASSED"
-
-          // el.css({ color: "green" }).text("do method test PASSED")
-        })
+        $(".testButton")
+          .later((el) => el.css({ color: "blue" }))
+          .text("HALF A SECOND OF GLORY") // Text is black
+          .wait(500)
+          .css({ color: "red" })
+          .text("Hello, world!") // Text is red
+          .wait(500)
+          .text("Goodbye, world!") // Text is blue
       }
 
-      doMethodTest()
+      nowMethodTest()
+
+      //     el.style.color = "green"
+      //     el.textContent = "now method test PASSED"
+
+      //     // el.css({ color: "green" }).text("do method test PASSED")
+      //   })
+      // }
     </script>
   </body>
 </html>

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test fromJSON</title>
+  </head>
+  <body>
+    <div id="testDiv"></div>
+
+    <script type="module">
+      import { $, $$ } from "../index.js"
+
+      $("#testDiv").fromJSON(
+        "https://jsonplaceholder.typicode.com/todos/1",
+        (element, data) => {
+          element.text(`Title: ${data.title}`).addClass("updated")
+        },
+        {
+          fallback: "I'M A CUSTOM FALLBACK",
+          error: "I'M A CUSTOM ERROR",
+          onComplete: alert("onComplete"),
+        }
+      )
+    </script>
+
+    <style>
+      .updated {
+        border: 1px solid red;
+        padding: 10px;
+      }
+    </style>
+  </body>
+</html>

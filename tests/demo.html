@@ -44,7 +44,7 @@
 
       container
         .on("click", () => {
-          container.css("backgroundColor", randomColor())
+          container.css("backgroundColor", randomColor()) // <-- This will not execute until we get to a wait call, and only once each time as each method call on the same variable is placed into the same queue.
         })
         .first()
         .css("backgroundColor", "lightblue")
@@ -87,6 +87,59 @@
         .wait(2000)
         .css("backgroundColor", "lightblue")
         .css("color", "black")
+
+      // container
+      // .on("click", () => {
+      //   container.css("backgroundColor", randomColor()) // <-- Now, this can actually be processed appropriately.
+      // })
+      // .first()
+      // .css("backgroundColor", "lightblue")
+      // .next()
+      // .next()
+      // .css("color", "green")
+      // .prev()
+      // .prev()
+      // .css("color", "purple")
+      // .parent()
+      // .css({
+      //   backgroundColor: "lightgreen",
+      //   border: "1px solid black",
+      //   padding: "10px",
+      //   margin: "10px",
+      // })
+      // .pick("button")
+      // .css({
+      //   width: "100px",
+      //   height: "100px",
+      //   borderRadius: "50%",
+      //   border: "none",
+      //   backgroundColor: "red",
+      //   color: "white",
+      //   fontSize: "2rem",
+      //   cursor: "pointer",
+      // })
+      // .later((el) =>
+      //   el
+      //     .wait(2000)
+      //     .css("color", "black")
+      //     .parent()
+      //     .parent()
+      //     .pickAll(".truth")
+      //     .text("jQuery is forever!")
+      //     .css("textAlign", "center")
+      // )
+      // .later((el) =>
+      //   el.wait(2000).do((el) => {
+      //     el.css("color", "white")
+      //     el.css("backgroundColor", "black")
+      //   })
+      // )
+      // .later((el) =>
+      //   el
+      //     .wait(2000)
+      //     .css("backgroundColor", "lightblue")
+      //     .css("color", "black")
+      // )
 
       const inputs = $$("input") // const inputs = document.querySelectorAll("input")
 

@@ -23,16 +23,6 @@
               <input id="myFavorite" type="text" />
               <h4 class="truth">Why are you still reading this?</h4>
             </div>`)
-
-      let count = 0
-
-      const counter = $("#counter")
-
-      counter.text(count).on("click", () => {
-        count++
-        counter.text(count)
-      })
-
       const container = $(".container")
 
       const randomColor = () => {
@@ -44,7 +34,7 @@
 
       container
         .on("click", () => {
-          container.css("backgroundColor", randomColor())
+          container.css("backgroundColor", randomColor()) // <-- This will not execute until the entire chain is complete.
         })
         .first()
         .css("backgroundColor", "lightblue")
@@ -79,16 +69,8 @@
         .pickAll(".truth")
         .text("jQuery is forever!")
         .css("textAlign", "center")
-        .wait(2000)
-        .do((el) => {
-          el.css("color", "white")
-          el.css("backgroundColor", "black")
-        })
-        .wait(2000)
-        .css("backgroundColor", "lightblue")
-        .css("color", "black")
 
-      const inputs = $$("input") // const inputs = document.querySelectorAll("input")
+      const inputs = $$("input")
 
       inputs.on("input", (e) => {
         // inputs.addEventListener("input", (e) => {
@@ -97,15 +79,6 @@
           el.val(e.target.value) // el.value = e.target.value
         })
       })
-
-      $("#parentTwo")
-        .attach("<button id='truth'>Truth</button>")
-        .pick("#truth")
-        .on("click", () => {
-          $("#truth").textContent === "Truth"
-            ? $("#truth").text("Lies")
-            : $("#truth").text("Truth")
-        })
     </script>
   </body>
 </html>

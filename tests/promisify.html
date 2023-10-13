@@ -28,13 +28,17 @@
         return data.name
       }
 
-      const slowLoadingText = promisify((resolve) => {
-        setTimeout(() => {
-          if (display.textContent === "") {
-            resolve("Loading...")
-          }
-        }, 200)
-      })
+      const slowLoadingText = promisify(
+        (resolve) => {
+          setTimeout(() => {
+            if (display.textContent === "") {
+              resolve("Loading...")
+            }
+          }, 200)
+        },
+        100,
+        { you: "SUCK" }
+      )
 
       button.on("click", () => {
         display

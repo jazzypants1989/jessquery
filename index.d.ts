@@ -23,10 +23,14 @@ declare module "jessquery" {
    * - {@link DomProxy.attach} - Attaches children to the element based on the provided options.
    * - {@link DomProxy.cloneTo} - Clone of the element to a new parent element in the DOM. By default, it is appended inside the new parent element, but you change change this with the `position` option. The original element remains in its current location. If you want to move the element instead of cloning it, use {@link DomProxy.moveTo}.
    * - {@link DomProxy.moveTo} - Move the element to a new parent element in the DOM. By default, it is appended inside the new parent element, but you change change this with the `position` option. The original element is removed from its current location. The `all` option is technically available, but it will simply use the last element in the collection. This is because you can only move an element to one place at a time. If you want to clone the element instead of moving it, use {@link DomProxy.cloneTo}.
-   * - {@link DomProxy.become} - Replace the element with a new element. By default, the element is moved to the new location. To clone it instead, set the mode to 'clone'.
+   * - {@link DomProxy.become} - Replace the element with a new element. By default, the new element is permanentaly removed from its original location. To clone it instead, set the mode to 'clone'.
    * - {@link DomProxy.purge} - Remove the element from the DOM entirely
    * - {@link DomProxy.transition} - Animate the element using the WAAPI
    * - {@link DomProxy.do} - Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too)
+
+   * - {@link DomProxy.defer} - De-prioritizes a function to the very end of the current queue. This is more reliable than {@link DomProxy.now} but should still be used sparingly. The whole point of JessQuery is to make things predictable, so just put the function at the end of the chain if you can.
+   * - {@link DomProxy.fromJSON} - Fetches a JSON resource from the provided URL, applies a transformation function on it and the proxy's target element.
+   * - {@link DomProxy.fromHTML} - Fetches an HTML resource from the provided URL and inserts it into the proxy's target element.
    * - {@link DomProxy.wait} - Sets a timeout for the given number of milliseconds and waits for it to resolve before continuing the chain
    * - {@link DomProxy.next} - Switch to the nextElementSibling in the middle of a chain
    * - {@link DomProxy.prev} - Switch to the previousElementSibling in the middle of a chain
@@ -40,7 +44,7 @@ declare module "jessquery" {
    * - {@link DomProxy.siblings} - Switch to a collection of all the siblings of the element in the middle of a chain
    */
   export type DomProxy<T extends HTMLElement = HTMLElement> = T & {
-    /** Add an event listener to the element
+    /** Add an event listener to the element.
      * @param ev The event name
      * @param fn The event listener
      * @returns This {@link DomProxy}
@@ -293,18 +297,42 @@ declare module "jessquery" {
     ) => DomProxy<T>
 
     /**
-     * Replace the element(s) with new element(s). By default, the element is moved to the new location. To clone it instead, set the mode to 'clone'. Under the hood, this is a light wrapper around `replaceWith` that has the option to use `cloneNode`.
-     * @param replacements An array of elements that will replace the original elements.
-     * @param mode Specify whether the original elements should be moved or cloned to their new location.
-     * @returns This {@link DomProxy}
+     * The $$.become method replaces the collection of elements wrapped by the DomProxyCollection instance. This is an enhanced, bulk-operation version of `$.become`.
+     *
+     * #### Mode Option
+     * - `"clone"`: Each replacement element is cloned. This is useful to keep the original elements intact.
+     * - `"move"`: Elements are moved to the new location as-is.
+     *
+     * #### Match Option
+     * - `"cycle"`: When the length of `replacements` is less than the collection length, it will cycle through `replacements` to fill the rest.
+     * - `"remove"`: If a replacement for a specific element isn't provided, that element will be removed.
+     *
+     * @param {Array<HTMLElement>|DomProxy} replacements - An array of HTMLElements or a DomProxy instance to replace the current collection of elements.
+     * @param {Object} [options] - An options object to control the mode and matching strategy.
+     * @param {"move"|"clone"} [options.mode="clone"] - Determines whether the replacement elements are cloned or moved.
+     * @param {"cycle"|"remove"} [options.match="cycle"] - Matching strategy for when the elements to be replaced outnumber the replacements.
+     * @returns {DomProxyCollection} - Returns the current DomProxyCollection for chaining.
+     *
      * @example
-     * $('div').become([newElement])
-     * $('div').become([newElement], 'clone')
+     * // Replaces each button with elements from `newElements`, cycling through `newElements` if needed.
+     * $$('.buttons').become(newElements, { mode: "move", match: "cycle" })
+     *
+     * @example
+     * // Replaces each button in the collection with a deep-clone of elements from `newElements`.
+     * $$('.buttons').become(newElements, { mode: "clone" })
+     *
+     * @example
+     * // Replaces each button with elements from another DomProxy. If fewer, cycles through them.
+     * $$('.buttons').become($$('.otherButtons'))
+     *
+     * @example
+     * // Replaces each button with elements from `newElements`. If an element in the collection lacks a replacement, it is removed.
+     * $$('.buttons').become(newElements, { mode: "move", match: "remove" })
      */
     become: (
-      replacements: Array<HTMLElement>,
-      mode?: "move" | "clone"
-    ) => DomProxy<T>
+      replacements: Array<HTMLElement> | DomProxy,
+      options?: { mode?: "move" | "clone"; match?: "cycle" | "remove" }
+    ) => DomProxyCollection<T>
 
     /** Remove the element from the DOM entirely. This is a light wrapper around `remove`.
      * @returns This {@link DomProxy}
@@ -341,6 +369,86 @@ declare module "jessquery" {
      */
     do: (fn: (el: DomProxy<T>) => Promise<void>) => DomProxy<T>
 
+    /**
+     * Schedules a function for deferred execution on the element. This will push the operation to the very end of the internal event loop.
+     * - Given the predictability of each queue, `defer` has limited use cases.
+     *
+     * #### Example Use Cases
+     * 1. **Logging**: Ensure that a log or telemetry event is recorded at the very end of a complex operation.
+     * 2. **Deferred Cleanup**: Delay cleanup or restoration of the DOM state after multiple operations.
+     *
+     * @param {function(DomProxy): void} fn - The function to be deferred for later execution.
+     * @returns {DomProxy} - The DomProxy instance, allowing for method chaining.
+     *
+     * @example
+     * // Logging at the end of a complex operation
+     * $('#id').html('<p>Step 1</p>').attr('data-step', '1').defer((el) => {
+     *   el.logTelemetry('Operation Completed');
+     * });
+     *
+     * @example
+     * // Deferred cleanup after complex manipulation
+     * $('#complexElement').modify().manipulate().animate().defer((el) => {
+     *   el.reset(); // Reset to initial state after all operations.
+     * });
+     */
+    defer: (fn: (element: DomProxy) => void) => DomProxy
+
+    /**
+     * Fetches a JSON resource from the provided URL and applies a transformation function which uses the fetched JSON and the proxy's target element as arguments.
+     * @param {string} url - The URL to fetch the JSON from.
+     * @param {function} transformFunc - The function that applies transformations on the fetched JSON and the proxy's target element.
+     * @param {FetchOptions} [options={}] - Options for the fetch operation.
+     * @param {string} [options.error] - A message to display if the fetch fails.
+     * @param {string} [options.fallback] - A message to display while the fetch is in progress.
+     * @param {function} [options.onComplete] - A callback to execute when the fetch is complete.
+     *
+     * @returns This {@link DomProxy}
+     * @example
+     * $('#item').fromJSON('/api/data', (element, json) => {
+     *     element.text(json.value);
+     * });
+     * @example
+     * $('#item').fromJSON('/api/data', (element, json) => {
+     *    element.html(`<span>${json.description}</span>`);
+     * });
+     * @example
+     * $('#news-item').fromJSON('/api/news-item', (element, json) => {
+     *    { title, summary } = json;
+     *
+     *   element.html(`<h1>${title}</h1>
+     *                 <p>${summary}</p>`);
+     * },
+     * {
+     *   error: 'Failed to load news item',
+     *   fallback: 'Loading news item...'
+     *   onComplete: () => console.log('News item loaded')
+     */
+    fromJSON: (
+      url: string,
+      transformFunc: (el: DomProxy<T>, json: any) => void,
+      options?: FetchOptions
+    ) => DomProxy<T>
+
+    /**
+     * Fetches an HTML resource from the provided URL and inserts it into the proxy's target element.
+     * @param {string} url - The URL to fetch the HTML from.
+     * @param {FetchOptions} [options={}] - Options for the fetch operation.
+     * @param {string} [options.error] - A message to display if the fetch fails.
+     * @param {string} [options.fallback] - A message to display while the fetch is in progress.
+     * @param {boolean} [options.sanitize=true] - Determines if the fetched HTML should be sanitized before insertion. Defaults to true.
+     * @param {function} [options.sanitizer] - A custom sanitizer to use for sanitization. {@link https://developer.mozilla.org/en-US/docs/Web/API/Sanitizer/Sanitizer}
+     *
+     * @returns This {@link DomProxy}
+     * @example
+     * $('#template').fromHTML('/template.html');
+     * @example
+     * $('#update').fromHTML('/update.html', { fallback: 'Loading update...', error: 'Failed to load update!' });
+     * @example
+     * $('#content').fromHTML('/malicious-content.html', { sanitize: false });
+     */
+    fromHTML: (url: string, options?: FetchOptions) => DomProxy<T>
+
     /** Sets a timeout for the given number of milliseconds and waits for it to resolve before continuing the chain
      * @param ms The number of milliseconds to wait
      * @returns This {@link DomProxy}
@@ -349,7 +457,9 @@ declare module "jessquery" {
      */
     wait: (ms: number) => DomProxy<T>
 
-    /** Switch to the nextElementSibling in the middle of a chain
+    /** Switch to the nextElementSibling in the middle of a chain.
+     *
+     * This will throw an error if the proxy was created as "fixed" (with a second argument of true).
      * @returns A new {@link DomProxy} from the next element
      * @example
      * $('button')
@@ -361,7 +471,9 @@ declare module "jessquery" {
      */
     next: () => DomProxy<T>
 
-    /** Switch to the previousElementSibling in the middle of a chain
+    /** Switch to the previousElementSibling in the middle of a chain.
+     *
+     * This will throw an error if the proxy was created as "fixed" (with a second argument of true).
      * @returns A new {@link DomProxy} from the previous element
      * @example
      * $('button')
@@ -373,7 +485,9 @@ declare module "jessquery" {
      */
     prev: () => DomProxy<T>
 
-    /** Switch to the firstChild of the element in the middle of a chain
+    /** Switch to the firstChild of the element in the middle of a chain.
+     *
+     * This will throw an error if the proxy was created as "fixed" (with a second argument of true).
      * @returns A new {@link DomProxy} from the firstChild element
      * @example
      * $('container')
@@ -383,7 +497,9 @@ declare module "jessquery" {
      */
     first: () => DomProxy<T>
 
-    /** Switch to the lastChild of the element in the middle of a chain
+    /** Switch to the lastChild of the element in the middle of a chain.
+     *
+     * This will throw an error if the proxy was created as "fixed" (with a second argument of true).
      * @returns A new {@link DomProxy} from the lastChild element
      * @example
      * $('container')
@@ -393,7 +509,9 @@ declare module "jessquery" {
      */
     last: () => DomProxy<T>
 
-    /** Switch to the parentElement in the middle of a chain
+    /** Switch to the parentElement in the middle of a chain.
+     *
+     * This will throw an error if the proxy was created as "fixed" (with a second argument of true).
      * @returns A new {@link DomProxy} from the parent element
      * @example
      * $('button')
@@ -406,29 +524,14 @@ declare module "jessquery" {
     parent: () => DomProxy<T>
 
     /** Switch to the closest ancestor matching a selector in the middle of a chain. Uses the native `closest` method.
+     *
+     * This will throw an error if the proxy was created as "fixed" (with a second argument of true).
      * @param ancestorSelector The ancestor selector
      * @returns A new {@link DomProxy} from the ancestor element
      * @example
      * $('.buttons').ancestor('.container')
      */
     ancestor: (ancestorSelector: string) => DomProxy<T>
-
-    /** Switch to the first element that matches a selector in the middle of a chain
-     * @param subSelector The sub-selector
-     * @returns A new {@link DomProxy} created from the first element matching the sub-selector
-     * @example
-     * $('.container').pick('.buttons')
-     * // Switches to the first element with the class 'buttons' inside the container
-     */
-    pick: (subSelector: string) => DomProxy<T>
-
-    /** Switch to a collection of all of the descendants of the element that match a selector in the middle of a chain
-     * @param subSelector The sub-selector
-     * @returns A new {@link DomProxyCollection} created from the descendants matching the sub-selector
-     * @example
-     * $('.container').pick('.buttons')
-     */
-    pickAll: (subSelector: string) => DomProxyCollection<T>
 
     /** Switch to the children of the element in the middle of a chain
      * @returns A new {@link DomProxyCollection} created from the children of the element
@@ -453,6 +556,27 @@ declare module "jessquery" {
      * // The button itself will remain red
      */
     siblings: () => DomProxyCollection<T>
+
+    /** Switch to the first descendant matching a selector in the middle of a chain.
+     *
+     * This will throw an error if the proxy was created as "fixed" (with a second argument of true).
+     * @param subSelector The sub-selector
+     * @returns A new {@link DomProxy} created from the first element matching the sub-selector
+     * @example
+     * $('.container').pick('.buttons')
+     * // Switches to the first element with the class 'buttons' inside the container
+     */
+    pick: (subSelector: string) => DomProxy<T>
+
+    /** Switch to a collection of all of the descendants of the element that match a selector in the middle of a chain.
+     *
+     * This will throw an error if the proxy was created as "fixed" (with a second argument of true).
+     * @param subSelector The sub-selector
+     * @returns A new {@link DomProxyCollection} created from the descendants matching the sub-selector
+     * @example
+     * $('.container').pick('.buttons')
+     */
+    pickAll: (subSelector: string) => DomProxyCollection<T>
   }
 
   /**
@@ -757,18 +881,44 @@ declare module "jessquery" {
     ) => DomProxyCollection<T>
 
     /**
-     * Replace the elements with different elements from elsewhere in the DOM. The new elements will be moved from their original location by default. To clone them instead, set the mode to 'clone'. Under the hood, this is a light wrapper around `replaceWith` that has the option to use `cloneNode`.
-     * @param replacements An array of elements that will replace the original elements.
-     * @param mode Specify whether the original elements should be moved or cloned to their new location.
-     * @returns This {@link DomProxyCollection}
+     * The become method is used to replace a single element with a different element from elsewhere in the DOM.
+     *
+     * Under the hood, it utilizes the native `replaceWith` method but adds extra layers of functionality. The replacement can be a simple HTMLElement, an array of HTMLElements, or another DomProxy instance.
+     *
+     * - **Mode**:
+     *
+     * - *clone* (default) - This makes a copy of the replacement element to use for the DomProxy. This clone includes the element, its attributes, and all its child nodes, but does not include event listeners. The original element is left untouched.
+     *
+     * - *move* - This moves the replacement element to the original element's position. The original element is removed from the DOM. This is the same as calling `replaceWith` directly.
+     *
+     * - **Match**: The `options.match` parameter mainly influences behavior when used with $$, but its default value is 'cycle'. For a single `$` operation, this is mostly irrelevant.
+     *
+     * @param {HTMLElement|Array<HTMLElement>|DomProxy} replacements - Element(s) or DomProxy that will replace the current element.
+     * @param {Object} [options] - Replacement options.
+     * @param {"move"|"clone"} [options.mode="clone"] - Decides if the new element replaces the existing element as-is ('move') or as a deep clone ('clone').
+     * @param {"cycle"|"remove"} [options.match="cycle"] - Determines how multiple replacements are handled. Mostly relevant for $$ operations.
+     * @returns {DomProxy} - A DomProxy instance that wraps the new element(s), enabling chainable methods.
+     *
      * @example
-     * $$('.buttons').become([newElements])
-     * $$('.buttons').become([newElements], 'clone')
+     * // Replaces div with newElement, literally moving it to the original div's position.
+     * $('div').become(newElement, {mode: "move"})
+     *
+     * @example
+     * // Replaces div with a deep clone of newElement, leaving the original newElement untouched.
+     * $('div').become(newElement, {mode: "clone"})
+     *
+     * @example
+     * // Takes another DomProxy as the replacement. The first element of the DomProxy is chosen for the replacement.
+     * $('#button').become($$('.otherButtons'))
+     *
+     * @example
+     * // Replaces the div with newElement. If newElement is null, the div is removed due to the 'remove' match setting.
+     * $('div').become(newElement || null, {mode: "move", match: "remove"})
      */
     become: (
-      replacements: Array<HTMLElement>,
-      mode?: "move" | "clone"
-    ) => DomProxyCollection<T>
+      replacements: HTMLElement | Array<HTMLElement> | DomProxy,
+      options?: { mode?: "move" | "clone"; match?: "cycle" | "remove" }
+    ) => DomProxy<T>
 
     /** Remove the elements from the DOM
      * @returns This {@link DomProxyCollection}
@@ -805,6 +955,66 @@ declare module "jessquery" {
      */
     do: (fn: (el: DomProxy) => Promise<void> | void) => DomProxyCollection<T>
 
+    /**
+     * Fetches a JSON resource from the provided URL, applies a transformation function on it and the proxy's target elements.
+     * @param {string} url - The URL to fetch the JSON from.
+     * @param {function} transformFunc - The function that applies transformations on the fetched JSON and each of the proxy's target elements.
+     * @param {FetchOptions} [options={}] - Options for the fetch operation.
+     * @param {string} [options.error] - A message to display if the fetch fails.
+     * @param {string} [options.fallback] - A message to display while the fetch is in progress.
+     * @param {function} [options.onComplete] - A callback to execute when the fetch is complete.
+     *
+     * @returns This {@link DomProxyCollection}
+     * @example
+     * $$('.items').fromJSON('/api/data', (element, json) => {
+     *     element.text(json.value);
+     * });
+     * @example
+     * $$('.items').fromJSON('/api/data', (element, json) => {
+     *    const {author, quote} = json;
+     *
+     *    element.html(`<p>${quote}</p>
+     *      <footer>${author}</footer>`);
+     * });
+     * @example
+     * $$('.news').fromJSON('/api/news', (element, json) => {
+     *   const {title, description, url} = json;
+     *
+     *  element.html(`<h2>${title}</h2>
+     *   <p>${description}</p>
+     *  <a href="${url}">Read more</a>`);
+     *  },
+     *  {
+     *   fallback: 'Loading the article...',
+     *   error: 'Failed to load the article.'
+     *   onComplete: () => console.log('Article loaded.')
+     * });
+     */
+    fromJSON: (
+      url: string,
+      transformFunc: (el: DomProxyCollection<T>, json: any) => void,
+      options?: FetchOptions
+    ) => DomProxyCollection<T>
+
+    /**
+     * Fetches an HTML resource from the provided URL and inserts it into the proxy's target elements.
+     * @param {string} url - The URL to fetch the HTML from.
+     * @param {FetchOptions} [options={}] - Options for the fetch operation.
+     * @param {string} [options.error] - A message to display if the fetch fails.
+     * @param {string} [options.fallback] - A message to display while the fetch is in progress.
+     * @param {boolean} [options.sanitize=true] - Determines if the fetched HTML should be sanitized before insertion. Defaults to true.
+     * @param {function} [options.sanitizer] - A custom sanitizer to use for sanitization. {@link https://developer.mozilla.org/en-US/docs/Web/API/Sanitizer/Sanitizer}
+     *
+     * @returns This {@link DomProxyCollection}
+     * @example
+     * $$('.template').fromHTML('/template.html');
+     * @example
+     * $$('.updates').fromHTML('/updates.html', { fallback: 'Checking for updates...', error: 'Failed to check for updates!' });
+     * @example
+     * $$('.content').fromHTML('/malicious-content.html', { sanitize: false });
+     */
+    fromHTML: (url: string, options?: FetchOptions) => DomProxyCollection<T>
+
     /** Await a timeout before continuing the chain
      * @param ms The number of milliseconds to wait
      * @returns This {@link DomProxyCollection}
@@ -813,7 +1023,9 @@ declare module "jessquery" {
      */
     wait: (ms: number) => DomProxyCollection<T>
 
-    /** Switch to the parents of the elements in the middle of a chain
+    /** Switch to the parents of the elements in the middle of a chain.
+     *
+     * This will throw an error if the proxy was created as "fixed" (with a second argument of true).
      * @returns The parent DomProxyCollection
      * @example
      * $$('.buttons')
@@ -826,6 +1038,8 @@ declare module "jessquery" {
     parents: () => DomProxyCollection<T>
 
     /** Switch to the closest ancestor matching a selector in the middle of a chain. Uses the native `closest` method.
+     *
+     * This will throw an error if the proxy was created as "fixed" (with a second argument of true).
      * @param ancestorSelector The ancestor selector
      * @returns This {@link DomProxyCollection}
      * @example
@@ -833,23 +1047,9 @@ declare module "jessquery" {
      */
     ancestor: (ancestorSelector: string) => DomProxyCollection<T>
 
-    /** Switch to the first descendants of the elements that match a selector in the middle of a chain
-     * @param subSelector The sub-selector
-     * @returns This {@link DomProxyCollection}
-     * @example
-     * $$('.container').pick('.buttons')
-     */
-    pick: (subSelector: string) => DomProxyCollection<T>
-
-    /** Switch to a collection of all of the descendants of the elements that match a selector in the middle of a chain
-     * @param subSelector The sub-selector
-     * @returns This {@link DomProxyCollection}
-     * @example
-     * $$('.container').pickAll('.buttons')
-     */
-    pickAll: (subSelector: string) => DomProxyCollection<T>
-
-    /** Switch to the children of the elements in the middle of a chain
+    /** Switch to the children of the elements in the middle of a chain.
+     *
+     * This will throw an error if the proxy was created as "fixed" (with a second argument of true).
      * @returns The child DomProxyCollection
      * @example
      * $$('.container')
@@ -861,7 +1061,9 @@ declare module "jessquery" {
      */
     kids: () => DomProxyCollection<T>
 
-    /** Switch to the siblings of the elements in the middle of a chain
+    /** Switch to the siblings of the elements in the middle of a chain.
+     *
+     * This will throw an error if the proxy was created as "fixed" (with a second argument of true).
      * @returns The sibling DomProxyCollection
      * @example
      * $$('.buttons')
@@ -872,14 +1074,38 @@ declare module "jessquery" {
      * // The buttons themselves will remain red
      */
     siblings: () => DomProxyCollection<T>
+
+    /** Switch to the first descendants of the elements that match a selector in the middle of a chain.
+     *
+     * This will throw an error if the proxy was created as "fixed" (with a second argument of true).
+     * @param subSelector The sub-selector
+     * @returns This {@link DomProxyCollection}
+     * @example
+     * $$('.container').pick('.buttons')
+     */
+    pick: (subSelector: string) => DomProxyCollection<T>
+
+    /** Switch to a collection of all of the descendants of the elements that match a selector in the middle of a chain
+     *
+     * This will throw an error if the proxy was created as "fixed" (with a second argument of true).
+     * @param subSelector The sub-selector
+     * @returns This {@link DomProxyCollection}
+     * @example
+     * $$('.container').pickAll('.buttons')
+     */
+    pickAll: (subSelector: string) => DomProxyCollection<T>
   }
 
-  /** Finds the first element in the DOM that matches a CSS selector and returns it with some extra, useful methods.
+  /**
+   * Finds the first element in the DOM that matches a CSS selector and returns it with some extra, useful methods.
    *
    * These methods can be chained together to create a sequence of actions that will be executed in order (including asynchronous tasks).
    *
+   * If the 'fixed' parameter is set to true, the proxy reference is fixed and cannot be switched to target another DOM element.
+   *
    * Every method returns a {@link DomProxy} or {@link DomProxyCollection} object, which can be used to continue the chain.
    * @param {string} selector - The CSS selector to match
+   * @param {boolean} [fixed=false] - Determines if the proxy reference should be fixed. Defaults to false.
    * @returns A {@link DomProxy} object representing the first element in the DOM that matches the selector
    * @example
    * $('button')
@@ -888,16 +1114,37 @@ declare module "jessquery" {
    *    .wait(1000)
    *    .css('color', 'lightblue')
    *    .text('Click me!')
+   *    .parent()
+   *     // This will switch the proxy to the parent of the button
+   *    .css('color', 'red')
+   *     // All good! The parent will turn red and the button will remain light blue
+   *
+   * @example
+   * $('button', true)
+   *   .on('click', () => console.log('Clicked!'))
+   *   .css('color', 'purple')
+   *   .parent()
+   *   // This will throw an error because the proxy is fixed
    */
-  export function $<S extends string>(selector: S): DomProxy<ElementForTag<S>>
-  export function $<T extends HTMLElement>(selector: string): DomProxy<T>
+  export function $<S extends string>(
+    selector: S,
+    fixed?: boolean
+  ): DomProxy<ElementForTag<S>>
+  export function $<T extends HTMLElement>(
+    selector: string,
+    fixed?: boolean
+  ): DomProxy<T>
 
-  /** Finds all elements in the DOM that match a CSS selector and returns them with some extra, useful methods.
+  /**
+   * Finds all elements in the DOM that match a CSS selector and returns them with some extra, useful methods.
    *
    * These methods can be chained together to create a sequence of actions that will be executed in order (including asynchronous tasks).
    *
+   * If the 'fixed' parameter is set to true, the proxy reference is fixed and cannot be switched to target another set of DOM elements.
+   *
    * Every method returns a {@link DomProxy} or {@link DomProxyCollection} object, which can be used to continue the chain.
    * @param {string} selector - The CSS selector to match
+   * @param {boolean} [fixed=false] - Determines if the proxy reference should be fixed. Defaults to false.
    * @returns A {@link DomProxyCollection} object representing all elements in the DOM that match the selector
    * @example
    * $$('.buttons')
@@ -906,43 +1153,80 @@ declare module "jessquery" {
    *   .wait(1000)
    *   .css('color', 'lightblue')
    *   .text('Click me!')
+   *   .parent()
+   *   // This will switch the proxy to the parent of the buttons
+   *   .css('color', 'red')
+   *   // All good! The parent will turn red and the buttons will remain light blue
+   *
+   * @example
+   * $$('.buttons', true)
+   *  .on('click', () => console.log('Clicked!'))
+   *  .css('color', 'purple')
+   *  .parent()
+   *  // This will throw an error because the proxy is fixed
    */
   export function $$<S extends string>(
-    selector: S
+    selector: S,
+    fixed?: boolean
   ): DomProxyCollection<ElementForTag<S>>
   export function $$<T extends HTMLElement>(
-    selector: string
+    selector: string,
+    fixed?: boolean
   ): DomProxyCollection<T>
 
-  /** Sets an error handler that will be called when an error occurs somewhere in JessQuery. The default behavior is to simply log it to the console. You can override this behavior with this method to do something else (or nothing... no judgement here! 😉)
-   * @param {function} handler - The error handler
+  /**
+   * Defines a custom error handler for JessQuery, replacing the default behavior of simply logging errors to the console. The handler can perform any custom logic or side-effects needed.
+   *
+   * The error handler receives two arguments:
+   * - `error`: The Error object thrown or rejected.
+   * - `context`: An object containing contextual information, such as function name, arguments, or any other metadata associated with the error. This is particularly useful for debugging and diagnostic purposes.
+   *
+   * By setting a custom error handler, you replace the default behavior. The custom handler will be executed for every error or rejected promise occurring within JessQuery. The default behavior is to log the error and its context to the console. You can modify this to any behavior, including but not limited to displaying alerts, sending error reports, or suppressing the errors entirely.
+   *
+   * @param {(error: Error, context: object) => void} handler - The custom error handler function.
+   *
    * @example
-   * setErrorHandler((err) => alert(err.message))
-   * // Now, you'll get an annoying alert every time an error occurs like a good little developer.
-   * // The error will not be thrown or logged to the console.
+   * // Basic usage
+   * setErrorHandler((err, context) => {
+   *   alert(err.message);
+   *   console.log(`Error context: ${JSON.stringify(context)}`);
+   * });
+   * // Now, an alert displays whenever an error occurs, along with logging the error context.
+   * // This will replace the default behavior of merely logging the error to the console.
+   *
+   * @example
+   * // Advanced usage: Sending error reports
+   * setErrorHandler((err, context) => {
+   *   // Send the error and context to an error reporting service
+   *   errorReportingService.send({error: err, context: context});
+   * });
+   * // Error and context details will be sent to an external error reporting service, aiding in debugging.
+   *
+   * @example
+   * // Suppressing errors
+   * setErrorHandler(() => {
+   *   // Do nothing, effectively suppressing all errors.
+   * });
+   * // Errors occurring within JessQuery will be swallowed, showing neither logs nor alerts.
    */
-  export function setErrorHandler(handler: (err: Error) => void): void
+  export function setErrorHandler(
+    handler: (error: Error, context: object) => void
+  ): void
 
   /**
-   * Converts any function that uses callbacks into a function that returns a promise, allowing easy integration into DomProxy chains. This is particularly useful for things like setTimeout, setInterval, and any older APIs that use callbacks.
+   * Transforms any function into one that returns a Promise, enabling easy integration into DomProxy chains. This is particularly useful for things like setTimeout, setInterval, or older APIs that are callback-based. It works just like returning a promise normally, but there are a few conveniences built in:
    *
-   * This works just like building a normal promise: call the resolve function when the function is successful, and call the reject function when it fails.
-   * If the function does not call either resolve or reject within the specified timeout, the promise will automatically reject.
-   * If you call the resolve function, the promise will resolve with the value you pass into it.
-   * If you call the reject function, the promise will reject with the value you pass into it.
+   * - All promise rejections are automatically caught and directed through the default error handler, which can be customized.
+   * - If neither resolve or reject are called within a specified timeout, the promise resolves automatically with no value. This prevents the chain from hanging indefinitely when you simply forget to meet a condition. Remember-- you can always reject the promise at any time.
+   * - A `meta` object can be optionally passed to add additional metadata for debugging or error handling. The `meta` object is fully extensible. Any extra fields you add will be accessible in the default error handler, making it highly flexible for diagnostic purposes.
    *
-   * Every promise that rejects or error found inside of a promisified function will get routed through the default error handler (which you can set with the {@link setErrorHandler} function).
+   * Usage in a chain allows you to feed its values into a DomProxy method like `text()` or `html()`, or use it within the {@link DomProxy.do} method to execute logic on the element or elements.
    *
-   * To use this function in the middle of a chain, you can use it to provide values to one of the DomProxy methods like text() or html().
+   * @param {(...args: any[]) => any} fn - The function to be promisified. Must call either the `resolve` or `reject` function.
+   * @param {number} [timeout=5000] - The amount of time in milliseconds to wait before resolving the promise automatically. Defaults to 5000 (5 seconds).
+   * @param {object} [meta={}] - Metadata for debugging and error-handling. Can include any key-value pairs. Custom fields will be available in the default error handler.
    *
-   * OR
-   *
-   * You can use the {@link DomProxy.do} method to execute the function and use the result on the element or elements represented by the DomProxy or DomProxyCollection.
-   *
-   * @param {(...args: any[]) => any} fn - The function you wish to promisify. This function must call one of either the resolve or reject functions passed into it.
-   * @param {number} [timeout=2000] - Amount of time (in milliseconds) to wait before automatically rejecting the promise due to inaction.
-   *
-   * @returns {(...args: any[]) => Promise<any>} - Returns a new function that when called, returns a promise.
+   * @returns {(...args: any[]) => Promise<any>} - Returns a new function that, when invoked, returns a Promise.
    *
    * @example
    * const fetchApiData = promisify((resolve, reject) => {
@@ -953,7 +1237,10 @@ declare module "jessquery" {
    *   xhr.send();
    * });
    *
-   * setErrorHandler((err) => $("#display").text(err.message));
+   * setErrorHandler((err, meta) => {
+   *   $("#display").text(err.message);
+   *   console.log(`Metadata: ${JSON.stringify(meta)}`);
+   * });
    *
    * button.on("click", () => {
    *   display
@@ -965,18 +1252,50 @@ declare module "jessquery" {
    *     });
    * });
    *
-   * // Alternatively, pass the promisified function directly into another method.
-   * button.on("click", async () => {
+   * @example
+   * // Alternative example: Passing the promisified function directly to another method.
+   * button.on("click", () => {
    *   display
    *     .text("I betcha don't even know what XHR is!")
    *     .wait(1000)
    *     .text(fetchApiData());
    * });
+   *
+   * @example
+   * // Demonstrating timeout and metadata
+   * const onlyWarnIfLoadIsSlow = promisify(
+   *   (resolve, reject) => {
+   *     const textContent = display.textContent;
+   *     if (textContent === "Loading..." || "") {
+   *            resolve("Sorry for the delay!");
+   *          }
+   *   },
+   *   500,
+   *   {
+   *     fnName: "onlyWarnIfLoadIsSlow",
+   *     fnArgs: ["arg1", "arg2"],
+   *     customDebugInfo: "Additional custom information"
+   *   }
+   * );
+   *
+   * // Customizing error handler to make use of metadata
+   * setErrorHandler((err, meta) => {
+   *   console.error(`Error: ${err.message}, Function: ${meta.fnName}, Args: ${meta.fnArgs}, Custom Info: ${meta.customDebugInfo}`);
+   * });
    */
   export function promisify(
     fn: (...args: any[]) => void,
-    timeout?: number
+    timeout?: number,
+    meta?: { [key: string]: any }
   ): (...args: any[]) => Promise<any>
+
+  interface FetchOptions extends RequestInit {
+    fallback?: string
+    onComplete?: () => void
+    error?: string
+    sanitize?: boolean
+    sanitizer?: Function
+  }
 
   type ChildInput = string | HTMLElement | DomProxy | ChildInput[]
 

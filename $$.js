@@ -1,7 +1,7 @@
 import { defaultErrorHandler, giveContext } from "./errors.js"
-import { addMethods } from "./methods.js"
+import { addMethods } from "./addMethods.js"
 
-export function $$(selector) {
+export function $$(selector, fixed = false) {
   const elements =
     typeof selector === "string"
       ? Array.from(document.querySelectorAll(selector))
@@ -15,6 +15,6 @@ export function $$(selector) {
     return null
   }
 
-  const proxy = addMethods("$$", selector, elements)
+  const proxy = addMethods("$$", selector, elements, fixed)
   return proxy
 }

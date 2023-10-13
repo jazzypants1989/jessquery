@@ -9,14 +9,14 @@ Rekindle your love for method chaining-- now in a lightweight, type-safe package
 | Library   | Size before gzip | Size after gzip |
 | --------- | ---------------- | --------------- |
 | jQuery    | 88.3kb           | 31.7kb          |
-| jessquery | 5.27kb           | 2.07kb          |
+| jessquery | 6.03kb           | 2.36kb          |
 
-![It's only 2.07kb! I swear! This badge proves it.](https://deno.bundlejs.com/badge?q=jessquery%402.1.2&treeshake=%5B*%5D)
+![It's only 2.36kb! I swear! This badge proves it.](https://deno.bundlejs.com/badge?q=jessquery%402.1.2&treeshake=%5B*%5D)
 
 ## Usage
 
 ```javascript
-import { $, $$, promisify, setErrorHandler } from "jessquery"
+import { $, $$, promisify, setErrorHandler, prioritize } from "jessquery"
 
 // Use $ to select a single element.
 const display = $(".display")
@@ -73,6 +73,7 @@ const oneSecond = { duration: 1000 } // WAAPI options
 
 buttons
   .addClass("btn")
+  .wait(1000)
   .text(
     "These buttons will animate in 2 seconds. They will fade in and out twice then disappear."
   )
@@ -82,6 +83,16 @@ buttons
   .transition(fadeIn, oneSecond)
   .transition(fadeOut, oneSecond)
   .purge()
+
+// You can even prioritize certain functions to run first! (please don't abuse this)
+prioritize(() => {
+  buttons.text("This function will run first!")
+})
+
+// OR last
+defer(() => {
+  buttons.text("This function will run last!")
+})
 ```
 
 ## Installation
@@ -104,20 +115,24 @@ Or, since it's so small, you can just use a CDN like the good, old days. The big
 
 ## The Rules
 
-1. Use `$` to operate on a single element
-2. Use `$$` for operating on multiple elements at once.
-3. All custom methods can be chained together.
-4. _ALL_ DOM API's can be used, but they **MUST COME LAST** in the chain. You can always start a new chain if you need to.
-5. _ALL_ `jessquery` methods are setters that return the proxy. If you need to check the value of something, just use the DOM API directly.
-6. All chains are begun in the order they are found in the script, but they await any microtasks or promises found before continuing.
-7. Synchronous tasks are always executed immediately unless they are preceded by an async task. In that case, they will be added to the queue and executed in order.
-8. Each chain gets its own queue but they are all executed concurrently, so you can have multiple chains operating on the same element at the same time.
+1. Use `$` to build a queue that operates on a single element. However, if you use a method like `pickAll` or `kids`, you will switch to a `DomProxyCollection` with multiple elements unless that proxy was created with a `fixed` argument set to `true`.
+2. Use `$$` to build a queue that operates on multiple elements at once. However, if you use a method like `pick` or `parent` and there is only one element in the collection, you will switch to a `DomProxy` with a single element unless that proxy was created with a `fixed` argument set to `true`.
+3. Every `DomProxy` is mutable unless it was created with a `fixed` argument set to `true`. If you store it in a variable and you change the element with a method like `next` or `siblings`, any event handlers using that use that variable for DOM manipulation will now operate on the new element. It's easy to forget this, but also super easy to fix. See the [demo](#demo-and-key-concepts) for an example and some tips to avoid frustration.
+4. All `jessquery` custom methods can be chained together.
+5. _ALL_ `jessquery` custom methods are **setters** that return the proxy. If you need to check the value of something, just use the DOM API directly.
+6. _ALL_ DOM API's can be used, but they **MUST COME LAST** in the chain. You can always start a new chain if you need to. You can even use the same variable-- you just need to know that function won't be executed until the previous chain finishes or hits a microtask.
+7. All chains are begun in the order they are found in the script, but they await any microtasks or promises found before continuing.
+8. Synchronous tasks are always executed immediately unless there are any promises in their arguments or they are preceded by an async task. In that case, they will be added to the queue and executed in order.
+9. Each chain gets its own queue which calls each function sequentially. However, the chains are executed concurrently if any promises are found, so you can have multiple chains operating on the same element at the same time.
+10. Event handlers are always given special priority and moved to the front of the queue. This way, even if you have a full minute of animations lined up, the user can still interact with the element and expect the event to fire immediately.
 
 Generally, just try to keep all your DOM operations for a single element together in a single chain. This isn't always possible, but you can usually separate them into discrete units of work. If anything gets hard, just use the `wait` method to let the DOM catch up while you re-evaluate your life choices. 😅
 
 ## Demo and Key Concepts
 
-Here's a [Stackblitz Playground](https://stackblitz.com/edit/jessquery?file=main.js) if you want to try it out. It works slightly differently from jQuery, but it makes sense once you understand the rules. It's a bit more like [PrototypeJS](http://prototypejs.org/doc/latest/dom/dollar-dollar/) mixed with the async flow of something like [RxJS](https://rxjs.dev/guide/overview).
+Here's a [Stackblitz Playground](https://stackblitz.com/edit/jessquery?file=main.js) if you want to try it out. The demo that will load in has an extremely long chain showing the mutability that a standard `DomProxy` exhibits. To see how an error is thrown when that proxy is `fixed` in place, simply add a `true` argument to the `$` call like this: `const container = $(".container", true)`.
+
+`jessquery` works slightly differently from jQuery, but it makes sense once you understand the rules. The concurrent chaining makes things a bit more complex, and understanding that each `$` or `$$` call is representative of a single queue is the main key. It's a bit like [PrototypeJS](http://prototypejs.org/doc/latest/dom/dollar-dollar/) mixed with the async flow of something like [RxJS](https://rxjs.dev/guide/overview).
 
 The magic sauce here is that everything is a [proxy](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy), so you can still use the full DOM API if your use case isn't covered by one of the methods. So, if you forget about the `.css` operator and use `.style` instead when using `$`, it will just work. The NodeList that you get from `$$` is automatically turned into an array so you can use array methods on it like `.map` or `.filter`.
 

@@ -13,10 +13,7 @@
 
       // Setting a custom error handler to demonstrate the captured errors
       setErrorHandler((error, context) => {
-        document.body.insertAdjacentHTML(
-          "beforeend",
-          `<p>Error in context ${context}: ${error.message}</p>`
-        )
+        document.body.innerHTML += `<p style="color: red;">${error.message}, ${context}</p>`
       })
 
       // Test adding a class to an element that doesn't exist

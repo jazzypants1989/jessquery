@@ -8,10 +8,12 @@
   <body>
     <div id="testContainer"></div>
     <div id="originalElement">Original Element</div>
+    <div class="two">Two</div>
+    <div class="two">Two</div>
     <div id="parent">Parent</div>
 
     <script type="module">
-      import { $ } from "../index.js"
+      import { $, $$ } from "../index.js"
 
       function simpleTest() {
         const output = document.createElement("div")
@@ -20,16 +22,29 @@
         const el = $("#originalElement")
         el.cloneTo("#parent")
 
-        const clonedElements = document.querySelectorAll(
+        const two = $$("div.two")
+        two.cloneTo("#parent")
+
+        const clonedElementsOne = document.querySelectorAll(
           "#parent #originalElement"
         )
 
-        if (clonedElements.length === 1) {
+        if (clonedElementsOne.length === 1) {
           output.style.color = "green"
-          output.textContent = "cloneTo test PASSED"
+          output.textContent += "cloneTo test ONE PASSED"
         } else {
           output.style.color = "red"
-          output.textContent = "cloneTo test FAILED"
+          output.textContent += "cloneTo test ONE FAILED"
+        }
+
+        const clonedElementsTwo = document.querySelectorAll("#parent div.two")
+
+        if (clonedElementsTwo.length === 2) {
+          output.style.color = "green"
+          output.textContent += "cloneTo test TWO PASSED"
+        } else {
+          output.style.color = "red"
+          output.textContent += "cloneTo test TWO FAILED"
         }
       }
 

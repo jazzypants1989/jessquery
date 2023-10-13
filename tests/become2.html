@@ -15,14 +15,21 @@
     <script type="module">
       import { $, $$ } from "../index.js"
 
+      // Assume your $ and $$ functions return { raw: DOMElement }
+      // And the become function looks similar to the previous version
+
       function becomeMultiElementTest() {
         const output = document.createElement("div")
         document.getElementById("testContainer").appendChild(output)
 
-        const toBeReplacedEls = $$(".toBeReplaced")
-        toBeReplacedEls.become($$(".replacementElement"), {
-          mode: "move",
-        }) // Diagnostic 1
+        const toBeReplacedEls = $$("div.toBeReplaced")
+        const replacementEls = $$("div.replacementElement")
+
+        // Validate that your $$ function is returning what you expect
+        console.log("toBeReplacedEls:", toBeReplacedEls) // Should be an array-like of { raw: DOMElement }
+        console.log("replacementEls:", replacementEls) // Should be an array-like of { raw: DOMElement }
+
+        toBeReplacedEls.become(replacementEls, { mode: "move" })
 
         const replacedElements = document.querySelectorAll(
           ".replacementElement"
@@ -40,7 +47,8 @@
         }
       }
 
-      becomeMultiElementTest()
+      // Add an event listener to ensure the DOM is fully loaded before running the code.
+      document.addEventListener("DOMContentLoaded", becomeMultiElementTest)
     </script>
   </body>
 </html>
