@@ -1,7 +1,5 @@
 import { defaultErrorHandler } from "./errors.js"
 
-const isThenable = (value) => value && typeof value.then === "function"
-
 export function createQueue() {
   const priorityQueue = []
   const mainQueue = []
@@ -61,6 +59,8 @@ export function createQueue() {
 }
 
 export function createApplyFunc(addToQueue, proxy) {
+  const isThenable = (value) => value && typeof value.then === "function"
+
   return function applyFunc(fn, context) {
     return (...args) => {
       addToQueue(async () => {

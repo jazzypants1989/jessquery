@@ -13,6 +13,8 @@
     <hr />
     <span class="spans"></span>
     <script type="module">
+      import { $, $$ } from "../index.js"
+
       const fadeIn = { opacity: 1 }
       const fadeOut = { opacity: 0 }
       const oneSecond = 1000
@@ -34,20 +36,20 @@
         .transition(fadeOut, oneSecond)
         .purge()
       // // Use $ to select a single element.
-      // const display = $(".display")
+      const display = $(".display")
       // const button = $("#button")
 
       // // Use $$ to select multiple elements.
       // const spans = $$(".spans")
 
-      // display
-      //   .defer((el) => el.css("color", "blue"))
-      //   .text("HALF A SECOND OF GLORY") // Text is black
-      //   .wait(500)
-      //   .text("Hello, world!") // Text is red
-      //   .css("color", "red") // Both are synchronous, so it doesn't matter which order you put them in.
-      //   .wait(500)
-      //   .text("Goodbye, world!") // Text is blue
+      display
+        .defer((el) => el.css("color", "blue"))
+        .text("HALF A SECOND OF GLORY") // Text is black
+        .wait(500)
+        .text("Hello, world!") // Text is red
+        .css("color", "red") // Both are synchronous, so it doesn't matter which order you put them in.
+        .wait(500)
+        .text("Goodbye, world!") // Text is blue
 
       // // These elements are now wrapped in a proxy with extra methods.
       // // They each have an internal queue that always executes in order.

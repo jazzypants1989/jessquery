@@ -417,39 +417,33 @@ declare module "jessquery" {
      *
      * Usually, everything will happen in sequence anyways. Given the predictability of each queue, `defer` has limited use cases and should be used sparingly. The whole point of JessQuery is to make things predictable, so you should just put the function at the end of the chain if you can.
      *
-     * #### Example Use Cases
-     * 1. **Logging**: Ensure that a log or telemetry event is recorded at the very end of a complex operation. This shouldn't be necessary. `do` will almost always work just fine.
-     * 2. **Deferred Cleanup**: Delay cleanup or restoration of the DOM state after multiple operations. Again, just put the cleanup at the end of the chain and it will usually happen after everything else. But... this is here if you need it.
+     * The only problem is if you set up an event listener using the same variable that has lots of queued behavior-- especially calls to the `wait` method. Just wrap the `wait` call and everything after it in `defer` to ensure that event handlers don't get stuck behind these in the queue.
      *
      * Honestly, I'm not sure if this even makes much sense. I just spent a bunch of time building a crazy queue system, and I feel like I need to expose it. If you have any ideas for how to make this more useful, please open an issue or PR.
      *
-     * @param {function(DomProxy): void} fn - The function to be deferred for later execution. It will be passed the DomProxy instance as an argument.
+     * @param {function(DomProxyCollection): void} fn - The function to be deferred for later execution. It will be passed the DomProxyCollection instance as an argument.
      * @returns {DomProxy} - The DomProxy instance, allowing for method chaining.
      *
      * @example
-     * // Logging Example
-     * $('#id')
-     *    .html('<p>Step 1</p>')
-     *    .data('step', '1')
-     *    .do((el) => {
-     *        el.text(somethingComplex());
+     * button
+     *     .on('click', () => {
+     *        button.text('Clicked!'); // This will be delayed for the first second
      *    })
-     *    .defer((el) => {
-     *       console.log('Operation complete!');
-     *    });
+     *     .wait(1000)
+     *     .text('Click me!')
      *
-     * @example
-     * // Deferred Cleanup Example
-     * $('#id')
-     *   .html('<p>Step 1</p>')
-     *   .data('step', '1')
-     *   .do((el) => {
-     *      el.text(somethingComplex());
-     * })
-     *   .defer((el) => {
-     *      el.html('<p>Step 2</p>'
-     *        .data('step', '2');
-     * });
+     * button
+     *    .on('click', () => {
+     *       button.text('Clicked!'); // This will happen immediately
+     *   })
+     *   .defer((el) => el.wait(1000).text('Click me!'))
+     *
+     * // Take note that this is only an issue if you're using the same variable for both the event handler and the queued behavior.
+     * button
+     *   .on('click', () => {
+     *     $('button').text('Clicked!'); // No problem here. This gets its own queue.
+     *  })
+     *   .wait(1000)
      *
      * @example
      * // Please limit the use of this method anywhere other than the end of a chain. That's confusing.
@@ -1046,9 +1040,7 @@ declare module "jessquery" {
      *
      * Usually, everything will happen in sequence anyways. Given the predictability of each queue, `defer` has limited use cases and should be used sparingly. The whole point of JessQuery is to make things predictable, so you should just put the function at the end of the chain if you can.
      *
-     * #### Example Use Cases Suggested by ChatGPT
-     * 1. **Logging**: Ensure that a log or telemetry event is recorded at the very end of a complex operation. This shouldn't be necessary. `do` will almost always work just fine.
-     * 2. **Deferred Cleanup**: Delay cleanup or restoration of the DOM state after multiple operations. Again, just put the cleanup at the end of the chain and it will usually happen after everything else. But... this is here if you need it.
+     * The only problem is if you set up an event listener using a variable that has lots of queued behavior-- especially calls to the `wait` method. Just wrap the `wait` call and everything after it in `defer` to ensure that event handlers don't get stuck behind these in the queue.
      *
      * Honestly, I'm not sure if this even makes much sense. I just spent a bunch of time building a crazy queue system, and I feel like I need to expose it. If you have any ideas for how to make this more useful, please open an issue or PR.
      *
@@ -1056,29 +1048,18 @@ declare module "jessquery" {
      * @returns {DomProxy} - The DomProxy instance, allowing for method chaining.
      *
      * @example
-     * // Logging Example
-     * $('#id')
-     *    .html('<p>Step 1</p>')
-     *    .data('step', '1')
-     *    .do((el) => {
-     *        el.text(somethingComplex());
-     *    })
-     *    .defer((el) => {
-     *       console.log('Operation complete!');
-     *    });
+     * $$('.buttons')
+     *  .on('click', () => buttons.text('Clicked!'))
+     *  .wait(1000) // The event handler will be stuck behind this for 1 second
      *
-     * @example
-     * // Deferred Cleanup Example
-     * $('#id')
-     *   .html('<p>Step 1</p>')
-     *   .data('step', '1')
-     *   .do((el) => {
-     *      el.text(somethingComplex());
-     * })
-     *   .defer((el) => {
-     *      el.html('<p>Step 2</p>'
-     *        .data('step', '2');
-     * });
+     * $$('.buttons')
+     * .on('click', () => buttons.text('Clicked!'))
+     * .defer(() => buttons.wait(1000)) // The event handler will be executed immediately
+     *
+     * // Take note that this is only an issue if you're using the same variable for both the event handler and the queued behavior.
+     * $$('button')
+     * .on('click', () => $$('.buttons').text('Clicked!'))
+     * .wait(1000) // This is fine because the event handler is not sharing a queue with the `wait` call
      *
      * @example
      * // Please limit the use of this method anywhere other than the end of a chain. That's confusing.

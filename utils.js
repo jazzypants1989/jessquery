@@ -132,7 +132,7 @@ export function wrappedFetch(url, options, type, toOneOrMany) {
     })
     .finally(() => {
       if (options.onComplete) {
-        options.onComplete()
+        requestIdleCallback(options.onComplete)
       }
     })
 }
@@ -157,13 +157,13 @@ export function modifyDOM(parent, children, options) {
 }
 
 export function getDOMElement(item, sanitize = true, all = false) {
-  return typeof item === "string" && item.trim().startsWith("<") // If it's an HTML string
-    ? createDOMFromString(item, sanitize) // Create an element from it
-    : item instanceof HTMLElement // If it's already an element
-    ? item // Just return it
-    : all // So, if it isn't an element or an HTML string, check if the all flag is true
-    ? Array.from(document.querySelectorAll(item)) // All is true? - see if you can make an array of elements that match a selector
-    : document.querySelector(item) // All is false? - Return the first element that matches the selector (or null)
+  return typeof item === "string" && item.trim().startsWith("<")
+    ? createDOMFromString(item, sanitize)
+    : item instanceof HTMLElement
+    ? item
+    : all
+    ? Array.from(document.querySelectorAll(item))
+    : document.querySelector(item)
 }
 
 export function createDOMFromString(htmlString, sanitize = true) {

@@ -34,19 +34,19 @@
       const display = $("#display")
       const button = $("#button")
 
-      //   button.on("click", async () => {
-      //     display.wait(500).text("about to use XHR").text(fetchApiData())
-      //   })
-
       button.on("click", async () => {
-        display
-          .wait(500)
-          .text("about to use XHR")
-          .do(async (el) => {
-            const data = await fetchApiData()
-            el.text(data)
-          })
+        display.text("about to use XHR").wait(500).text(fetchApiData())
       })
+
+      // button.on("click", async () => {
+      //   display
+      //     .text("about to use XHR")
+      //     .wait(500)
+      //     .do(async (el) => {
+      //       const data = await fetchApiData()
+      //       el.text(data)
+      //     })
+      // })
     </script>
   </body>
 </html>

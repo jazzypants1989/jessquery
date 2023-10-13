@@ -2,16 +2,16 @@
 
 `jessquery` is a lightweight wrapper around the DOM API that offers the intuitive elegance of jQuery, but streamlined for the modern web.
 
-Feel like a 🦕 for still using jQuery? Wish that it didn't use up so much of your bundle size like a 🐖? Want something a little more 🆕✨?
+Feel like a 🦕 for still using jQuery? Wish that it didn't bloat up your bundle size like a 🐖? Want something 🆕 and ✨?
 
 Rekindle your love for method chaining-- now in a lightweight, type-safe package! `jessquery` helps you seamlessly handle asynchronous tasks, customize error behaviors, and ensure your DOM operations always execute in order. And, the best part? 🏎️💨
 
 | Library   | Size before gzip | Size after gzip |
 | --------- | ---------------- | --------------- |
 | jQuery    | 88.3kb           | 31.7kb          |
-| jessquery | 6.03kb           | 2.36kb          |
+| jessquery | 7.28kb           | 2.88kb          |
 
-![It's only 2.36kb! I swear! This badge proves it.](https://deno.bundlejs.com/badge?q=jessquery%402.1.2&treeshake=%5B*%5D)
+![It's only 2.88kb! I swear! This badge proves it.](https://deno.bundlejs.com/badge?q=jessquery%402.1.2&treeshake=%5B*%5D)
 
 ## Basic Usage
 
@@ -22,14 +22,16 @@ Rekindle your love for method chaining-- now in a lightweight, type-safe package
 const fadeIn = [{ opacity: 0 }, { opacity: 1 }] // WAAPI keyframes
 const fadeOut = [{ opacity: 1 }, { opacity: 0 }] // WAAPI keyframes
 const oneSecond = { duration: 1000 } // WAAPI options
+const animatedText = $$(".animated-text") // $$ ≈ querySelectorAll, use $ for querySelector
 
-buttons
-  .addClass("btn")
-  .wait(1000)
-  .attach(
+animatedText
+  .addClass("special")
+  .wait(1000) // Will not appear for one second
+  .toggle("hidden")
+  .text(
     `<p>
-      "These buttons will animate in 2 seconds. They will fade in and out twice
-      then disappear."
+      In two seconds, every element matching the 'animated-text' class
+      will fade in and out twice then disappear.
     </p>`
   )
   .wait(2000)
@@ -37,7 +39,7 @@ buttons
   .transition(fadeOut, oneSecond)
   .transition(fadeIn, oneSecond)
   .transition(fadeOut, oneSecond)
-  .purge()
+  .purge() // All `.animated-text` elements will be removed from the DOM
 ```
 
 ## Installation
@@ -60,32 +62,34 @@ Or, since it's so small, you can just use a CDN like the good, old days. The big
 
 ## The Rules
 
-1. Use `$` to build a queue that operates on a single element. However, if you use a method like `pickAll` or `kids`, you will switch to a `DomProxyCollection` with multiple elements unless that proxy was created with a `fixed` argument set to `true`.
-2. Use `$$` to build a queue that operates on multiple elements at once. However, if you use a method like `pick` or `parent` and there is only one element in the collection, you will switch to a `DomProxy` with a single element unless that proxy was created with a `fixed` argument set to `true`.
-3. Every `DomProxy` is mutable unless it was created with a `fixed` argument set to `true`. If you store it in a variable and you change the element with a method like `next` or `siblings`, any event handlers using that use that variable for DOM manipulation will now operate on the new element. It's easy to forget this, but also super easy to fix. See the [demo](#demo-and-key-concepts) for an example and some tips to avoid frustration.
-4. All `jessquery` custom methods can be chained together.
-5. _ALL_ `jessquery` custom methods are **setters** that return the proxy. If you need to check the value of something, just use the DOM API directly.
-6. _ALL_ DOM API's can be used, but they **MUST COME LAST** in the chain. You can always start a new chain if you need to. You can even use the same variable-- you just need to know that function won't be executed until the previous chain finishes or hits a microtask.
-7. All chains are begun in the order they are found in the script, but they await any microtasks or promises found before continuing.
-8. Synchronous tasks are always executed immediately unless there are any promises in their arguments or they are preceded by an async task. In that case, they will be added to the queue and executed in order.
-9. Each chain gets its own queue which calls each function sequentially. However, the chains are executed concurrently if any promises are found, so you can have multiple chains operating on the same element at the same time.
-10. Event handlers are always given special priority and moved to the front of the queue. This way, even if you have a full minute of animations lined up, the user can still interact with the element and expect the event to fire immediately.
+I wrote a lot, but the main idea is that everything should be predictable. You probably only need to read the bold parts unless you start doing a lot of crazy DOM manipulation that operates on multiple elements at once while using the same variables for everything. If you're just doing simple stuff, you can probably just ignore the rest. 👌
 
-Generally, just try to keep all your DOM operations for a single element together in a single chain. This isn't always possible, but you can usually separate them into discrete units of work. If anything gets hard, just use the `wait` method to let the DOM catch up while you re-evaluate your life choices. 😅
+1. **Use `$()` to build a queue that operates on a single element-- a DomProxy**. However, if you use a method like `pickAll` or `kids`, you will switch to a `DomProxyCollection` with multiple elements.
+2. **Use `$$()` to build a queue that operates on multiple elements at once-- a DomProxyCollection**. However, if you use a method like `pick` or `parent` and there is only one element in the collection, you will switch to a `DomProxy` with a single element.
+3. **Every `DomProxy` is mutable unless it was created with a `fixed` argument set to `true`**. If you store it in a variable and you change the element with a method like `next` or `siblings`, any event handlers that use that variable for DOM manipulation will now operate on the new element.
+4. _ALL_ `jessquery` custom methods can be chained together. Each method will operate on the element(s) held in the proxy at the time the function is called. If you switch context multiple times, it can get confusing. **Try to only switch "element context" once per variable**. If you do not want your proxy to be mutable, you can use the `fixed` argument like this: `const container = $(".container", true)`. This will throw an error if you try to change the element with a method like `next` or `siblings`. The "element context" is now `fixed` in place.
+5. **_ALL_ `jessquery` custom methods are setters that return the proxy**. If you need to check the value of something, just use the DOM API directly (`textContent` instead of `text()`, for example). This also helps to differentiate between set and get operations.
+6. **_ALL_ DOM API's can be used, but they MUST COME LAST within a single chain**. You can always start a new chain if you need to. You can even use the same variable-- you just need to know that function won't be executed until the previous chain finishes or hits a microtask.
+7. All chains are begun in the order they are found in the script, but they await any microtasks or promises found before continuing. If you need to do things concurrently, **just make a new variable so you get a new queue**.
+8. **Each variable tied to a single `$` or `$$` call gets its own queue which runs every function sequentially**. However, remember that the chains are executed concurrently if any promises are found, so you can have multiple chains operating on the same element at the same time if you're not careful.
+9. **Synchronous tasks are always executed as soon as possible, but not until their turn is reached in the queue.** If they are preceded by an async task, they will be added to the queue and executed in order. If there are any promises in their arguments, those will be awaited before the function is called.
+10. Event handlers are always given special priority and moved to the front of the queue. This way, even if you have a full minute of animations lined up, the user can still interact with the element and expect the event to fire immediately. However, **each method is blocking, so if you use the same variable for event handlers, you will block the event handler from firing until the chain is finished**.
+
+Generally, just try to keep each discrete chain of DOM operations for a single element together, and try to use a new variable for any event handlers. I mean, the whole point of this library is that `$()` and `$$()` are really easy to type, and you only need to worry about it when things aren't behaving the way you expect. If anything gets too hard, you can also use the `defer` and `wait` methods to let the DOM catch up while you re-evaluate your life choices. 😅
 
 ## Demo and Key Concepts
 
-Here's a [Stackblitz Playground](https://stackblitz.com/edit/jessquery?file=main.js) if you want to try it out. The demo that will load in has an extremely long chain showing the mutability that a standard `DomProxy` exhibits. To see how an error is thrown when that proxy is `fixed` in place, simply add a `true` argument to the `$` call like this: `const container = $(".container", true)`.
-
-`jessquery` works slightly differently from jQuery, but it makes sense once you understand the rules. The concurrent chaining makes things a bit more complex, and understanding that each `$` or `$$` call is representative of a single queue is the main key. It's a bit like [PrototypeJS](http://prototypejs.org/doc/latest/dom/dollar-dollar/) mixed with the async flow of something like [RxJS](https://rxjs.dev/guide/overview).
+`jessquery` works slightly differently from jQuery, but it makes sense once you understand the rules. The concurrent chaining makes things a bit more complex. The key is understanding that each `$` or `$$` call is representative of a single queue-- not necessarily the elements that are being manipulated. It's a bit like [PrototypeJS](http://prototypejs.org/doc/latest/dom/dollar-dollar/) mixed with the async flow of something like [RxJS](https://rxjs.dev/guide/overview).
 
 The magic sauce here is that everything is a [proxy](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy), so you can still use the full DOM API if your use case isn't covered by one of the methods. So, if you forget about the `.css` operator and use `.style` instead when using `$`, it will just work. The NodeList that you get from `$$` is automatically turned into an array so you can use array methods on it like `.map` or `.filter`.
 
 This is the benefit of using proxies, but I'm curious if this will scale well as they bring a tiny bit of overhead. This might get problematic in large applications, but I'm probably just being paranoid. I welcome anyone to do some tests! 😅
 
+Here's a [Stackblitz Playground](https://stackblitz.com/edit/jessquery?file=main.js) if you want to try it out. The demo that will load in has an extremely long chain showing the mutability that a standard `DomProxy` exhibits. To see how an error is thrown when that proxy is `fixed` in place, simply add a `true` argument to the `$` call like this: `const container = $(".container", true)`.
+
 ## TypeScript
 
-Everything is fully type-safe, but there's no way for the `$` and `$$` functions to infer the type of the element you're selecting unless it's a tag name. Things like `$$('input')` will always be fully inferred even if you map over the individual elements in the collection-- in that case, each element would automatically become an `HTMLInputElement`. However, if you select a class or id, the type will always be `HTMLElement` unless you specify the type yourself like this:
+Everything is fully type-safe, but there's no way for the `$()` and `$$()` functions to infer the type of the element you're selecting unless it's a tag name. Things like `$$('input')` will always be fully inferred even if you map over the individual elements in the collection-- in that case, each element would automatically become an `HTMLInputElement`. However, if you select a class or id, the type will always be `HTMLElement` unless you specify the type yourself like this:
 
 ```typescript
 const button = $<HTMLButtonElement>(".button")
@@ -100,10 +104,9 @@ import { $, $$, promisify, setErrorHandler, prioritize } from "jessquery"
 
 // Use $ to select a single element.
 const display = $(".display")
-const button = $("#button")
 
 // Use $$ to select multiple elements.
-const buttons = $$(".buttons")
+const dynamicSpans = $$(".dynamic-spans")
 
 // These elements are now wrapped in a proxy with extra methods.
 // They each have an internal queue that always executes in order.
@@ -132,7 +135,7 @@ const onlyWarnIfLoadIsSlow = promisify((resolve) => {
 })
 
 // The default error handler catches all errors and promise rejections
-// All we do is log it to the console, but you can use setErrorHandler to override this.
+// It simply logs using console.error, but you can use setErrorHandler to override this.
 setErrorHandler((err) => {
   sendErrorToAnalytics(err)
 })
@@ -148,6 +151,33 @@ button.on("click", () => {
 
 // There's also internal `fromJSON` and `fromHTML` methods which automatically handle fetching and parsing.
 // I just wanted to show off the `promisify` method and how you don't have to await anything.
+// These functions expand fetch to include a fallback message, an error message, and a callback.
+const fetchOptions = {
+  error: "Failed to load data",
+  fallback: "Loading...",
+  onComplete: () => dynamicSpans.attach("<h6>Data Loaded!</h6>"),
+  // This will reflect the DOM AFTER the fetch is done.
+  headers: {
+    "Cool-Header": "Cool-Value",
+    // the full range of fetch options (requestInit) are still supported.
+  },
+}
+
+// You can nest things as deep as you want (if you like making things confusing).
+dynamicSpans.fromJSON(
+  "https://jessepence.com/api/cool-json",
+  (el, json) => {
+    el.html(
+      `<h2>${json.name}</h2>
+       <p>${json.bio}</p>
+    `
+    )
+      .wait(5000)
+      .fromHTML("/api/cool-html", fetchOptions)
+      .attach("<h2>Enough about me, check out this cool HTML!</h2>")
+  },
+  fetchOptions
+)
 ```
 
 ## Interfaces
@@ -242,9 +272,12 @@ button.on("click", () => {
 ### $()
 
 - **$(selector: string): DomProxy**
+
   - Finds the first element in the DOM that matches a CSS selector and returns it with some extra, useful methods.
   - These methods can be chained together to create a sequence of actions that will be executed in order (including asynchronous tasks).
   - Every method returns a DomProxy or DomProxyCollection object, which can be used to continue the chain.
+  - All DOM API's can still be used, but they _MUST COME LAST_ within a single chain.
+
   - Example:
 
 ```javascript
@@ -253,7 +286,8 @@ $("#button")
   .css("color", "purple")
   .wait(1000)
   .css("color", "lightblue")
-  .text("Click me!")
+  .text("Click me!").style.backgroundColor = "lightGreen" // This will work, but only because it's the last thing in the chain.
+// It's also important to note that the style method call is not queued, so it will happen before everything else.
 ```
 
 ### $$()
@@ -263,6 +297,7 @@ $("#button")
   - Finds all elements in the DOM that match a CSS selector and returns them with some extra, useful methods
   - These methods can be chained together to create a sequence of actions that will be executed in order (including asynchronous tasks).
   - Every method returns a DomProxy or DomProxyCollection object, which can be used to continue the chain.
+  - All DOM API's can still be used, but they _MUST COME LAST_ within a single chain.
 
   - Example:
 
@@ -272,12 +307,13 @@ $$(".buttons")
   .css("color", "purple")
   .wait(1000)
   .css("color", "lightblue")
-  .text("Click me!")
+  .text("Click me!").style.backgroundColor = "lightGreen" // This will work, but only because it's the last thing in the chain.
+// It's also important to note that the style method call is not queued, so it will happen before everything else.
 ```
 
 ### DomProxy
 
-A proxy covering a single HTML element that allows you to chain methods sequentially (including asynchronous tasks) and then execute them all at once.
+A proxy covering a single HTML element that allows you to chain methods sequentially (including asynchronous tasks) and then execute them one after the other. It includes **38** of these custom methods, but you can still use the full DOM API if you need to.
 
 #### DomProxy Methods
 
@@ -589,26 +625,33 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
 
   - Usually, everything will happen in sequence anyways. Given the predictability of each queue, `defer` has limited use cases and should be used sparingly. The whole point of JessQuery is to make things predictable, so you should just put the function at the end of the chain if you can.
 
-  - Example Use Cases:
+  - Schedules a function for deferred execution on the element. This will push the operation to the very end of the internal event loop.
 
-    1. **Logging**: Ensure that a log or telemetry event is recorded at the very end of a complex operation. This shouldn't be necessary. `do` will almost always work just fine.
+  - Usually, everything will happen in sequence anyways. Given the predictability of each queue, defer has limited use cases and should be used sparingly. The whole point of JessQuery is to make things predictable, so you should just put the function at the end of the chain if you can.
 
-    2. **Deferred Cleanup**: Delay cleanup or restoration of the DOM state after multiple operations. Again, just put the cleanup at the end of the chain, and it will usually happen after everything else. But... this is here if you need it.
+  - The only problem is if you set up an event listener using the same variable that has lots of queued behavior-- especially calls to the wait method. Just wrap the wait call and everything after it in defer to ensure that event handlers don't get stuck behind these in the queue.
+
+  - `defer` will capture the element at the time of the call, so this should not be mixed with context switching methods like `parent` or `pickAll`.
 
   - Honestly, I'm not sure if this even makes much sense. I just spent a bunch of time building a crazy queue system, and I feel like I need to expose it. If you have any ideas for how to make this more useful, please open an issue or PR.
 
   - Example:
 
   ```javascript
-  $("#id")
-    .html("<p>Step 1</p>")
-    .data("step", "1")
-    .do((el) => {
-      el.text(somethingComplex())
-    })
-    .defer((el) => {
-      console.log("Operation complete!")
-    })
+  const button = $("button")
+
+  button
+    .text("this won't do anything for a second because of the wait call")
+    .on("click", () => button.text("clicked"))
+    .wait(1000)
+
+  //but if we wrap the wait call in defer, the events will not be queued behind it
+  button
+    .text("this will be immediately responsive due to the defer call")
+    .defer((el) => el.wait(1000).text("Yay!"))
+
+  // THIS ONLY OCCURS BECAUSE THE SAME VARIABLE IS USED FOR THE EVENT LISTENER AND THE CHAIN
+  $("button").on("click", () => $("button").text("clicked").wait(1000)) // NO PROBLEM HERE
   ```
 
 ##### DomProxy.transition
@@ -708,7 +751,7 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
 
 ### DomProxyCollection
 
-A proxy covering a collection of HTML elements that allows you to chain methods sequentially (including asynchronous tasks) and then execute them all at once.
+A proxy covering a collection of HTML elements that allows you to chain methods sequentially (including asynchronous tasks) and then execute them one after the other. It includes **38** of these custom methods, but you can still use the full DOM API if you need to.
 
 #### DomProxyCollection Methods
 
@@ -998,26 +1041,29 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 
   - Usually, everything will happen in sequence anyways. Given the predictability of each queue, `defer` has limited use cases and should be used sparingly. The whole point of JessQuery is to make things predictable, so you should just put the function at the end of the chain if you can.
 
-  - Example Use Cases:
+  - This only becomes a problem if you set up an event listener using the same variable that has lots of queued behavior-- especially calls to the wait method. Just wrap the wait call and everything after it in defer to ensure that event handlers don't get stuck behind these in the queue.
 
-    1. **Logging**: Ensure that a log or telemetry event is recorded at the very end of a complex operation. This shouldn't be necessary. `do` will almost always work just fine.
-
-    2. **Deferred Cleanup**: Delay cleanup or restoration of the DOM state after multiple operations. Again, just put the cleanup at the end of the chain, and it will usually happen after everything else. But... this is here if you need it.
+  - `defer` will capture the elements at the time of the call, so this should not be mixed with context switching methods like `parent` or `pickAll`.
 
   - Honestly, I'm not sure if this even makes much sense. I just spent a bunch of time building a crazy queue system, and I feel like I need to expose it. If you have any ideas for how to make this more useful, please open an issue or PR.
 
   - Example:
 
   ```javascript
-  $$(".item")
-    .html("<p>Step 1</p>")
-    .data("step", "1")
-    .do((el) => {
-      el.text(somethingComplex())
-    })
-    .defer((el) => {
-      console.log("Operation complete!")
-    })
+  const buttons = $$(".buttons")
+
+  buttons
+    .text("this won't do anything for a second because of the wait call")
+    .on("click", () => buttons.text("clicked"))
+    .wait(1000)
+
+  //but if we wrap the wait call in defer, the events will not be queued behind it
+  buttons
+    .text("this will be immediately responsive due to the defer call")
+    .defer((el) => el.wait(1000).text("Yay!"))
+
+  // THIS ONLY OCCURS BECAUSE THE SAME VARIABLE IS USED FOR THE EVENT LISTENER AND THE CHAIN
+  $$(".buttons").on("click", () => $$(".buttons").text("clicked").wait(1000)) // NO PROBLEM HERE
   ```
 
 ##### DomProxyCollection.transition

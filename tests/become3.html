@@ -8,7 +8,7 @@
   <body>
     <div id="testContainer"></div>
 
-    <div id="cycleMatchTest">
+    <div id="cycle">
       <h2>Cycle Match Test:</h2>
       <div class="toBeReplaced">To Be Replaced 1</div>
       <div class="toBeReplaced">To Be Replaced 2</div>
@@ -17,8 +17,8 @@
       <div class="replacementElement">Replacement Element 2</div>
     </div>
 
-    <div id="ignoreMatchTest">
-      <h2>Ignore Match Test:</h2>
+    <div id="remove">
+      <h2>Remove Match Test:</h2>
       <div class="toBeReplaced">To Be Replaced 1</div>
       <div class="toBeReplaced">To Be Replaced 2</div>
       <div class="toBeReplaced">To Be Replaced 3</div>
@@ -29,78 +29,57 @@
       // Import your $ and $$ functions that return { raw: DOMElement }
       import { $, $$ } from "../index.js"
 
-      // Define the become method
-      function become(
-        elements,
-        replacements,
-        options = { mode: "clone", match: "cycle" }
-      ) {
-        // Your become method implementation here
-      }
-
       function runTests() {
         const output = document.createElement("div")
         document.getElementById("testContainer").appendChild(output)
 
+        const toBeReplacedElsCycle = $$("#cycle .toBeReplaced")
+        const replacementElsCycle = $$("#cycle .replacementElement")
+        const toBeReplacedElsRemove = $$("#remove .toBeReplaced")
+        const replacementElsRemove = $$("#remove .replacementElement")
+
+        // toBeReplacedElsCycle.become(replacementElsCycle, {
+        //   mode: "move",
+        //   match: "cycle",
+        // })
+
+        // toBeReplacedElsRemove.become(replacementElsRemove, {
+        //   mode: "move",
+        //   match: "remove",
+        // })
+
         // Cycle Match Test
-        const cycleMatchOutput = document.createElement("div")
-        document.getElementById("cycleMatchTest").appendChild(cycleMatchOutput)
-
-        const toBeReplacedElsCycle = $$("div.toBeReplaced")
-        const replacementElsCycle = $$("div.replacementElement")
-
         toBeReplacedElsCycle.become(replacementElsCycle, {
-          mode: "move",
+          mode: "clone",
           match: "cycle",
         })
 
-        const replacedElementsCycle = document.querySelectorAll(
-          ".replacementElement"
-        )
-
         if (
-          replacedElementsCycle.length === 3 &&
-          !document.querySelectorAll(".toBeReplaced").length
+          document.querySelectorAll("#cycle .replacementElement").length === 5
         ) {
-          cycleMatchOutput.style.color = "green"
-          cycleMatchOutput.textContent = "Cycle Match Test PASSED"
+          output.innerHTML += `<p>Cycle Match Test: <span style="color: green;">Passed</span></p>`
         } else {
-          cycleMatchOutput.style.color = "red"
-          cycleMatchOutput.textContent = "Cycle Match Test FAILED"
+          console.log(replacementElsCycle.length)
+          output.innerHTML += `<p>Cycle Match Test: <span style="color: red;">Failed</span></p>`
         }
 
-        // Ignore Match Test
-        const ignoreMatchOutput = document.createElement("div")
-        document
-          .getElementById("ignoreMatchTest")
-          .appendChild(ignoreMatchOutput)
-
-        const toBeReplacedElsIgnore = $$("div.toBeReplaced")
-        const replacementElsIgnore = $$("div.replacementElement")
-
-        toBeReplacedElsIgnore.become(replacementElsIgnore, {
-          mode: "move",
-          match: "ignore",
+        // Remove Match Test
+        toBeReplacedElsRemove.become(replacementElsRemove, {
+          mode: "clone",
+          match: "remove",
         })
 
-        const replacedElementsIgnore = document.querySelectorAll(
-          ".replacementElement"
-        )
-
         if (
-          replacedElementsIgnore.length === 1 &&
-          !document.querySelectorAll(".toBeReplaced").length
+          document.querySelectorAll("#remove .replacementElement").length === 2
         ) {
-          ignoreMatchOutput.style.color = "green"
-          ignoreMatchOutput.textContent = "Ignore Match Test PASSED"
+          output.innerHTML += `<p>Remove Match Test: <span style="color: green;">Passed</span></p>`
         } else {
-          ignoreMatchOutput.style.color = "red"
-          ignoreMatchOutput.textContent = "Ignore Match Test FAILED"
+          console.log(replacementElsRemove)
+          output.innerHTML += `<p>Remove Match Test: <span style="color: red;">Failed</span></p>`
         }
       }
 
-      // Add an event listener to ensure the DOM is fully loaded before running the tests.
-      document.addEventListener("DOMContentLoaded", runTests)
+      runTests()
     </script>
   </body>
 </html>
