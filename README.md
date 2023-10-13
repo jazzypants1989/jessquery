@@ -14,6 +14,14 @@ Rekindle your love for method chaining-- now in a lightweight, type-safe package
 ![It's only 2.89kb! I swear! This badge proves it.](https://deno.bundlejs.com/badge?q=jessquery@2.2.1)
 [![npm version](https://badge.fury.io/js/jessquery.svg)](https://badge.fury.io/js/jessquery)
 
+- [Basic Usage](#basic-usage)
+- [Installation](#installation)
+- [The Rules](#the-rules)
+- [Demo and Key Concepts](#demo-and-key-concepts)
+- [TypeScript](#typescript)
+- [Advanced Usage](#advanced-usage)
+- [Contributing](#contributing)
+
 ## Basic Usage
 
 ```javascript
