@@ -37,7 +37,7 @@ buttons
   .transition(fadeOut, oneSecond)
   .transition(fadeIn, oneSecond)
   .transition(fadeOut, oneSecond)
-  .purge() // or .remove(). At the end of the chain, you can use any DOM API method.
+  .purge()
 ```
 
 ## Installation
