@@ -419,9 +419,11 @@ declare module "jessquery" {
      *
      * The only problem is if you set up an event listener using the same variable that has lots of queued behavior-- especially calls to the `wait` method. Just wrap the `wait` call and everything after it in `defer` to ensure that event handlers don't get stuck behind these in the queue.
      *
+     * This captures the collection's state at the time of the call, so it should not be mixed with context-sensitive methods like `next`, `prev`, `first`, `last`, `parent`, `ancestor`, `pick`, `pickAll`, `kids`, or `siblings`.
+     *
      * Honestly, I'm not sure if this even makes much sense. I just spent a bunch of time building a crazy queue system, and I feel like I need to expose it. If you have any ideas for how to make this more useful, please open an issue or PR.
      *
-     * @param {function(DomProxyCollection): void} fn - The function to be deferred for later execution. It will be passed the DomProxyCollection instance as an argument.
+     * @param {function(DomProxy): void} fn - The function to be deferred for later execution. It will be passed the DomProxy instance as an argument.
      * @returns {DomProxy} - The DomProxy instance, allowing for method chaining.
      *
      * @example
@@ -459,6 +461,46 @@ declare module "jessquery" {
     defer: (fn: (element: DomProxy) => void) => DomProxy
 
     /** Animate the element using the WAAPI. The queue will wait for the animation to complete before continuing.
+     *
+     *  - Returns the proxy so that you can continue chaining methods. If you need to return the animation object, just use the `animate` method directly.
+     *  - Remember, this method is blocking, so watch out for any event handlers using the same variable.
+     *
+     * **Keyframes**:
+     *
+     * The keyframes can be specified in a few different ways:
+     *
+     * - *Array* - An array of objects (keyframes) consisting of properties and values to iterate over. This is the canonical format returned by the `getKeyframes()` method. Each keyframe is an object containing the CSS properties and values to animate. The first keyframe is the "from" keyframe, and the last keyframe is the "to" keyframe. The number of keyframes is arbitrary.
+     *
+     * Example:
+     *
+     * ```js
+     * $('button').animate([
+     *  { opacity: 0, color: '#fff' },
+     * { opacity: 1, color: '#000' }
+     * ], 2000)
+     * ```
+     * - *Object* - An object containing the CSS properties and values to animate. The keys are the CSS properties, and the values are the CSS values. The object is treated as a single keyframe. The key is the property to animate, and the value is an array of values to iterate over. The number of elements in each array does not need to be equal. The provided values will be spaced out independently.
+     *
+     * Example:
+     *
+     * ```js
+     * $('button').animate({
+     * opacity: [0, 1], // [ from, to ]
+     * color: ['#fff', '#000'] // [ from, to ]
+     * }, 2000)
+     * ```
+     * **Options**:
+     *
+     * Either an integer representing the animation's duration (in milliseconds), or an Object containing one or more timing properties described in the `KeyframeEffect()` options parameter and/or the following options:
+     *
+     * - *Number* - The duration of the animation in milliseconds.
+     * - *Object* - An object containing the animation options. The options are the same as the options for the `KeyframeEffect` constructor.
+     *
+     *    - *id* - A string with which to reference the animation.
+     *    - *rangeStart* - Specifies the start of an animation's attachment range along its timeline, i.e. where along the timeline an animation will start. The JavaScript equivalent of the CSS `animation-range-start` property. `rangeStart` can take the same value types as `rangeEnd`.
+     *    - *rangeEnd* - Specifies the end of an animation's attachment range along its timeline, i.e. where along the timeline an animation will end. The JavaScript equivalent of the CSS `animation-range-end` property.
+     *    - *timeline* - The `AnimationTimeline` to associate with the animation. Defaults to `Document.timeline`. The JavaScript equivalent of the CSS `animation-timeline` property.
+     *
      * @param keyframes The keyframes to animate
      * @param options The animation options
      * @returns This {@link DomProxy}
@@ -908,6 +950,7 @@ declare module "jessquery" {
      * @example
      * $$('.buttons').moveTo('.target', { position: 'prepend' })
      * // Moves and prepends to .target as first child
+     * @see https://stackoverflow.com/questions/14846506/append-prepend-after-and-before
      */
     moveTo: (
       parentSelector: string,
@@ -1042,10 +1085,12 @@ declare module "jessquery" {
      *
      * The only problem is if you set up an event listener using a variable that has lots of queued behavior-- especially calls to the `wait` method. Just wrap the `wait` call and everything after it in `defer` to ensure that event handlers don't get stuck behind these in the queue.
      *
+     * This will capture the state of the DomProxyCollection BEFORE THE CHAIN and pass it to the function, so this should not be mixed with context switching methods like `next` or `pick`.
+     *
      * Honestly, I'm not sure if this even makes much sense. I just spent a bunch of time building a crazy queue system, and I feel like I need to expose it. If you have any ideas for how to make this more useful, please open an issue or PR.
      *
-     * @param {function(DomProxy): void} fn - The function to be deferred for later execution. It will be passed the DomProxy instance as an argument.
-     * @returns {DomProxy} - The DomProxy instance, allowing for method chaining.
+     * @param {function(DomProxyCollection): void} fn - The function to be deferred for later execution. It will be passed the DomProxy instance as an argument.
+     * @returns {DomProxyCollection} - The DomProxyCollection instance, allowing for method chaining.
      *
      * @example
      * $$('.buttons')
@@ -1075,6 +1120,45 @@ declare module "jessquery" {
     defer: (fn: (el: DomProxyCollection) => void) => DomProxyCollection<T>
 
     /** Animate the elements using the WAAPI
+     *  - Returns the proxy so you can continue chaining. If you need to return the animation object, use the `animate` method instead.
+     *  - Remember, this method is blocking, so watch out for any event handlers using the same variable.
+     *
+     * **Keyframes**:
+     *
+     * The keyframes can be specified in a few different ways:
+     *
+     * - *Array* - An array of objects (keyframes) consisting of properties and values to iterate over. This is the canonical format returned by the `getKeyframes()` method. Each keyframe is an object containing the CSS properties and values to animate. The first keyframe is the "from" keyframe, and the last keyframe is the "to" keyframe. The number of keyframes is arbitrary.
+     *
+     * Example:
+     *
+     * ```js
+     * $('button').animate([
+     *  { opacity: 0, color: '#fff' },
+     * { opacity: 1, color: '#000' }
+     * ], 2000)
+     * ```
+     * - *Object* - An object containing the CSS properties and values to animate. The keys are the CSS properties, and the values are the CSS values. The object is treated as a single keyframe. The key is the property to animate, and the value is an array of values to iterate over. The number of elements in each array does not need to be equal. The provided values will be spaced out independently.
+     *
+     * Example:
+     *
+     * ```js
+     * $('button').animate({
+     * opacity: [0, 1], // [ from, to ]
+     * color: ['#fff', '#000'] // [ from, to ]
+     * }, 2000)
+     * ```
+     * **Options**:
+     *
+     * Either an integer representing the animation's duration (in milliseconds), or an Object containing one or more timing properties described in the `KeyframeEffect()` options parameter and/or the following options:
+     *
+     * - *Number* - The duration of the animation in milliseconds.
+     * - *Object* - An object containing the animation options. The options are the same as the options for the `KeyframeEffect` constructor.
+     *
+     *    - *id* - A string with which to reference the animation.
+     *    - *rangeStart* - Specifies the start of an animation's attachment range along its timeline, i.e. where along the timeline an animation will start. The JavaScript equivalent of the CSS `animation-range-start` property. `rangeStart` can take the same value types as `rangeEnd`.
+     *    - *rangeEnd* - Specifies the end of an animation's attachment range along its timeline, i.e. where along the timeline an animation will end. The JavaScript equivalent of the CSS `animation-range-end` property.
+     *    - *timeline* - The `AnimationTimeline` to associate with the animation. Defaults to `Document.timeline`. The JavaScript equivalent of the CSS `animation-timeline` property.
+     *
      * @param keyframes The keyframes to animate
      * @param options The animation options
      * @returns This {@link DomProxyCollection}
@@ -1088,6 +1172,8 @@ declare module "jessquery" {
     ): DomProxyCollection<T>
 
     /** Await a timeout before continuing the chain
+     *
+     *  - Remember, this method is blocking, so watch out for any event handlers using the same variable.
      * @param ms The number of milliseconds to wait
      * @returns This {@link DomProxyCollection}
      * @example
@@ -1315,7 +1401,7 @@ declare module "jessquery" {
    *
    * @example
    * // Basic usage
-   * setErrorHandler((err, context) => {
+   * setErrorHandler((err) => {
    *   alert(err.message);
    *   console.log(`Error context: ${JSON.stringify(context)}`);
    * });
@@ -1324,9 +1410,9 @@ declare module "jessquery" {
    *
    * @example
    * // Advanced usage: Sending error reports
-   * setErrorHandler((err, context) => {
+   * setErrorHandler((error, context) => {
    *   // Send the error and context to an error reporting service
-   *   errorReportingService.send({error: err, context: context});
+   *   errorReportingService.send({ error, context });
    * });
    * // Error and context details will be sent to an external error reporting service, aiding in debugging.
    *
@@ -1348,7 +1434,7 @@ declare module "jessquery" {
    * - If neither resolve or reject are called within a specified timeout, the promise resolves automatically with no value. This prevents the chain from hanging indefinitely when you simply forget to meet a condition. Remember-- you can always reject the promise at any time.
    * - A `meta` object can be optionally passed to add additional metadata for debugging or error handling. The `meta` object is fully extensible. Any extra fields you add will be accessible in the default error handler, making it highly flexible for diagnostic purposes.
    *
-   * Usage in a chain allows you to feed its values into a DomProxy method like `text()` or `html()`, or use it within the {@link DomProxy.do} method to execute logic on the element or elements.
+   * Usage in a chain allows you to feed its values into a DomProxy method like `text()` or `html()`, or use it within the {@link DomProxy.do} method to use the element itself as an argument.
    *
    * @param {(...args: any[]) => any} fn - The function to be promisified. Must call either the `resolve` or `reject` function.
    * @param {number} [timeout=5000] - The amount of time in milliseconds to wait before resolving the promise automatically. Defaults to 5000 (5 seconds).

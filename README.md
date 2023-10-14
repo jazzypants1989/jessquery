@@ -30,9 +30,10 @@ Rekindle your love for method chaining-- now in a lightweight, type-safe package
 // They will always execute in order!
 const fadeIn = [{ opacity: 0 }, { opacity: 1 }] // WAAPI keyframes
 const fadeOut = [{ opacity: 1 }, { opacity: 0 }] // WAAPI keyframes
-const oneSecond = { duration: 1000 } // WAAPI options
 const animatedText = $$(".animated-text") // $$ ≈ querySelectorAll, use $ for querySelector
 
+// <span hidden class="animated-text"></span>
+// <span hidden class="animated-text"></span>
 animatedText
   .addClass("special")
   .wait(1000) // Will not appear for one second
@@ -44,10 +45,10 @@ animatedText
     </p>`
   )
   .wait(2000)
-  .transition(fadeIn, oneSecond)
-  .transition(fadeOut, oneSecond)
-  .transition(fadeIn, oneSecond)
-  .transition(fadeOut, oneSecond)
+  .transition(fadeIn, 1000)
+  .transition(fadeOut, 1000)
+  .transition(fadeIn, 1000)
+  .transition(fadeOut, 1000)
   .purge() // All `.animated-text` elements will be removed from the DOM
 ```
 
@@ -508,6 +509,7 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
   - Example: `$('div').cloneTo('.target', { position: 'after' })` // Clones and places after first .target element
   - Example: `$('div').cloneTo('.target', { all: true })` // Clones and places inside all .target elements
   - Example: `$('div').cloneTo('.target', { all: true, position: 'before' })` // Clones and places before all .target elements
+  - [Handy StackOverflow Answer for Position Option](https://stackoverflow.com/questions/14846506/append-prepend-after-and-before)
 
 ##### DomProxy.moveTo
 
@@ -526,6 +528,7 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
 
   - Example: `$('div').moveTo('.target')` // Moves inside first .target element (default behavior)
   - Example: `$('div').moveTo('.target', { position: 'after' })` // Moves after first .target element
+  - [Handy StackOverflow Answer for Position Option](https://stackoverflow.com/questions/14846506/append-prepend-after-and-before)
 
 ##### DomProxy.become
 
@@ -634,10 +637,6 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
 
   - Usually, everything will happen in sequence anyways. Given the predictability of each queue, `defer` has limited use cases and should be used sparingly. The whole point of JessQuery is to make things predictable, so you should just put the function at the end of the chain if you can.
 
-  - Schedules a function for deferred execution on the element. This will push the operation to the very end of the internal event loop.
-
-  - Usually, everything will happen in sequence anyways. Given the predictability of each queue, defer has limited use cases and should be used sparingly. The whole point of JessQuery is to make things predictable, so you should just put the function at the end of the chain if you can.
-
   - The only problem is if you set up an event listener using the same variable that has lots of queued behavior-- especially calls to the wait method. Just wrap the wait call and everything after it in defer to ensure that event handlers don't get stuck behind these in the queue.
 
   - `defer` will capture the element at the time of the call, so this should not be mixed with context switching methods like `parent` or `pickAll`.
@@ -657,10 +656,13 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
   //but if we wrap the wait call in defer, the events will not be queued behind it
   button
     .text("this will be immediately responsive due to the defer call")
+    .on("click", () => button.text("clicked"))
     .defer((el) => el.wait(1000).text("Yay!"))
 
   // THIS ONLY OCCURS BECAUSE THE SAME VARIABLE IS USED FOR THE EVENT LISTENER AND THE CHAIN
-  $("button").on("click", () => $("button").text("clicked").wait(1000)) // NO PROBLEM HERE
+  $("button")
+    .on("click", () => $("button").text("clicked"))
+    .wait(1000) // NO PROBLEM HERE
   ```
 
 ##### DomProxy.transition
@@ -668,6 +670,8 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
 - **transition(keyframes: Keyframe[] | PropertyIndexedKeyframes, options: KeyframeAnimationOptions): DomProxy**
 
   - Animates the element using the WAAPI.
+  - Returns the proxy so you can continue chaining. If you need to return the animation object, use the `animate` method instead.
+  - Remember, this method is blocking, so watch out for any event handlers using the same variable.
   - Example: `$('button').transition([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 })`
   - [MDN Documentation](https://developer.mozilla.org/en-US/docs/Web/API/Element/animate)
 
@@ -676,6 +680,8 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
 - **wait(ms: number): DomProxy**
 
   - Waits for a specified number of milliseconds before continuing the chain.
+  - Returns the proxy so you can continue chaining. If you need to return the animation object, use the `animate` method instead.
+  - Remember, this method is blocking, so watch out for any event handlers using the same variable.
   - Example: `$('button').wait(1000)`
 
 ##### DomProxy.next
@@ -683,6 +689,7 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
 - **next(): DomProxy**
 
   - Switch to the next sibling of the element in the middle of a chain.
+  - This will throw an error if the proxy was created as "fixed" (with a second argument of true).
   - Example: `$('button').css('color', 'red').next().css('color', 'blue')`
   - Expectation: The next sibling of the button will turn blue. The button itself will remain red.
 
@@ -691,6 +698,7 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
 - **prev(): DomProxy**
 
   - Switch to the previous sibling of the element in the middle of a chain.
+  - This will throw an error if the proxy was created as "fixed" (with a second argument of true).
   - Example: `$('button').css('color', 'red').prev().css('color', 'blue')`
   - Expectation: The previous sibling of the button will turn blue. The button itself will remain red.
 
@@ -699,6 +707,7 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
 - **first(): DomProxy**
 
   - Switch to the first child of the element in the middle of a chain.
+  - This will throw an error if the proxy was created as "fixed" (with a second argument of true).
   - Example: `$('button').css('color', 'red').first().css('color', 'blue')`
   - Expectation: The first child of the button will turn blue. The button itself will remain red.
 
@@ -707,6 +716,7 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
 - **last(): DomProxy**
 
   - Switch to the last child of the element in the middle of a chain.
+  - This will throw an error if the proxy was created as "fixed" (with a second argument of true).
   - Example: `$('button').css('color', 'red').last().css('color', 'blue')`
   - Expectation: The last child of the button will turn blue. The button itself will remain red.
 
@@ -715,6 +725,7 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
 - **parent(): DomProxy**
 
   - Switch to the parent of the element in the middle of a chain.
+  - This will throw an error if the proxy was created as "fixed" (with a second argument of true).
   - Example: `$('button').css('color', 'red').parent().css('color', 'blue')`
   - Expectation: The parent of the button will turn blue. The button itself will remain red.
 
@@ -722,15 +733,17 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
 
 - **ancestor(ancestorSelector: string): DomProxy**
 
-- Gets the closest ancestor matching a selector. Uses the `closest` API under the hood.
-- Example: `$('.buttons').css('color', 'red').ancestor('.container').css('color', 'blue')`
-- Expectation: The container will turn blue. The buttons will remain red.
+  - Gets the closest ancestor matching a selector. Uses the `closest` API under the hood.
+  - This will throw an error if the proxy was created as "fixed" (with a second argument of true).
+  - Example: `$('.buttons').css('color', 'red').ancestor('.container').css('color', 'blue')`
+  - Expectation: The container will turn blue. The buttons will remain red.
 
 ##### DomProxy.pick
 
 - **pick(subSelector: string): DomProxy**
 
   - Gets the first descendant matching a sub-selector.
+  - This will throw an error if the proxy was created as "fixed" (with a second argument of true).
   - Example: `$('.container').css('color', 'red').pick('.buttons').css('color', 'blue')`
   - Expectation: The descendants of the container will turn blue. The container itself will remain red.
 
@@ -739,6 +752,7 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
 - **pickAll(subSelector: string): DomProxyCollection**
 
   - Gets all descendants matching a sub-selector.
+  - This will throw an error if the proxy was created as "fixed" (with a second argument of true).
   - Example: `$('.container').css('color', 'red').pickAll('.buttons').css('color', 'blue')`
   - Expectation: The descendants of the container will turn blue. The container itself will remain red.
 
@@ -747,15 +761,17 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
 - **siblings(): DomProxyCollection**
 
   - Switch to the siblings of the element in the middle of a chain.
+  - This will throw an error if the proxy was created as "fixed" (with a second argument of true).
   - Example: `$('button').css('color', 'red').siblings().css('color', 'blue')`
   - Expectation: The siblings of the button will turn blue. The button itself will remain red.
 
-##### DomProxy.children
+##### DomProxy.kids
 
-- **children(): DomProxyCollection**
+- **kids(): DomProxyCollection**
 
   - Switch to the children of the element in the middle of a chain.
-  - Example: `$('button').css('color', 'red').children().css('color', 'blue')`
+  - This will throw an error if the proxy was created as "fixed" (with a second argument of true).
+  - Example: `$('button').css('color', 'red').kids().css('color', 'blue')`
   - Expectation: The children of the button will turn blue. The button itself will remain red.
 
 ### DomProxyCollection
@@ -933,6 +949,7 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
   - Example: `$$('div').cloneTo('.target', { position: 'after' })` // Clones and places after first .target element
   - Example: `$$('div').cloneTo('.target', { all: true })` // Clones and places inside all .target elements
   - Example: `$$('div').cloneTo('.target', { all: true, position: 'before' })` // Clones and places before all .target elements
+  - [Handy StackOverflow Answer for Position Option](https://stackoverflow.com/questions/14846506/append-prepend-after-and-before)
 
 ##### DomProxyCollection.moveTo
 
@@ -948,6 +965,7 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
   - Example: `$$('div').moveTo('.target')` // Moves elements inside first .target element (default behavior)
   - Example: `$$('div').moveTo('.target', { position: 'before' })` // Moves elements before first .target element
   - Example: `$$('div').moveTo('.target', { position: 'after' })` // Moves elements after first .target element
+  - [Handy StackOverflow Answer for Position Option](https://stackoverflow.com/questions/14846506/append-prepend-after-and-before)
 
 ##### DomProxyCollection.become
 
@@ -1080,6 +1098,8 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 - **transition(keyframes: Keyframe[] | PropertyIndexedKeyframes, options: KeyframeAnimationOptions): DomProxyCollection**
 
   - Animates the elements using the WAAPI.
+  - Returns the proxy so you can continue chaining. If you need to return the animation object, use the `animate` method instead.
+  - Remember, this method is blocking, so watch out for any event handlers using the same variable.
   - Example: `$$('.buttons').transition([{ opacity: 0 }, { opacity: 1 }], { duration: 1000 })`
   - [MDN Documentation](https://developer.mozilla.org/en-US/docs/Web/API/Element/animate)
 
@@ -1088,6 +1108,7 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 - **wait(ms: number): DomProxyCollection**
 
   - Waits for a specified number of milliseconds before continuing the chain.
+  - Remember, this method is blocking, so watch out for any event handlers using the same variable.
   - Example: `$$('button').wait(1000)`
 
 ##### DomProxyCollection.next
@@ -1095,6 +1116,7 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 - **next(): DomProxyCollection**
 
   - Switch to the next siblings of the elements in the middle of a chain.
+  - This will throw an error if the proxy was created as "fixed" (with a second argument of true).
   - Example: `$$('button').css('color', 'red').next().css('color', 'blue')`
   - Expectation: The next siblings of the buttons will turn blue. The buttons themselves will remain red.
 
@@ -1103,6 +1125,7 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 - **prev(): DomProxyCollection**
 
   - Switch to the previous siblings of the elements in the middle of a chain.
+  - This will throw an error if the proxy was created as "fixed" (with a second argument of true).
   - Example: `$$('button').css('color', 'red').prev().css('color', 'blue')`
   - Expectation: The previous siblings of the buttons will turn blue. The buttons themselves will remain red.
 
@@ -1111,6 +1134,7 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 - **first(): DomProxyCollection**
 
   - Switch to the first children of the elements in the middle of a chain.
+  - This will throw an error if the proxy was created as "fixed" (with a second argument of true).
   - Example: `$$('button').css('color', 'red').first().css('color', 'blue')`
   - Expectation: The first children of the buttons will turn blue. The buttons themselves will remain red.
 
@@ -1127,6 +1151,7 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 - **parent(): DomProxyCollection**
 
   - Switch to the parents of the elements in the middle of a chain.
+  - This will throw an error if the proxy was created as "fixed" (with a second argument of true).
   - Example: `$$('button').css('color', 'red').parent().css('color', 'blue')`
   - Expectation: The parents of the buttons will turn blue. The buttons themselves will remain red.
 
@@ -1135,6 +1160,7 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 - **ancestor(ancestorSelector: string): DomProxyCollection**
 
   - Switch to the closest ancestors matching a selector. Uses the `closest` API under the hood.
+  - This will throw an error if the proxy was created as "fixed" (with a second argument of true).
   - Example: `$$('.buttons').css('color', 'red').ancestor('.container').css('color', 'blue')`
   - Expectation: The containers will turn blue. The buttons will remain red.
 
@@ -1143,6 +1169,7 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 - **pick(subSelector: string): DomProxyCollection**
 
   - Switch to the first descendants matching a sub-selector.
+  - This will throw an error if the proxy was created as "fixed" (with a second argument of true).
   - Example: `$$('.container').css('color', 'red').pick('.buttons').css('color', 'blue')`
   - Expectation: The buttons will turn blue. The container will remain red.
 
@@ -1151,6 +1178,7 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 - **pickAll(subSelector: string): DomProxyCollection**
 
   - Switch to all descendants matching a sub-selector.
+  - This will throw an error if the proxy was created as "fixed" (with a second argument of true).
   - Example: `$$('.container').css('color', 'red').pickAll('.buttons').css('color', 'blue')`
   - Expectation: The buttons will turn blue. The container will remain red.
 
@@ -1159,6 +1187,7 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 - **siblings(): DomProxyCollection**
 
   - Switch to the siblings of the elements in the middle of a chain.
+  - This will throw an error if the proxy was created as "fixed" (with a second argument of true).
   - Example: `$$('button').css('color', 'red').siblings().css('color', 'blue')`
   - Expectation: The siblings of the buttons will turn blue. The buttons themselves will remain red.
 
@@ -1167,6 +1196,7 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 - **kids(): DomProxyCollection**
 
   - Switch to the children of the elements in the middle of a chain.
+  - This will throw an error if the proxy was created as "fixed" (with a second argument of true).
   - Example: `$$('.container').css('color', 'red').kids().css('color', 'blue')`
   - Expectation: The children of the container will turn blue. The container itself will remain red.
 
