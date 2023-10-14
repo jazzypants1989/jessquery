@@ -9,9 +9,9 @@ Rekindle your love for method chaining-- now in a lightweight, type-safe package
 | Library   | Size before gzip | Size after gzip |
 | --------- | ---------------- | --------------- |
 | jQuery    | 88.3kb           | 31.7kb          |
-| jessquery | 7.28kb           | 2.89kb          |
+| jessquery | 7.38kb           | 2.95kb          |
 
-![It's only 2.89kb! I swear! This badge proves it.](https://deno.bundlejs.com/badge?q=jessquery@2.2.1)
+![It's only 2.95kb! I swear! This badge proves it.](https://deno.bundlejs.com/badge?q=jessquery@2.2.2)
 [![npm version](https://badge.fury.io/js/jessquery.svg)](https://badge.fury.io/js/jessquery)
 
 - [Basic Usage](#basic-usage)
