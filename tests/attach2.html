@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Attach Test for HTMLElement</title>
+  </head>
+  <body>
+    <div id="testContainer"></div>
+
+    <script type="module">
+      import { $, $$ } from "../index.js"
+
+      const testContainer = $("#testContainer")
+      const singleElement = document.createElement("div")
+      singleElement.id = "singleElement"
+      singleElement.innerHTML = "I am a single element"
+
+      const multipleElements = document.createElement("div")
+      multipleElements.id = "multipleElements"
+      multipleElements.innerHTML = "I am a multiple elements"
+      multipleElements.innerHTML += "<div>Child 1</div>"
+
+      testContainer.attach(singleElement)
+      testContainer.attach(multipleElements)
+    </script>
+  </body>
+</html>

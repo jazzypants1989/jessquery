@@ -25,6 +25,13 @@
             </div>`)
       const container = $(".container")
 
+      let count = 0
+      $("#counter").text(count)
+
+      $("#counter").on("click", () => {
+        $("#counter").text(count++)
+      })
+
       const randomColor = () => {
         const r = Math.floor(Math.random() * 256)
         const g = Math.floor(Math.random() * 256)

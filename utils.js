@@ -45,11 +45,13 @@ export function addStyleSheet(rules) {
 export function attach(element, ...args) {
   const options =
     args[args.length - 1] instanceof Object &&
-    ("sanitize" || "position" || "all" in args[args.length - 1])
+    ("sanitize" in args[args.length - 1] || "position" in args[args.length - 1])
       ? args.pop()
       : {}
 
-  modifyDOM(element, args, options)
+  const children = args.flat()
+
+  modifyDOM(element, children, options)
 }
 
 export function moveOrClone(elements, parentSelector, options = {}) {
@@ -139,6 +141,7 @@ export function wrappedFetch(url, options, type, toOneOrMany) {
 
 export function modifyDOM(parent, children, options) {
   const { position = "append", sanitize = true, mode = "move" } = options
+  if (!parent || !children || children.length === 0) return
 
   const DOMActions = {
     append: (parent, child) => parent.append(child),
@@ -151,23 +154,26 @@ export function modifyDOM(parent, children, options) {
     mode === "clone" ? (el) => el.cloneNode(true) : (el) => el
 
   children.forEach((child) => {
-    const domElement = getCloneOrNode(getDOMElement(child, sanitize))
-    DOMActions[position](parent, domElement)
+    const domElements = getDOMElement(child, sanitize)
+    domElements.forEach((domElement) => {
+      DOMActions[position](parent, getCloneOrNode(domElement))
+    })
   })
 }
 
 export function getDOMElement(item, sanitize = true, all = false) {
+  if (!item) throw new Error("No item provided")
   return typeof item === "string" && item.trim().startsWith("<")
-    ? createDOMFromString(item, sanitize)
-    : item instanceof HTMLElement
-    ? item
-    : all
+    ? createDOMFromString(item, sanitize) // If it's an HTML string, create DOM elements from it
+    : item instanceof HTMLElement // If it's already a DOM element, return it
+    ? [item]
+    : all // If the all flag is set, return all matching elements from the DOM
     ? Array.from(document.querySelectorAll(item))
-    : document.querySelector(item)
+    : [document.querySelector(item)] // Otherwise, return the first matching element from the DOM as an array
 }
 
-export function createDOMFromString(htmlString, sanitize = true) {
+export function createDOMFromString(string, sanitize = true) {
   const div = document.createElement("div")
-  sanitize ? div.setHTML(htmlString) : (div.innerHTML = htmlString)
-  return div.firstElementChild
+  sanitize ? div.setHTML(string) : (div.innerHTML = string)
+  return Array.from(div.children)
 }

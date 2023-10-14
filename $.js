@@ -1,11 +1,11 @@
 import { defaultErrorHandler, giveContext } from "./errors.js"
 import { addMethods } from "./addMethods.js"
+import { getDOMElement } from "./utils.js"
 
 export function $(selector, fixed = false) {
-  let element =
-    typeof selector === "string" ? document.querySelector(selector) : selector
+  const element = getDOMElement(selector, false, false)
 
-  if (!element) {
+  if (!element[0]) {
     defaultErrorHandler(
       new Error(`Error finding element.`),
       giveContext("selector", selector)
@@ -13,6 +13,6 @@ export function $(selector, fixed = false) {
     return null
   }
 
-  const proxy = addMethods("$", selector, element, fixed)
+  const proxy = addMethods("$", selector, element[0], fixed)
   return proxy
 }

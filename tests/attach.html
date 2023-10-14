@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Attach Test</title>
+  </head>
+  <body>
+    <div id="testContainer"></div>
+    <script type="module">
+      import { $, $$ } from "../index.js"
+
+      $("#testContainer").attach([
+        `
+        <div id="originalElement">Original Element</div>,
+        <div class="two">Two</div>,
+        <div class="two">Two</div>,
+        <div id="parent">Parent</div>,
+      `,
+      ])
+    </script>
+  </body>
+</html>

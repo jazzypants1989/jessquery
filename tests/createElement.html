@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="testContainer">hi</div>
+
+    <script type="module">
+      import { $, $$ } from "../index.js"
+
+      $(`<div> <span>hey what's up? </span>
+        <img src="https://picsum.photos/200/300" alt="random image" />
+        <p>some text</p>
+        </div>`).moveTo("#testContainer", { position: "before" })
+    </script>
+  </body>
+</html>
