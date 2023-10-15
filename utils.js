@@ -141,7 +141,6 @@ export function wrappedFetch(url, options, type, toOneOrMany) {
 
 export function modifyDOM(parent, children, options) {
   const { position = "append", sanitize = true, mode = "move" } = options
-  if (!parent || !children || children.length === 0) return
 
   const DOMActions = {
     append: (parent, child) => parent.append(child),
@@ -162,7 +161,6 @@ export function modifyDOM(parent, children, options) {
 }
 
 export function getDOMElement(item, sanitize = true, all = false) {
-  if (!item) throw new Error("No item provided")
   return typeof item === "string" && item.trim().startsWith("<")
     ? createDOMFromString(item, sanitize) // If it's an HTML string, create DOM elements from it
     : item instanceof HTMLElement // If it's already a DOM element, return it

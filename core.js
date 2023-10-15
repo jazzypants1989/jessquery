@@ -1,4 +1,28 @@
-import { defaultErrorHandler } from "./errors.js"
+import { defaultErrorHandler, giveContext } from "./errors.js"
+import { addMethods } from "./addMethods.js"
+import { getDOMElement } from "./utils.js"
+
+export function $(string, fixed = false) {
+  return addProxy("$", string, fixed)
+}
+
+export function $$(string, fixed = false) {
+  return addProxy("$$", string, fixed)
+}
+
+function addProxy(type, string, fixed = false) {
+  const element = getDOMElement(string, false, type === "$$")
+
+  if (!element[0]) {
+    defaultErrorHandler(
+      new Error(`Error with element.`),
+      giveContext(type, string)
+    )
+    return null
+  }
+
+  return addMethods(type, string, element, fixed)
+}
 
 export function createQueue() {
   const priorityQueue = []

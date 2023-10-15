@@ -2,17 +2,17 @@ import { defaultErrorHandler, giveContext } from "./errors.js"
 import { addMethods } from "./addMethods.js"
 import { getDOMElement } from "./utils.js"
 
-export function $(selector, fixed = false) {
-  const element = getDOMElement(selector, false, false)
+export function $(string, fixed = false) {
+  const element = getDOMElement(string, false, false)
 
   if (!element[0]) {
     defaultErrorHandler(
-      new Error(`Error finding element.`),
-      giveContext("selector", selector)
+      new Error(`Error with element.`),
+      giveContext("$", string)
     )
     return null
   }
 
-  const proxy = addMethods("$", selector, element[0], fixed)
+  const proxy = addMethods("$", string, element, fixed)
   return proxy
 }

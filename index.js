@@ -1,5 +1,4 @@
-import { $ } from "./$.js"
-import { $$ } from "./$$.js"
+import { $, $$ } from "./core.js"
 import { setErrorHandler } from "./errors.js"
 import { promisify } from "./promisify.js"
 
