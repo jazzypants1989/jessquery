@@ -14,11 +14,10 @@ function addProxy(type, string, fixed = false) {
   const element = getDOMElement(string, false, type === "$$")
 
   if (!element[0]) {
-    defaultErrorHandler(
+    return defaultErrorHandler(
       new Error(`Error with element.`),
       giveContext(type, string)
     )
-    return null
   }
 
   return addMethods(type, string, element, fixed)

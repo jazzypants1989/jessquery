@@ -4,8 +4,6 @@ export let defaultErrorHandler = (error, context) => {
 
 export function setErrorHandler(handler) {
   defaultErrorHandler = handler
-
-  return defaultErrorHandler
 }
 
 export function giveContext(methodName, selector) {

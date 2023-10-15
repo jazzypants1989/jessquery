@@ -9,9 +9,12 @@
     <div id="testContainer">hi</div>
 
     <script type="module">
-      import { $, $$ } from "../index.js"
+      import { $, $$, setErrorHandler } from "../index.js"
 
-      $(`<h1>je</h1>`).moveTo("#testContainer", { position: "before" })
+      setErrorHandler((err) => {
+        alert(err)
+      })
+      $().moveTo("#testContainer", { position: "before" })
     </script>
   </body>
 </html>
