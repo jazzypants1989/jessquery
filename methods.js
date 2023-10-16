@@ -117,22 +117,6 @@ export function addMethods(type, selector, target, fixed = false) {
 
     send: makeMethod((el, options) => send(el, options, applyMethod), "send"),
 
-    fromStream: makeMethod((el, url, options = {}) => {
-      const type = options.sse ? "sse" : "stream"
-      fetchElements(type, url, options, el, applyMethod)
-    }, "fromStream"),
-
-    fromHTML: makeMethod((el, url, options = {}) => {
-      fetchElements("text", url, options, el, applyMethod)
-    }, "fromHTML"),
-
-    fromJSON: makeMethod((el, url, fn, options = {}) => {
-      wrappedFetch(url, options, "json", applyMethod).then((json) => {
-        const wrappedElement = addMethods(type, selector, el)
-        fn(wrappedElement, json)
-      })
-    }, "fromJSON"),
-
     do: makeMethod((el, fn) => {
       const wrappedElement = addMethods(type, selector, el)
       fn(wrappedElement)
@@ -142,6 +126,22 @@ export function addMethods(type, selector, target, fixed = false) {
       const wrappedElement = addMethods(type, selector, el)
       defer(fn, [wrappedElement])
     }, "defer"),
+
+    fromJSON: makeMethod((el, url, fn, options = {}) => {
+      wrappedFetch(url, options, "json", applyMethod).then((json) => {
+        const wrappedElement = addMethods(type, selector, el)
+        fn(wrappedElement, json)
+      })
+    }, "fromJSON"),
+
+    fromHTML: makeMethod((el, url, options = {}) => {
+      fetchElements("text", url, options, el, applyMethod)
+    }, "fromHTML"),
+
+    fromStream: makeMethod((el, url, options = {}) => {
+      const type = options.sse ? "sse" : "stream"
+      fetchElements(type, url, options, el, applyMethod)
+    }, "fromStream"),
 
     transition: queueFunction(
       (keyframes, options) =>

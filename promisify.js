@@ -1,4 +1,4 @@
-import { defaultErrorHandler } from "./errors.js"
+import { errorHandler } from "./errors.js"
 
 export function promisify(
   fn,
@@ -27,10 +27,7 @@ export function promisify(
         if (!settled) {
           settled = true
           resolve()
-          defaultErrorHandler(
-            new Error(`Timeout: ${timeout}ms exceeded.`),
-            meta
-          )
+          errorHandler(new Error(`Timeout: ${timeout}ms exceeded.`), meta)
         }
       }, timeout)
 

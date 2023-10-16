@@ -1,4 +1,4 @@
-import { defaultErrorHandler, giveContext } from "./errors.js"
+import { errorHandler, giveContext } from "./errors.js"
 import { addMethods } from "./methods.js"
 import { getDOMElement } from "./DOM.js"
 
@@ -14,7 +14,7 @@ function addProxy(type, string, fixed = false) {
   const elements = getDOMElement(string, false, type === "$$")
 
   if (!elements[0]) {
-    return defaultErrorHandler(
+    return errorHandler(
       new Error(`No elements for ${type}(${string})`),
       giveContext(type, string)
     )
@@ -36,7 +36,7 @@ export function createQueue() {
     while (priorityQueue.length > 0 || mainQueue.length > 0) {
       if (priorityQueue.length > 0) {
         const { fn, args } = priorityQueue.shift()
-        await fn(...args)
+        await eachArgument(fn, args)
       } else if (mainQueue.length > 0) {
         const fn = mainQueue.shift()
         await fn()
@@ -50,7 +50,7 @@ export function createQueue() {
     ) {
       while (deferredQueue.length > 0) {
         const { fn, args } = deferredQueue.shift()
-        await fn(...args)
+        await eachArgument(fn, args)
       }
     }
 
@@ -82,22 +82,13 @@ export function createQueue() {
 }
 
 export function createQueueFunction(addToQueue, proxy) {
-  const isThenable = (value) => value && typeof value.then === "function"
-
   return function queueFunction(fn, context) {
     return (...args) => {
       addToQueue(async () => {
         try {
-          const resolvedArgs = []
-          for (const arg of args) {
-            resolvedArgs.push(isThenable(arg) ? await arg : arg)
-          }
-          const result = fn(...resolvedArgs)
-          if (isThenable(result)) {
-            await result
-          }
+          await eachArgument(fn, args)
         } catch (error) {
-          defaultErrorHandler(error, context)
+          errorHandler(error, context)
         }
       })
       return proxy()
@@ -132,5 +123,17 @@ export function handlerMaker(element, customMethods) {
       element[prop] = value
       return true
     },
+  }
+}
+
+async function eachArgument(fn, args) {
+  const isThenable = (value) => value && typeof value.then === "function"
+  const resolvedArgs = []
+  for (const arg of args) {
+    resolvedArgs.push(isThenable(arg) ? await arg : arg)
+  }
+  const result = fn(...resolvedArgs)
+  if (isThenable(result)) {
+    await result
   }
 }

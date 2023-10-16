@@ -18,34 +18,6 @@ export async function wrappedFetch(url, options, type, toOneOrMany) {
   }
 }
 
-export function send(element, options = {}, toOneOrMany) {
-  let { url, method = "POST", json = false, body, event, headers } = options
-
-  event && event.preventDefault()
-  url = url || getAction(element)
-  body = body || getBody(element, options)
-  headers = headers || new Headers()
-
-  if (json) {
-    headers.append("Content-Type", "application/json")
-    body =
-      body instanceof FormData
-        ? JSON.stringify(Object.fromEntries(body.entries()))
-        : typeof body === "object"
-        ? JSON.stringify(body)
-        : JSON.stringify({ body })
-  }
-
-  const fetchOptions = {
-    ...options,
-    method,
-    headers,
-    body,
-  }
-
-  return wrappedFetch(url, fetchOptions, "text", toOneOrMany)
-}
-
 export function fetchElements(type, url, options = {}, target, toOneOrMany) {
   if (type === "sse") {
     const eventSource = new EventSource(url)
@@ -77,6 +49,34 @@ export function fetchElements(type, url, options = {}, target, toOneOrMany) {
       throw new Error(`No ${type} found at ${url}`)
     }
   })
+}
+
+export function send(element, options = {}, toOneOrMany) {
+  let { url, method = "POST", json = false, body, event, headers } = options
+
+  event && event.preventDefault()
+  url = url || getAction(element)
+  body = body || getBody(element, options)
+  headers = headers || new Headers()
+
+  if (json) {
+    headers.append("Content-Type", "application/json")
+    body =
+      body instanceof FormData
+        ? JSON.stringify(Object.fromEntries(body.entries()))
+        : typeof body === "object"
+        ? JSON.stringify(body)
+        : JSON.stringify({ body })
+  }
+
+  const fetchOptions = {
+    ...options,
+    method,
+    headers,
+    body,
+  }
+
+  return wrappedFetch(url, fetchOptions, "text", toOneOrMany)
 }
 
 function handleResponse(response, type, toOneOrMany) {

@@ -9,7 +9,7 @@ Rekindle your love for method chaining-- now in a lightweight, type-safe package
 | Library   | Size before gzip | Size after gzip |
 | --------- | ---------------- | --------------- |
 | jQuery    | 88.3kb           | 31.7kb          |
-| jessquery | 7.23kb           | 2.92kb          |
+| jessquery | 8.5kb            | 3.5kb           |
 
 ![It's only 2.92kb! I swear! This badge proves it.](https://deno.bundlejs.com/badge?q=jessquery@2.3.0)
 [![npm version](https://badge.fury.io/js/jessquery.svg)](https://badge.fury.io/js/jessquery)
@@ -118,6 +118,9 @@ const display = $(".display")
 // Use $$ to select multiple elements.
 const dynamicSpans = $$(".dynamic-spans")
 
+// You can create elements on the fly
+$(`<h1>I'm #1</h1>`).moveTo(".container", { position: "prepend" }) // append is the default
+
 // These elements are now wrapped in a proxy with extra methods.
 // They each have an internal queue that always executes in order.
 // So, the chains are not only convenient and readable, but they're also predictable.
@@ -167,6 +170,7 @@ const fetchOptions = {
   fallback: "Loading...",
   onSuccess: () => dynamicSpans.attach("<h6>Data Loaded!</h6>"),
   // This will reflect the DOM AFTER the fetch is done.
+  onError: (err) => sendFetchErrorToAnalytics(err),
   headers: {
     "Cool-Header": "Cool-Value",
     // the full range of fetch options (requestInit) are still supported.
@@ -184,10 +188,30 @@ dynamicSpans.fromJSON(
     )
       .wait(5000)
       .fromHTML("/api/cool-html", fetchOptions)
-      .attach("<h2>Enough about me, check out this cool HTML!</h2>")
+      .attach(
+        "<h2>Enough about me, watch this! I'm gonna replace this cool HTML with a stream in 5 seconds.</h2>"
+      )
+      .wait(5000)
+      .fromStream("/api/cool-stream", fetchOptions)
   },
   fetchOptions
 )
+
+$("#bigForm").send()
+// This will automatically serialize the form
+// It will send it to the action attribute if it exists (The page's URL if not)
+// You can also customize each aspect of the request if you want.
+// EVERYTHING is optional. You can just pass a URL if you want.
+
+$("#otherSubmitButton").on("click", (event) => {
+  $$("#bigForm").send({
+    event, // to prevent default submission
+    url: "/api/cool-endpoint", // Otherwise, the formaction attribute or any parent form's action would be used if it exists.
+    body: { cool: "data" }, // Otherwise, the form's data would be used. If no form, the textContent would be used.
+    method: "PUT", // POST is the default
+  })
+})
+// (this will send multiple fetches though. No caching or batching... yet)
 ```
 
 ## Interfaces
@@ -540,7 +564,6 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
   - Mode:
     - _clone_ (default) - This makes a copy of the replacement element to use for the DomProxy. This clone includes the element, its attributes, and all its child nodes, but does not include event listeners. The original element is left untouched.
     - _move_ - This moves the replacement element to the original element's position. The original element is removed from the DOM. This is the same as calling `replaceWith` directly.
-  - Match: The `options.match` parameter mainly influences behavior when used with `$$()`, but its default value is 'cycle'. For a single `$()` operation, this is mostly irrelevant.
   - Example: `$('div').become(newElement, {mode: "move"})`
   - Expectation: Replaces div with newElement, literally moving it to the original div's position.
 
@@ -550,9 +573,6 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
   - Example: `$('#button').become($$('.otherButtons'))`
   - Expectation: Takes another DomProxy as the replacement. The first element of the DomProxy is chosen for the replacement.
 
-  - Example: `$('div').become(newElement || null, {mode: "move", match: "remove"})`
-  - Expectation: Replaces the div with newElement. If newElement is null, the div is removed due to the 'remove' match setting.
-
 ##### DomProxy.purge
 
 - **purge(): DomProxy**
@@ -560,55 +580,56 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
   - Removes the element from the DOM entirely.
   - Example: `$('button').purge()`
 
-##### DomProxy.fromJSON
+##### DomProxy.send
 
-- **fromJSON(url: string, transformFunc: (el: DomProxy, json: any) => void, options?: FetchOptions): DomProxy**
+- **send(options: {url?: string, json?: boolean, event?: Event, serializer?: (element) => void} & FetchOptions): DomProxy**
 
-  - Fetches a JSON resource from the provided URL and applies a transformation function which uses the fetched JSON and the proxy's target element as arguments.
-  - The transform function can be used to set the text, html, or any other property of the element.
-  - The options object can be used to set a fallback message while the fetch is in progress, an error message if the fetch fails, and a callback to execute when the fetch is complete.
+  - Sends an HTTP request using the current element as the body of the request unless otherwise specified.
+  - None of the options are required-- not even the URL.
+
+  - If you do not provide a URL the method will:
+
+    - First, look to see if it's in a form with an action property.
+    - Next, it will look to see if the element is a button with a formaction property.
+    - Next, it will try to see if the element is part of a form that has an action property.
+    - Finally, it will take the current URL and slice off everything after the last slash. (http://example.com/foo/index.html -> http://example.com/foo/)
+
+  - Unless the `body` option is provided, it will be created automatically based on the element type:
+
+    - If it's a form, the entire form will be serialized using the formData API unless a custom serializer is provided.
+    - If it's an input, textarea, or select, the value will be used.
+    - If it isn't a form or one of the above elements, we will check to see if the element has a form property or one can be found with the `closest` method. If so, we will serialize the form using the formData API unless a custom serializer is provided.
+    - If none of the above, the element's textContent will be used.
+
+  - If the `json` option is set to true, the request will be sent as JSON and the response will be parsed as JSON.
+  - Otherwise, the request will be sent as FormData and the response will be parsed as text.
+
   - Example:
 
   ```javascript
-  $("#item").fromJSON("/api/data", (element, json) => {
-    element.text(json.value)
+  // Send a JSON request using input value, providing fallback and completion messages.
+  $("#myInput").send(myElement, {
+    url: "/api/data",
+    json: true,
+    fallback: "Loading...",
+    onSuccess: (data) => console.log("Received:", data),
+    onError: (error) => console.log("Error occurred:", error),
   })
   ```
 
   - Example:
 
   ```javascript
-  $("#item").fromJSON("/api/data", (element, json) => {
-    element.html(`<span>${json.description}</span>`)
+  // Send form data using a custom serializer.
+  $("#myForm").send(myElement, {
+    url: "/api/data",
+    serializer: (form) => {
+      const formData = new FormData(form)
+      formData.append("extra", "data")
+      return formData
+    },
   })
   ```
-
-  - Example:
-
-  ```javascript
-  $('#news-item').fromJSON('/api/news-item', (element, json) => {
-     { title, summary } = json;
-
-    element.html(`<h1>${title}</h1>
-                  <p>${summary}</p>`);
-  },
-  {
-    error: 'Failed to load news item',
-    fallback: 'Loading news item...'
-    onSuccess: () => console.log('News item loaded')
-  }
-  ```
-
-##### DomProxy.fromHTML
-
-- **fromHTML(url: string, options?: FetchOptions): DomProxy**
-
-  - Fetches an HTML resource from the provided URL and inserts it into the proxy's target element.
-  - The options object can be used to set a fallback message while the fetch is in progress, an error message if the fetch fails, and a callback to execute when the fetch is complete.
-  - The HTML is sanitized by default, which helps prevent XSS attacks.
-  - Example: `$('#template').fromHTML('/template.html')`
-  - Example: `$('#update').fromHTML('/update.html', { fallback: 'Loading update...', error: 'Failed to load update!' })`
-  - Example: `$('#content').fromHTML('/malicious-content.html', { sanitize: false })`
 
 ##### DomProxy.do
 
@@ -664,6 +685,66 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
     .on("click", () => $("button").text("clicked"))
     .wait(1000) // NO PROBLEM HERE
   ```
+
+##### DomProxy.fromJSON
+
+- **fromJSON(url: string, transformFunc: (el: DomProxy, json: any) => void, options?: FetchOptions): DomProxy**
+
+  - Fetches a JSON resource from the provided URL and applies a transformation function which uses the fetched JSON and the proxy's target element as arguments.
+  - The transform function can be used to set the text, html, or any other property of the element.
+  - The options object can be used to set a fallback message while the fetch is in progress, an error message if the fetch fails, and a callback to execute when the fetch is complete.
+  - Example:
+
+  ```javascript
+  $("#item").fromJSON("/api/data", (element, json) => {
+    element.text(json.value)
+  })
+  ```
+
+  - Example:
+
+  ```javascript
+  $("#item").fromJSON("/api/data", (element, json) => {
+    element.html(`<span>${json.description}</span>`)
+  })
+  ```
+
+  - Example:
+
+  ```javascript
+  $('#news-item').fromJSON('/api/news-item', (element, json) => {
+     { title, summary } = json;
+
+    element.html(`<h1>${title}</h1>
+                  <p>${summary}</p>`);
+  },
+  {
+    error: 'Failed to load news item',
+    fallback: 'Loading news item...'
+    onSuccess: () => console.log('News item loaded')
+  }
+  ```
+
+##### DomProxy.fromHTML
+
+- **fromHTML(url: string, options?: FetchOptions): DomProxy**
+
+  - Fetches an HTML resource from the provided URL and inserts it into the proxy's target element.
+  - The options object can be used to set a fallback message while the fetch is in progress, an error message if the fetch fails, and a callback to execute when the fetch is complete.
+  - The HTML is sanitized by default, which helps prevent XSS attacks.
+  - Example: `$('#template').fromHTML('/template.html')`
+  - Example: `$('#update').fromHTML('/update.html', { fallback: 'Loading update...', error: 'Failed to load update!' })`
+  - Example: `$('#content').fromHTML('/malicious-content.html', { sanitize: false })`
+
+##### DomProxy.fromStream
+
+- **fromStream(url: string, options?: { sse?: boolean; add?: boolean; error?: string; fallback?: string; sanitize?: boolean; onSuccess?: (data: any) => void }): DomProxy**
+
+  - Dynamically fetches data from the provided URL and updates a single DOM element using a stream or Server-Sent Event (SSE).
+  - The options object can be used to set a fallback message while the stream is in progress, an error message if the stream fails, and a callback to execute when the stream is complete.
+  - The HTML is sanitized by default, which helps prevent XSS attacks.
+  - Example: `$('#content').fromStream('/api/data', { sanitize: false })` <-- Only for trusted sources!
+  - Example: `$('#liveFeed').fromStream('/api/live', { sse: true, add: true, onSuccess: (data) => console.log('New data received:', data) })`
 
 ##### DomProxy.transition
 
@@ -975,9 +1056,10 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
   - Under the hood, it utilizes the native `replaceWith` method but adds extra layers of functionality.
   - The replacement can be a simple HTMLElement, an array of HTMLElements, or another DomProxy instance.
   - Mode:
+
     - _clone_ (default) - This makes a copy of the replacement element to use for the DomProxy. This clone includes the element, its attributes, and all its child nodes, but does not include event listeners. The original element is left untouched.
     - _move_ - This moves the replacement element to the original element's position. The original element is removed from the DOM. This is the same as calling `replaceWith` directly.
-  - Match: The `options.match` parameter mainly influences behavior when used with `$$()`, but its default value is 'cycle'. For a single `$()` operation, this is mostly irrelevant.
+
   - Example: `$$('div').become(newElement, {mode: "move"})`
   - Expectation: Replaces div with newElement, literally moving it to the original div's position.
 
@@ -987,15 +1069,89 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
   - Example: `$$('.buttons').become($$('.otherButtons'))`
   - Expectation: Takes another DomProxy as the replacement. The first element of the DomProxy is chosen for the replacement.
 
-  - Example: `$$('div').become(newElement || null, {mode: "move", match: "remove"})`
-  - Expectation: Replaces the div with newElement. If newElement is null, the div is removed due to the 'remove' match setting.
-
 ##### DomProxyCollection.purge
 
 - **purge(): DomProxyCollection**
 
   - Removes the elements from the DOM.
   - Example: `$$('.buttons').purge()`
+
+##### DomProxyCollection.do
+
+- **do(fn: (el: DomProxy) => Promise<void>): DomProxyCollection**
+
+  - Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too).
+  - Example: `$$('button').do(async (el) => { // The elements are passed as an argument
+  const response = await fetch('/api')
+  const data = await response.json()
+  el.text(data.message) // All the methods are still available
+})`
+
+##### DomProxyCollection.defer
+
+- **defer(fn: (el: DomProxy) => void): DomProxyCollection**
+
+  - Schedules a function for deferred execution on the elements.
+
+  - This will push the operation to the very end of the internal event loop.
+
+  - Usually, everything will happen in sequence anyways. Given the predictability of each queue, `defer` has limited use cases and should be used sparingly. The whole point of JessQuery is to make things predictable, so you should just put the function at the end of the chain if you can.
+
+  - This only becomes a problem if you set up an event listener using the same variable that has lots of queued behavior-- especially calls to the wait method. Just wrap the wait call and everything after it in defer to ensure that event handlers don't get stuck behind these in the queue.
+
+  - `defer` will capture the elements at the time of the call, so this should not be mixed with context switching methods like `parent` or `pickAll`.
+
+  - Honestly, I'm not sure if this even makes much sense. I just spent a bunch of time building a crazy queue system, and I feel like I need to expose it. If you have any ideas for how to make this more useful, please open an issue or PR.
+
+  - Example:
+
+  ```javascript
+  const buttons = $$(".buttons")
+
+  buttons
+    .text("this won't do anything for a second because of the wait call")
+    .on("click", () => buttons.text("clicked"))
+    .wait(1000)
+
+  //but if we wrap the wait call in defer, the events will not be queued behind it
+  buttons
+    .text("this will be immediately responsive due to the defer call")
+    .defer((el) => el.wait(1000).text("Yay!"))
+
+  // THIS ONLY OCCURS BECAUSE THE SAME VARIABLE IS USED FOR THE EVENT LISTENER AND THE CHAIN
+  $$(".buttons").on("click", () =>
+    $$(".buttons").text("clicked").wait(1000)
+  ) // NO PROBLEM HERE
+  ``
+  ```
+
+##### DomProxyCollection.send
+
+- **send(options: { url?: string, json?: boolean, event?: Event, serializer?: (elements) => void } & FetchOptions) => DomProxyCollection<T>**
+
+  - Sends HTTP requests using each of the current elements as the body of the requests unless otherwise specified.
+  - None of the options are required-- not even the URL.
+
+  - If you do not provide a URL the method will:
+
+    - First, look to see if it's in a form with an action property and use that.
+    - If it can't find that, it will look to see if the element is a button with a formaction property and use that.
+    - If it can't find that, it will try to see if the element is part of a form that has an action property and use that.
+    - Finally, if it can't find anything else, it will use the current URL.
+
+  - Unless the `body` option is provided, it will be created automatically based on the element type:
+
+    - If it's a form, the entire form will be serialized using the formData API unless a custom serializer is provided.
+    - If it's an input, textarea, or select, the value will be used.
+    - If it isn't a form or one of the above elements, we will check to see if the element has a form property or one can be found with the `closest` method. If so, we will serialize the form using the formData API unless a custom serializer is provided.
+    - If none of the above, the element's textContent will be used.
+
+  - If the `json` option is set to true, the request will be sent as JSON and the response will be parsed as JSON.
+  - Otherwise, the request will be sent as FormData and the response will be parsed as text.
+
+  - Example: `$$('button').send({ url: '/api/submit' })`
+  - Example: `$$('button').send({ url: '/api/submit', method: 'GET' })`
+  - Example: `$$('button').send({ url: '/api/submit', json: true })`
 
 ##### DomProxyCollection.fromJSON
 
@@ -1047,51 +1203,15 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
   - Example: `$$('.update').fromHTML('/update.html', { fallback: 'Loading update...', error: 'Failed to load update!' })`
   - Example: `$$('.content').fromHTML('/malicious-content.html', { sanitize: false })`
 
-##### DomProxyCollection.do
+##### DomProxyCollection.fromStream
 
-- **do(fn: (el: DomProxy) => Promise<void>): DomProxyCollection**
+- **fromStream(url: string, options?: { sse?: boolean; add?: boolean; error?: string; fallback?: string; sanitize?: boolean; onSuccess?: (data: any) => void }): DomProxyCollection**
 
-  - Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too).
-  - Example: `$$('button').do(async (el) => { // The elements are passed as an argument
-  const response = await fetch('/api')
-  const data = await response.json()
-  el.text(data.message) // All the methods are still available
-})`
-
-##### DomProxyCollection.defer
-
-- **defer(fn: (el: DomProxy) => void): DomProxyCollection**
-
-  - Schedules a function for deferred execution on the elements.
-
-  - This will push the operation to the very end of the internal event loop.
-
-  - Usually, everything will happen in sequence anyways. Given the predictability of each queue, `defer` has limited use cases and should be used sparingly. The whole point of JessQuery is to make things predictable, so you should just put the function at the end of the chain if you can.
-
-  - This only becomes a problem if you set up an event listener using the same variable that has lots of queued behavior-- especially calls to the wait method. Just wrap the wait call and everything after it in defer to ensure that event handlers don't get stuck behind these in the queue.
-
-  - `defer` will capture the elements at the time of the call, so this should not be mixed with context switching methods like `parent` or `pickAll`.
-
-  - Honestly, I'm not sure if this even makes much sense. I just spent a bunch of time building a crazy queue system, and I feel like I need to expose it. If you have any ideas for how to make this more useful, please open an issue or PR.
-
-  - Example:
-
-  ```javascript
-  const buttons = $$(".buttons")
-
-  buttons
-    .text("this won't do anything for a second because of the wait call")
-    .on("click", () => buttons.text("clicked"))
-    .wait(1000)
-
-  //but if we wrap the wait call in defer, the events will not be queued behind it
-  buttons
-    .text("this will be immediately responsive due to the defer call")
-    .defer((el) => el.wait(1000).text("Yay!"))
-
-  // THIS ONLY OCCURS BECAUSE THE SAME VARIABLE IS USED FOR THE EVENT LISTENER AND THE CHAIN
-  $$(".buttons").on("click", () => $$(".buttons").text("clicked").wait(1000)) // NO PROBLEM HERE
-  ```
+  - Dynamically fetches data from the provided URL and updates a single DOM element using a stream or Server-Sent Event (SSE).
+  - The options object can be used to set a fallback message while the stream is in progress, an error message if the stream fails, and a callback to execute when the stream is complete.
+  - The HTML is sanitized by default, which helps prevent XSS attacks.
+  - Example: `$$('.content').fromStream('/api/data', { sanitize: false })` <-- Only for trusted sources!
+  - Example: `$$('.liveFeed').fromStream('/api/live', { sse: true, add: true, onSuccess: (data) => console.log('New data received:', data) })`
 
 ##### DomProxyCollection.transition
 

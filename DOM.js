@@ -1,3 +1,5 @@
+import { addMethods } from "./methods.js"
+
 export function setFormElementValue(element, value) {
   if (element instanceof HTMLInputElement) {
     const inputTypes = {
@@ -61,8 +63,6 @@ export function attach(element, ...args) {
 export function moveOrClone(elements, parentSelector, options = {}) {
   let parents = getDOMElement(parentSelector, options.sanitize, options.all)
 
-  !Array.isArray(parents) && (parents = [parents])
-
   const children = Array.isArray(elements) ? elements : [elements].flat()
 
   parents.forEach((parent) => {
@@ -77,16 +77,20 @@ export function become(elements, replacements, options = { mode: "clone" }) {
       options.mode === "clone" ? replacement.cloneNode(true) : replacement
     element.replaceWith(newElement)
   }
+  const isIterable = (candidate) => candidate[Symbol.iterator]
   const proxyOrDOM = (candidate) => candidate.raw || candidate
-  const makeArray = (candidate) =>
-    Array.isArray(candidate) ? candidate : [candidate]
+  const makeArray = (candidate) => {
+    if (isIterable(candidate)) return Array.from(candidate)
+    if (candidate instanceof HTMLElement) return [candidate]
+    return []
+  }
 
   const elementsArray = makeArray(proxyOrDOM(elements))
   const replacementsArray = makeArray(proxyOrDOM(replacements))
 
-  elementsArray.forEach((element, index) => {
+  elementsArray.forEach((element, index) =>
     handleReplacement(element, replacementsArray[index])
-  })
+  )
 }
 
 export function transition(elements, keyframes, options) {
@@ -104,6 +108,7 @@ export function modifyDOM(parent, children, options) {
     prepend: (parent, child) => parent.prepend(child),
     before: (parent, child) => parent.before(child),
     after: (parent, child) => parent.after(child),
+    replace: (parent, child) => parent.replaceWith(child),
   }
 
   const getCloneOrNode =
@@ -120,7 +125,7 @@ export function modifyDOM(parent, children, options) {
 export function getDOMElement(item, sanitize = true, all = false) {
   return typeof item === "string" && item.trim().startsWith("<") // If it's an HTML string, create DOM elements from it
     ? createDOMFromString(item, sanitize) // If it's an HTML string, create DOM elements from it
-    : item instanceof HTMLElement // If it's already a DOM element, return it
+    : item instanceof HTMLElement
     ? [item]
     : all // If the all flag is set, return all matching elements from the DOM
     ? Array.from(document.querySelectorAll(item))
