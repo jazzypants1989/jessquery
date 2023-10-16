@@ -4,7 +4,7 @@
 
 Feel like a 🦕 for still using jQuery? Wish that it didn't bloat up your bundle size like a 🐖? Want something 🆕 and ✨?
 
-Rekindle your love for method chaining-- now in a lightweight, type-safe package! `jessquery` helps you seamlessly handle asynchronous tasks, customize error behaviors, and ensure your DOM operations always execute in order. And, the best part? 🏎️💨
+Rekindle your love for method chaining-- now in a lightweight, type-safe package! With **40** custom methods that are sneakily powerful, `jessquery` helps you seamlessly handle asynchronous tasks, customize error behaviors, and ensure your DOM operations always execute in order. And, the best part? 🏎️💨
 
 | Library   | Size before gzip | Size after gzip |
 | --------- | ---------------- | --------------- |
@@ -348,7 +348,7 @@ $$(".buttons")
 
 ### DomProxy
 
-A proxy covering a single HTML element that allows you to chain methods sequentially (including asynchronous tasks) and then execute them one after the other. It includes **38** of these custom methods, but you can still use the full DOM API if you need to.
+A proxy covering a single HTML element that allows you to chain methods sequentially (including asynchronous tasks) and then execute them one after the other. It includes **40** of these custom methods, but you can still use the full DOM API if you need to.
 
 #### DomProxy Methods
 
@@ -858,7 +858,7 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
 
 ### DomProxyCollection
 
-A proxy covering a collection of HTML elements that allows you to chain methods sequentially (including asynchronous tasks) and then execute them one after the other. It includes **38** of these custom methods, but you can still use the full DOM API if you need to.
+A proxy covering a collection of HTML elements that allows you to chain methods sequentially (including asynchronous tasks) and then execute them one after the other. It includes **40** of these custom methods, but you can still use the full DOM API if you need to.
 
 #### DomProxyCollection Methods
 
