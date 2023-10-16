@@ -70,23 +70,6 @@ Or, since it's so small, you can just use a CDN like the good, old days. The big
 <script src="https://unpkg.com/jessquery"></script>
 ```
 
-## The Rules
-
-I wrote a lot, but the main idea is that everything should be predictable. You probably only need to read the bold parts unless you start doing a lot of crazy DOM manipulation that operates on multiple elements at once while using the same variables for everything. If you're just doing simple stuff, you can probably just ignore the rest. 👌
-
-1. **Use `$()` to build a queue that operates on a single element-- a DomProxy**. However, if you use a method like `pickAll()` or `kids()`, you will switch to a `DomProxyCollection` with multiple elements.
-2. **Use `$$()` to build a queue that operates on multiple elements at once-- a DomProxyCollection**. However, if you use a method like `pick()` or `parent()` and there is only one element in the collection, you will switch to a `DomProxy` with a single element.
-3. **Every `DomProxy` is mutable unless it was created with a `fixed` argument set to `true`**. If you store it in a variable and you change the element with a method like `next()` or `siblings()`, any event handlers that use that variable for DOM manipulation will now operate on the new element.
-4. _ALL_ `jessquery` custom methods can be chained together. Each method will operate on the element(s) held in the proxy at the time the function is called. If you switch context multiple times, it can get confusing. **Try to only switch "element context" once per variable**. If you do not want your proxy to be mutable, you can use the `fixed` argument like this: `const container = $(".container", true)`. This will throw an error if you try to change the element with a method like `next()` or `siblings()`. The "element context" is now `fixed` in place.
-5. **_ALL_ `jessquery` custom methods are setters that return the proxy**. If you need to check the value of something, just use the DOM API directly (`textContent` instead of `text()`, for example). This also helps to differentiate between set and get operations.
-6. **_ALL_ DOM API's can be used, but they MUST COME LAST within a single chain**. You can always start a new chain if you need to. You can even use the same variable-- you just need to know that function won't be executed until the previous chain finishes or hits a microtask.
-7. All chains are begun in the order they are found in the script, but they await any microtasks or promises found before continuing. If you need to do things concurrently, **just make a new variable so you get a new queue**.
-8. **Each variable tied to a single `$()` or `$$()` call gets its own queue which runs every function sequentially**. However, remember that the chains are executed concurrently if any promises are found, so you can have multiple chains operating on the same element at the same time if you're not careful.
-9. **Synchronous tasks are always executed as soon as possible, but not until their turn is reached in the queue.** If they are preceded by an async task, they will be added to the queue and executed in order. If there are any promises in their arguments, those will be awaited before the function is called.
-10. Event handlers are always given special priority and moved to the front of the queue. This way, even if you have a full minute of animations lined up, the user can still interact with the element and expect the event to fire immediately. However, **each method is blocking, so if you use the same variable for event handlers, you will block the event handler from firing until that function is finished**. This is particularly problematic if that chain has any `wait()` calls or long animations.
-
-Generally, just try to keep each discrete chain of DOM operations for a single element together, and try to use a new variable for any event handlers. I mean, the whole point of this library is that `$()` and `$$()` are really easy to type, and you only need to worry about it when things aren't behaving the way you expect. If anything gets too hard, you can also use the `defer()` and `wait()` methods to let the DOM catch up while you re-evaluate your life choices. 😅
-
 ## Demo and Key Concepts
 
 `jessquery` works slightly differently from jQuery, but it makes sense once you understand the rules. The concurrent chaining makes things a bit more complex. The key is understanding that each `$()` or `$$()` call is representative of a single queue-- not necessarily the elements that are being manipulated. It's a bit like [PrototypeJS](http://prototypejs.org/doc/latest/dom/dollar-dollar/) mixed with the async flow of something like [RxJS](https://rxjs.dev/guide/overview).
@@ -106,6 +89,23 @@ const button = $<HTMLButtonElement>(".button")
 
 const coolInputs = $$<HTMLInputElement>(".cool-inputs")
 ```
+
+## The Rules
+
+I wrote a lot, but the main idea is that everything should be predictable. You probably only need to read the bold parts unless you start doing a lot of crazy DOM manipulation that operates on multiple elements at once while using the same variables for everything. If you're just doing simple stuff, you can probably just ignore the rest. 👌
+
+1. **Use `$()` to build a queue that operates on a single element-- a DomProxy**. However, if you use a method like `pickAll()` or `kids()`, you will switch to a `DomProxyCollection` with multiple elements.
+2. **Use `$$()` to build a queue that operates on multiple elements at once-- a DomProxyCollection**. However, if you use a method like `pick()` or `parent()` and there is only one element in the collection, you will switch to a `DomProxy` with a single element.
+3. **Every `DomProxy` is mutable unless it was created with a `fixed` argument set to `true`**. If you store it in a variable and you change the element with a method like `next()` or `siblings()`, any event handlers that use that variable for DOM manipulation will now operate on the new element.
+4. _ALL_ `jessquery` custom methods can be chained together. Each method will operate on the element(s) held in the proxy at the time the function is called. If you switch context multiple times, it can get confusing. **Try to only switch "element context" once per variable**. If you do not want your proxy to be mutable, you can use the `fixed` argument like this: `const container = $(".container", true)`. This will throw an error if you try to change the element with a method like `next()` or `siblings()`. The "element context" is now `fixed` in place.
+5. **_ALL_ `jessquery` custom methods are setters that return the proxy**. If you need to check the value of something, just use the DOM API directly (`textContent` instead of `text()`, for example). This also helps to differentiate between set and get operations.
+6. **_ALL_ DOM API's can be used, but they MUST COME LAST within a single chain**. You can always start a new chain if you need to. You can even use the same variable-- you just need to know that function won't be executed until the previous chain finishes or hits a microtask.
+7. All chains are begun in the order they are found in the script, but they await any microtasks or promises found before continuing. If you need to do things concurrently, **just make a new variable so you get a new queue**.
+8. **Each variable tied to a single `$()` or `$$()` call gets its own queue which runs every function sequentially**. However, remember that the chains are executed concurrently if any promises are found, so you can have multiple chains operating on the same element at the same time if you're not careful.
+9. **Synchronous tasks are always executed as soon as possible, but not until their turn is reached in the queue.** If they are preceded by an async task, they will be added to the queue and executed in order. If there are any promises in their arguments, those will be awaited before the function is called.
+10. Event handlers are always given special priority and moved to the front of the queue. This way, even if you have a full minute of animations lined up, the user can still interact with the element and expect the event to fire immediately. However, **each method is blocking, so if you use the same variable for event handlers, you will block the event handler from firing until that function is finished**. This is particularly problematic if that chain has any `wait()` calls or long animations.
+
+Generally, just try to keep each discrete chain of DOM operations for a single element together, and try to use a new variable for any event handlers. I mean, the whole point of this library is that `$()` and `$$()` are really easy to type, and you only need to worry about it when things aren't behaving the way you expect. If anything gets too hard, you can also use the `defer()` and `wait()` methods to let the DOM catch up while you re-evaluate your life choices. 😅
 
 ## Advanced Usage
 
