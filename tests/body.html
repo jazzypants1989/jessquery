@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test send Function</title>
+  </head>
+  <body>
+    <form id="myForm">
+      <input id="butt" type="text" name="title" value="My Title" />
+      <textarea name="body">This is the body of my post.</textarea>
+      <button id="submitButton">Submit</button>
+    </form>
+
+    <script type="module">
+      import { $, $$ } from "../index.js"
+
+      // submitButton.addEventListener("click", async () => {
+      //   const url = "https://jsonplaceholder.typicode.com/posts" // JSONPlaceholder API
+      //   const options = {
+      //     method: "POST",
+      //     json: true,
+      //     oncomplete: () => {
+      //       // Callback function to handle completion
+      //       console.log("Request completed.")
+      //     },
+      //     onerror: (error) => {
+      //       // Callback function to handle errors
+      //       console.error("Request error:", error)
+      //     },
+      //   }
+
+      //   try {
+      //     const response = await send(url, formElement, options)
+      //     console.log("Response:", response)
+      //   } catch (error) {
+      //     console.error("Error:", error)
+      //   }
+      // })
+
+      $("#submitButton").on("click", async (event) => {
+        $("#submitButton").send({
+          event,
+          url: "https://jsonplaceholder.typicode.com/posts",
+          json: true,
+          oncomplete: (r) => {
+            console.log("Response:", r)
+            $("#submitButton").text(JSON.stringify(r))
+          },
+          onerror: (error) => {
+            console.error("Request error:", error)
+          },
+        })
+      })
+    </script>
+  </body>
+</html>

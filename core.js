@@ -20,7 +20,7 @@ function addProxy(type, string, fixed = false) {
     )
   }
 
-  return addMethods(type, string, element, fixed)
+  return addMethods(type, string, element[1] ? element : element[0], fixed)
 }
 
 export function createQueue() {

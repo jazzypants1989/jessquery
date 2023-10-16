@@ -28,12 +28,25 @@
 
       const counter = $("#counter")
 
+      counter.set("hidden")
+
       counter.text(count).on("click", () => {
         count++
         counter.text(count)
+      }).style.border = "2px solid black"
+
+      const truth = $$(".truth")
+
+      truth.data({
+        truth: true,
+        lie: false,
       })
 
+      truth.data("other", "other")
+
       const container = $(".container")
+
+      const card = $(".card")
 
       const randomColor = () => {
         const r = Math.floor(Math.random() * 256)

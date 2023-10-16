@@ -14,8 +14,13 @@
 
       const body = $("body")
 
-      body.fromHTML("http://localhost:5500/tests/moveTo2.html", {
+      // body.fromHTML("http://localhost:5500/tests/moveTo2.html", {
+      //   onComplete: () => body.attach("<h1>It worked!</h1>"),
+      // })
+
+      body.fromStream("http://localhost:8080", {
         onComplete: () => body.attach("<h1>It worked!</h1>"),
+        sse: true,
       })
     </script>
   </body>

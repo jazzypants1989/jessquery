@@ -362,7 +362,7 @@ declare module "jessquery" {
      * });
      * @example
      * $('#news-item').fromJSON('/api/news-item', (element, json) => {
-     *    { title, summary } = json;
+     *    const { title, summary } = json;
      *
      *   element.html(`<h1>${title}</h1>
      *                 <p>${summary}</p>`);

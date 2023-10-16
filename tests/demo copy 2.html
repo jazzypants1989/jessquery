@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div class="container">
+      <h1>jQuery is for old people.</h1>
+      <div class="card">
+        <button id="counter" type="button"></button>
+      </div>
+      <h2 class="truth">This will disappear.</h2>
+      <h3 class="truth">I love you.</h3>
+    </div>
+    <input type="text" />
+    <div class="container" id="parentTwo">
+      <input id="myFavorite" type="text" />
+      <h4 class="truth">Why are you still reading this?</h4>
+    </div>
+    <script type="module">
+      import { $, $$ } from "../index.js"
+      let count = 0
+      const counter = $("#counter").text(count)
+      counter
+        .text(count)
+        .on("click", () => {
+          count++
+          counter.text(count)
+        })
+        .css("border", "2px solid black")
+        .css({
+          padding: "10px",
+          borderRadius: "5px",
+          cursor: "pointer",
+        })
+        .parent()
+        .css("border", "2px solid red")
+        .parent()
+        .css("border", "2px solid blue")
+    </script>
+  </body>
+</html>

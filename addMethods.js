@@ -4,11 +4,13 @@ import {
   addStyleSheet,
   attach,
   become,
-  css,
+  stringOrObject,
   moveOrClone,
   setFormElementValue,
   transition,
   wrappedFetch,
+  send,
+  fetchElements,
 } from "./utils.js"
 
 export function addMethods(type, selector, target, fixed = false) {
@@ -19,170 +21,129 @@ export function addMethods(type, selector, target, fixed = false) {
     return isSingle ? func(target) : target.forEach((el) => func(el))
   }
 
-  const switchTarget = (newTarget) => {
-    if (fixed)
-      throw new Error(`Proxy is fixed. Create new proxy to switch targets.`)
-    if (!newTarget || (Array.isArray(newTarget) && newTarget.length === 0))
-      throw new Error(`No elements found.`)
-    target = newTarget
-    proxy = updateProxy(target)
-    return proxy
-  }
-
   const { addToQueue, prioritize, defer } = createQueue()
   const applyFunc = createApplyFunc(addToQueue, () => proxy)
 
+  const makeMethod = (action, methodContext) => {
+    return applyFunc((...args) => {
+      toOneOrMany((el) => action(el, ...args))
+    }, giveContext(methodContext, selector))
+  }
+
   const customMethods = {
-    on: applyFunc((ev, fn) => {
-      toOneOrMany((el) => {
-        el.addEventListener(ev, (...args) => {
+    on: makeMethod((el, ev, fn) => {
+      el.addEventListener(ev, (...args) => {
+        prioritize(fn, args)
+      })
+    }, "on"),
+
+    once: makeMethod((el, ev, fn) => {
+      el.addEventListener(
+        ev,
+        (...args) => {
           prioritize(fn, args)
-        })
-      })
-    }, giveContext("on", selector)),
+        },
+        { once: true }
+      )
+    }, "once"),
 
-    once: applyFunc((ev, fn) => {
-      toOneOrMany((el) => {
-        el.addEventListener(
-          ev,
-          (...args) => {
-            prioritize(fn, args)
-          },
-          { once: true }
-        )
-      })
-    }, giveContext("once", selector)),
-
-    delegate: applyFunc((event, subSelector, handler) => {
-      toOneOrMany((el) => {
-        el.addEventListener(event, (e) => {
-          if (e.target.matches(subSelector)) {
-            prioritize(handler, [e])
-          }
-        })
-      })
-    }, giveContext("delegate", selector)),
-
-    off: applyFunc((ev, fn) => {
-      toOneOrMany((el) => {
-        el.removeEventListener(ev, fn)
-      })
-    }, giveContext("off", selector)),
-
-    html: applyFunc((newHtml) => {
-      toOneOrMany((el) => (el.innerHTML = newHtml))
-    }, giveContext("html", selector)),
-
-    sanitize: applyFunc((newHtml, sanitizer) => {
-      toOneOrMany((el) => el.setHTML(newHtml, sanitizer))
-    }, giveContext("sanitize", selector)),
-
-    text: applyFunc((newText) => {
-      toOneOrMany((el) => (el.textContent = newText))
-    }, giveContext("text", selector)),
-
-    val: applyFunc((newValue) => {
-      toOneOrMany((el) => {
-        setFormElementValue(el, newValue)
-      })
-    }, giveContext("val", selector)),
-
-    css: applyFunc((stylesOrProp, value) => {
-      toOneOrMany((el) => css(el, stylesOrProp, value))
-    }, giveContext("css", selector)),
-
-    addStyleSheet: applyFunc((rules) => {
-      addStyleSheet(rules)
-    }, giveContext("addStyleSheet", selector)),
-
-    addClass: applyFunc((className) => {
-      toOneOrMany((el) => el.classList.add(className))
-    }, giveContext("addClass", selector)),
-
-    removeClass: applyFunc((className) => {
-      toOneOrMany((el) => el.classList.remove(className))
-    }, giveContext("removeClass", selector)),
-
-    toggleClass: applyFunc((className) => {
-      toOneOrMany((el) => el.classList.toggle(className))
-    }, giveContext("toggleClass", selector)),
-
-    set: applyFunc((attr, value = "") => {
-      toOneOrMany((el) => el.setAttribute(attr, value))
-    }, giveContext("set", selector)),
-
-    unset: applyFunc((attr) => {
-      toOneOrMany((el) => el.removeAttribute(attr))
-    }, giveContext("unset", selector)),
-
-    toggle: applyFunc((attr) => {
-      toOneOrMany((el) => el.toggleAttribute(attr))
-    }, giveContext("toggle", selector)),
-
-    data: applyFunc((key, value) => {
-      toOneOrMany((el) => (el.dataset[key] = value))
-    }, giveContext("data", selector)),
-
-    attach: applyFunc((...children) => {
-      toOneOrMany((el) => attach(el, ...children))
-    }, giveContext("attach", selector)),
-
-    cloneTo: applyFunc((parentSelector, options) => {
-      moveOrClone(target, parentSelector, { mode: "clone", ...options })
-    }, giveContext("cloneTo", selector)),
-
-    moveTo: applyFunc((parentSelector, options) => {
-      moveOrClone(target, parentSelector, { mode: "move", ...options })
-    }, giveContext("moveTo", selector)),
-
-    become: applyFunc((replacements, options) => {
-      become(target, replacements, options)
-    }, giveContext("become", selector)),
-
-    purge: applyFunc(() => {
-      toOneOrMany((el) => el.remove())
-    }, giveContext("purge", selector)),
-
-    fromJSON: applyFunc((url, transformFunc, options = {}) => {
-      if (typeof transformFunc !== "function") {
-        throw new TypeError("Expected transformFunc to be a function")
-      }
-
-      wrappedFetch(url, options, "json", toOneOrMany).then((json) => {
-        toOneOrMany((el) => {
-          const wrappedElement = addMethods(type, selector, el)
-          transformFunc(wrappedElement, json)
-        })
-      })
-    }, giveContext("fromJSON", selector)),
-
-    fromHTML: applyFunc((url, options = {}) => {
-      wrappedFetch(url, options, "text", toOneOrMany).then((html) => {
-        if (html) {
-          const { sanitize = true, sanitizer } = options
-          const targetElements = Array.isArray(target) ? target : [target]
-          targetElements.forEach((el) => {
-            sanitize ? el.setHTML(html, sanitizer) : (el.innerHTML = html)
-          })
-        } else {
-          throw new Error(`No HTML found at ${url}`)
+    delegate: makeMethod((el, event, subSelector, handler) => {
+      el.addEventListener(event, (e) => {
+        if (e.target.matches(subSelector)) {
+          prioritize(handler, [e])
         }
       })
-    }, giveContext("fromHTML", selector)),
+    }, "delegate"),
 
-    do: applyFunc((fn) => {
-      toOneOrMany((el) => {
-        const wrappedElement = addMethods(type, selector, el)
-        fn(wrappedElement)
-      })
-    }, giveContext("do", selector)),
+    off: makeMethod((el, ev, fn) => {
+      el.removeEventListener(ev, fn)
+    }, "off"),
 
-    defer: applyFunc((fn) => {
-      toOneOrMany((el) => {
+    html: makeMethod((el, newHtml) => (el.innerHTML = newHtml), "html"),
+
+    text: makeMethod((el, newText) => (el.textContent = newText), "text"),
+
+    sanitize: makeMethod(
+      (el, newHtml, sanitizer) => el.setHTML(newHtml, sanitizer),
+      "sanitize"
+    ),
+
+    val: makeMethod((el, newValue) => setFormElementValue(el, newValue), "val"),
+
+    css: makeMethod(
+      (el, stylesOrProp, value) =>
+        stringOrObject(el.style, stylesOrProp, value),
+      "css"
+    ),
+
+    addStyleSheet: makeMethod(
+      (el, rules) => addStyleSheet(rules),
+      "addStyleSheet"
+    ),
+
+    addClass: makeMethod(classMethod("add"), "addClass"),
+
+    removeClass: makeMethod(classMethod("remove"), "removeClass"),
+
+    toggleClass: makeMethod(classMethod("toggle"), "toggleClass"),
+
+    set: makeMethod(
+      (el, attr, value = "") => stringOrObject(el, attr, value, true),
+      "set"
+    ),
+
+    unset: makeMethod((el, attr) => el.removeAttribute(attr), "unset"),
+
+    toggle: makeMethod((el, attr) => el.toggleAttribute(attr), "toggle"),
+
+    data: makeMethod(
+      (el, keyOrObj, value) => stringOrObject(el.dataset, keyOrObj, value),
+      "data"
+    ),
+
+    attach: makeMethod((el, ...children) => attach(el, ...children), "attach"),
+
+    cloneTo: makeMethod((el, parentSelector, options) => {
+      moveOrClone(el, parentSelector, { mode: "clone", ...options })
+    }, "cloneTo"),
+
+    moveTo: makeMethod((el, parentSelector, options) => {
+      moveOrClone(el, parentSelector, { mode: "move", ...options })
+    }, "moveTo"),
+
+    become: makeMethod((el, replacements, options) => {
+      become(el, replacements, options)
+    }, "become"),
+
+    purge: makeMethod((el) => el.remove(), "purge"),
+
+    send: makeMethod((el, options) => send(el, options), "send"),
+
+    fromStream: makeMethod((url, options = {}) => {
+      const type = options.sse ? "sse" : "stream"
+      fetchElements(type, url, options, target, toOneOrMany)
+    }, "fromStream"),
+
+    fromHTML: makeMethod((el, url, options = {}) => {
+      fetchElements("text", url, options, el, toOneOrMany)
+    }, "fromHTML"),
+
+    fromJSON: makeMethod((el, url, fn, options = {}) => {
+      wrappedFetch(url, options, "json", toOneOrMany).then((json) => {
         const wrappedElement = addMethods(type, selector, el)
-        defer(fn, [wrappedElement])
+        fn(wrappedElement, json)
       })
-    }, giveContext("defer", selector)),
+    }, "fromJSON"),
+
+    do: makeMethod((el, fn) => {
+      const wrappedElement = addMethods(type, selector, el)
+      fn(wrappedElement)
+    }),
+
+    defer: makeMethod((el, fn) => {
+      const wrappedElement = addMethods(type, selector, el)
+      defer(fn, [wrappedElement])
+    }, "defer"),
 
     transition: applyFunc(
       (keyframes, options) =>
@@ -199,73 +160,40 @@ export function addMethods(type, selector, target, fixed = false) {
       giveContext("wait", selector)
     ),
 
-    next: applyFunc(() => {
-      const nextElements = performOnTargets((el) => el.nextElementSibling)
-      return switchTarget(nextElements)
-    }, giveContext("next", selector)),
+    next: contextSwitch("nextElementSibling"),
 
-    prev: applyFunc(() => {
-      const previousElements = performOnTargets(
-        (el) => el.previousElementSibling
-      )
-      return switchTarget(previousElements)
-    }, giveContext("prev", selector)),
+    prev: contextSwitch("previousElementSibling"),
 
-    first: applyFunc(() => {
-      const firstChildren = performOnTargets((el) => el.firstElementChild)
-      return switchTarget(firstChildren)
-    }, giveContext("first", selector)),
+    first: contextSwitch("firstElementChild"),
 
-    last: applyFunc(() => {
-      const lastChildren = performOnTargets((el) => el.lastElementChild)
-      return switchTarget(lastChildren)
-    }, giveContext("last", selector)),
+    last: contextSwitch("lastElementChild"),
 
-    parent: applyFunc(() => {
-      const parents = isSingle
-        ? [target.parentElement]
-        : target.map((el) => el.parentElement)
-      return switchTarget([...new Set(parents)])
-    }, giveContext("parent", selector)),
+    parent: contextSwitch("parentElement"),
 
     ancestor: applyFunc((selector) => {
-      const ancestors = isSingle
-        ? [target.closest(selector)]
-        : target.map((el) => el.closest(selector))
-      return switchTarget([...new Set(ancestors)])
+      const ancestor = filterTarget((el) => el.closest(selector))
+      return switchTarget(ancestor)
     }, giveContext("ancestor", selector)),
 
     kids: applyFunc(() => {
-      const childrenArray = isSingle
-        ? target.children
-          ? Array.from(target.children)
-          : []
-        : target.flatMap((el) => Array.from(el.children))
-      return switchTarget(childrenArray)
+      const kidsArray = filterTarget((el) => Array.from(el.children))
+      return switchTarget(kidsArray.flat())
     }, giveContext("kids", selector)),
 
     siblings: applyFunc(() => {
-      const siblingsArray = isSingle
-        ? Array.from(target.parentElement.children).filter(
-            (child) => child !== target
-          )
-        : target.flatMap((el) =>
-            Array.from(el.parentElement.children).filter(
-              (child) => child !== el
-            )
-          )
-      siblingsArray.length ? switchTarget(siblingsArray) : switchTarget(null)
+      const siblings = filterTarget((el) =>
+        Array.from(el.parentElement.children).filter((child) => child !== el)
+      )
+      return switchTarget(siblings)
     }, giveContext("siblings", selector)),
 
     pick: applyFunc((selector) => {
-      const pickedElements = performOnTargets((el) =>
-        el.querySelector(selector)
-      )
+      const pickedElements = filterTarget((el) => el.querySelector(selector))
       return switchTarget(pickedElements)
     }, giveContext("pick", selector)),
 
     pickAll: applyFunc((selector) => {
-      const pickedElements = performOnTargets((el) =>
+      const pickedElements = filterTarget((el) =>
         Array.from(el.querySelectorAll(selector))
       )
       return switchTarget(pickedElements.flat())
@@ -280,13 +208,34 @@ export function addMethods(type, selector, target, fixed = false) {
     return proxy
   }
 
-  function performOnTargets(action) {
+  function contextSwitch(prop) {
+    return applyFunc(() => {
+      const resultElements = filterTarget((el) => el[prop])
+      return switchTarget(resultElements)
+    }, giveContext(prop, selector))
+  }
+
+  function switchTarget(newTarget) {
+    if (fixed)
+      throw new Error(`Proxy is fixed. Create new proxy to switch targets.`)
+    if (!newTarget || (Array.isArray(newTarget) && newTarget.length === 0))
+      throw new Error(`No elements found.`)
+    target = newTarget
+    proxy = updateProxy(target)
+    return proxy
+  }
+
+  function filterTarget(action) {
     if (isSingle) {
       const result = action(target)
       return result ? [result] : []
     } else {
       return target.map(action).filter((el) => el)
     }
+  }
+
+  function classMethod(type) {
+    return (el, ...classes) => el.classList[type](...classes)
   }
 
   proxy = updateProxy(target)

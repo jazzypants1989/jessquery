@@ -7,14 +7,15 @@
   </head>
   <body>
     <div id="testDiv"></div>
+    <div id="testDiv"></div>
 
     <script type="module">
       import { $, $$ } from "../index.js"
 
-      $("#testDiv").fromJSON(
+      $$("#testDiv").fromJSON(
         "https://jsonplaceholder.typicode.com/todos/1",
         (element, data) => {
-          element.text(`Title: ${data.title}`).addClass("updated")
+          element.html(`<h1>Title: ${data.title}</h1>`).addClass("updated")
         },
         {
           fallback: "I'M A CUSTOM FALLBACK",

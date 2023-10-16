@@ -1,5 +1,7 @@
 export let defaultErrorHandler = (error, context) => {
-  console.error(context, "\n", error)
+  typeof context === "string"
+    ? console.error(`${context}\n`, error)
+    : console.error(context, error)
 }
 
 export function setErrorHandler(handler) {

@@ -28,11 +28,11 @@ export function setFormElementValue(element, value) {
   }
 }
 
-export function css(element, stylesOrProp, value) {
-  if (typeof stylesOrProp === "string") {
-    element.style[stylesOrProp] = value
-  } else if (typeof stylesOrProp === "object") {
-    Object.assign(element.style, stylesOrProp)
+export function stringOrObject(prop, stringOrObj, value, attr) {
+  if (typeof stringOrObj === "string") {
+    attr ? prop.setAttribute(stringOrObj, value) : (prop[stringOrObj] = value)
+  } else if (typeof stringOrObj === "object") {
+    Object.assign(prop, stringOrObj)
   }
 }
 
@@ -109,36 +109,6 @@ export function transition(elements, keyframes, options) {
   return Promise.all(animations.map((animation) => animation.finished))
 }
 
-export function wrappedFetch(url, options, type, toOneOrMany) {
-  if (options.fallback) {
-    toOneOrMany(
-      (el) =>
-        (el[type === "json" ? "textContent" : "innerHTML"] = options.fallback)
-    )
-  }
-
-  return fetch(url, options)
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      return type === "json" ? response.json() : response.text()
-    })
-    .catch((error) => {
-      const errorMessage = options.error || `Failed to load ${type}`
-      toOneOrMany(
-        (el) =>
-          (el[type === "json" ? "textContent" : "innerHTML"] = errorMessage)
-      )
-      throw error
-    })
-    .finally(() => {
-      if (options.onComplete) {
-        requestIdleCallback(options.onComplete)
-      }
-    })
-}
-
 export function modifyDOM(parent, children, options) {
   const { position = "append", sanitize = true, mode = "move" } = options
 
@@ -157,6 +127,164 @@ export function modifyDOM(parent, children, options) {
     domElements.forEach((domElement) => {
       DOMActions[position](parent, getCloneOrNode(domElement))
     })
+  })
+}
+
+export function wrappedFetch(url, options, type, toOneOrMany) {
+  let response
+
+  handleFallback(options, toOneOrMany, type)
+
+  return fetch(url, options)
+    .then((res) => {
+      response = res
+      return handleResponse(res, type, toOneOrMany)
+    })
+    .catch((error) => handleError(error, options, toOneOrMany, type))
+    .finally(() => handleFinally(options, response))
+}
+
+export function send(element, options = {}, toOneOrMany) {
+  let {
+    url,
+    method = "POST",
+    json = false,
+    onerror,
+    oncomplete,
+    event,
+  } = options
+  event && event.preventDefault()
+  url =
+    url ||
+    element.action ||
+    element.formAction ||
+    element.form.action ||
+    window.location.href.slice(0, window.location.href.lastIndexOf("/"))
+  let body = getBody(element, options)
+  const headers = new Headers()
+
+  if (json) {
+    headers.append("Content-Type", "application/json")
+    body =
+      body instanceof FormData
+        ? JSON.stringify(Object.fromEntries(body.entries()))
+        : typeof body === "object"
+        ? JSON.stringify(body)
+        : JSON.stringify({ body })
+  }
+
+  const fetchOptions = { method, headers, body }
+  let response
+
+  handleFallback(options, toOneOrMany, json ? "json" : "text")
+
+  return fetch(url, fetchOptions)
+    .then((res) => {
+      response = res
+      return handleResponse(res, json ? "json" : "text")
+    })
+    .then((data) => {
+      oncomplete && oncomplete(data)
+      return data
+    })
+    .catch((error) => {
+      onerror && onerror(error)
+      handleError(error, options, toOneOrMany, json ? "json" : "text")
+    })
+    .finally(() => handleFinally(options, response))
+
+  function getBody(element, options = {}) {
+    const { serializer } = options
+    const tagName = element.tagName
+    const form = element.form || element.closest("form")
+
+    return tagName === "FORM"
+      ? serializer
+        ? serializer(element)
+        : new FormData(element)
+      : tagName === "INPUT" || tagName === "SELECT" || tagName === "TEXTAREA"
+      ? element.value
+      : form
+      ? serializer
+        ? serializer(form)
+        : new FormData(form)
+      : element.textContent
+  }
+}
+
+function handleResponse(response, type, toOneOrMany) {
+  if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+
+  if (type === "json") return response.json()
+  if (type === "stream") {
+    const reader = response.body.getReader()
+    return recursiveRead(reader, toOneOrMany, type)
+  }
+
+  return response.text()
+}
+
+function recursiveRead(reader, toOneOrMany, type, chunks = []) {
+  return reader.read().then(({ done, value }) => {
+    const decodedChunk = new TextDecoder("utf-8").decode(value)
+    const allChunks = [...chunks, decodedChunk]
+
+    toOneOrMany((el) => updateContent(el, type, allChunks.join("")))
+
+    return done
+      ? allChunks.join("")
+      : recursiveRead(reader, toOneOrMany, type, allChunks)
+  })
+}
+
+function updateContent(el, type, message) {
+  el[type === "json" || type === "stream" ? "textContent" : "innerHTML"] =
+    message
+}
+
+function handleError(error, options, toOneOrMany, type) {
+  const errorMessage = options.error || `Failed to load ${type}`
+  toOneOrMany((el) => updateContent(el, type, errorMessage))
+  throw error
+}
+
+function handleFallback(options, toOneOrMany, type) {
+  if (options.fallback) {
+    toOneOrMany((el) => updateContent(el, type, options.fallback))
+  }
+}
+
+function handleFinally(options, response) {
+  if (options.onComplete) {
+    requestIdleCallback(() => options.onComplete(response))
+  }
+}
+
+export function fetchElements(type, url, options = {}, target, toOneOrMany) {
+  if (type === "sse") {
+    const eventSource = new EventSource(url)
+    eventSource.onmessage = (event) => {
+      toOneOrMany((el) => {
+        sanitizeOrNot(el, event.data, options)
+      })
+    }
+    return
+  }
+
+  wrappedFetch(url, options, type, toOneOrMany).then((data) => {
+    if (data) {
+      sanitizeOrNot(target, data, options)
+    } else {
+      throw new Error(`No ${type} found at ${url}`)
+    }
+  })
+}
+
+export function sanitizeOrNot(target, data, options) {
+  const { sanitize = true, sanitizer } = options
+  const targetElements = Array.isArray(target) ? target : [target]
+  targetElements.forEach((el) => {
+    sanitize ? el.setHTML(data, sanitizer) : (el.innerHTML = data)
   })
 }
 

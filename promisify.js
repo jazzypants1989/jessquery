@@ -7,36 +7,34 @@ export function promisify(
 ) {
   return (...args) => {
     return new Promise((resolve, reject) => {
-      let hasSettled = false
+      let settled = false
 
-      const guardedResolve = (value) => {
-        if (!hasSettled) {
-          hasSettled = true
+      const Resolve = (value) => {
+        if (!settled) {
+          settled = true
           resolve(value)
         }
       }
 
-      const guardedReject = (reason) => {
-        if (!hasSettled) {
-          hasSettled = true
+      const Reject = (reason) => {
+        if (!settled) {
+          settled = true
           reject(reason)
         }
       }
 
       setTimeout(() => {
-        if (!hasSettled) {
-          hasSettled = true
+        if (!settled) {
+          settled = true
           resolve()
           defaultErrorHandler(
-            new Error(
-              `Promisify Timeout (second argument): ${timeout}ms exceeded.`
-            ),
+            new Error(`Timeout: ${timeout}ms exceeded.`),
             meta
           )
         }
       }, timeout)
 
-      fn(guardedResolve, guardedReject, ...args)
+      fn(Resolve, Reject, ...args)
     })
   }
 }
