@@ -120,7 +120,7 @@ export function addMethods(type, selector, target, fixed = false) {
     do: makeMethod((el, fn) => {
       const wrappedElement = addMethods(type, selector, el)
       fn(wrappedElement)
-    }),
+    }, "do"),
 
     defer: makeMethod((el, fn) => {
       const wrappedElement = addMethods(type, selector, el)

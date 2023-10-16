@@ -23,12 +23,14 @@ declare module "jessquery" {
    * - {@link DomProxy.attach} - Attaches children to the element based on the provided options.
    * - {@link DomProxy.cloneTo} - Clone of the element to a new parent element in the DOM. By default, it is appended inside the new parent element, but you change change this with the `position` option. The original element remains in its current location. If you want to move the element instead of cloning it, use {@link DomProxy.moveTo}.
    * - {@link DomProxy.moveTo} - Move the element to a new parent element in the DOM. By default, it is appended inside the new parent element, but you change change this with the `position` option. The original element is removed from its current location. If you want to clone the element instead of moving it, use {@link DomProxy.cloneTo}.
-   * - {@link DomProxy.become} - Replace the element with a new element. By default, the new element is permanentaly removed from its original location. To clone it instead, set the mode to 'clone'.
+   * - {@link DomProxy.become} - Replace the element with a new element. By default, the new element is cloned from its original location. To permanentaly remove it instead, set the mode to 'move'.
    * - {@link DomProxy.purge} - Remove the element from the DOM entirely
-   * - {@link DomProxy.fromJSON} - Fetches a JSON resource from the provided URL, applies a transformation function on it and the proxy's target element.
-   * - {@link DomProxy.fromHTML} - Fetches an HTML resource from the provided URL and inserts it into the proxy's target element.
+   * - {@link DomProxy.send} - Sends an HTTP request using the current element as the body of the request unless otherwise specified.
    * - {@link DomProxy.do} - Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too)
    * - {@link DomProxy.defer} - Schedules a function for deferred execution on the element. This will push the operation to the very end of the internal event loop.
+   * - {@link DomProxy.fromJSON} - Fetches a JSON resource from the provided URL, applies a transformation function on it and the proxy's target element.
+   * - {@link DomProxy.fromHTML} - Fetches an HTML resource from the provided URL and inserts it into the proxy's target element.
+   * - {@link DomProxy.fromStream} - Fetches a stream resource from the provided URL and inserts it into the proxy's target element. Can also use Server-Sent Events.
    * - {@link DomProxy.transition} - Animate the element using the WAAPI. The queue will wait for the animation to complete before continuing.
    * - {@link DomProxy.wait} - Sets a timeout for the given number of milliseconds and waits for it to resolve before continuing the chain
    * - {@link DomProxy.next} - Switch to the nextElementSibling in the middle of a chain
@@ -363,7 +365,7 @@ declare module "jessquery" {
      * @param {boolean} [options.json=false] - If true, sends and expects JSON, otherwise sends FormData.
      * @param {any} [options.body] - Body of the request. Defaults to form/input field content.
      * @param {Event} [options.event] - Event object to prevent default behavior.
-     * @param {function} [options.serializer] - Custom function to serialize form data.
+     * @param {function} [options.serializer] - Custom function to serialize form data. Will receive the ENTIRE element as an argument.
      * @param {string} [options.error] - Error message for display/update on failed request.
      * @param {string} [options.fallback] - Message/content to display during request processing.
      * @param {function} [options.onError] - Callback for request errors.
@@ -769,10 +771,12 @@ declare module "jessquery" {
    * - {@link DomProxyCollection.moveTo} - Moves the elements to a new parent element in the DOM. By default, it is appended inside the new parent element, but you change change this with the `position` option. The original elements are removed from their current location. The `all` option is technically available, but it will simply use the last element in the collection. This is because you can only move an element to one place at a time. If you want to clone the elements instead of moving them, use {@link DomProxyCollection.cloneTo}.
    * - {@link DomProxyCollection.become} - Replaces the elements with new elements. By default, the elements are moved to the new location. To clone them instead, set the mode to 'clone'.
    * - {@link DomProxyCollection.purge} - Remove the elements from the DOM entirely
-   * - {@link DomProxyCollection.fromJSON} - Fetches a JSON resource from the provided URL and applies a transformation function which uses the fetched JSON and the proxy's target element as arguments.
-   * - {@link DomProxyCollection.fromHTML} - Fetches an HTML resource from the provided URL and inserts it into the proxy's target element.
+   * - {@link DomProxyCollection.send} - Sends an HTTP request using the current element as the body of the request unless otherwise specified.
    * - {@link DomProxyCollection.do} - Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too)
    * - {@link DomProxyCollection.defer} - Schedules a function for deferred execution on the elements. This will push the operation to the very end of the internal event loop.
+   * - {@link DomProxyCollection.fromJSON} - Fetches a JSON resource from the provided URL and applies a transformation function which uses the fetched JSON and the proxy's target element as arguments.
+   * - {@link DomProxyCollection.fromHTML} - Fetches an HTML resource from the provided URL and inserts it into the proxy's target element.
+   * - {@link DomProxyCollection.fromStream} - Dynamically fetches data from the provided URL and updates a single DOM element using a stream or Server-Sent Event (SSE).
    * - {@link DomProxyCollection.transition} - Animate the elements using the WAAPI. The queue will wait for the animation to complete before continuing.
    * - {@link DomProxyCollection.wait} - Sets a timeout for the given number of milliseconds and waits for it to resolve before continuing the chain
    * - {@link DomProxyCollection.next} - Switch to every existing nextElementSibling for each element in the collection
