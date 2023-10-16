@@ -1155,6 +1155,63 @@ declare module "jessquery" {
       } & FetchOptions
     ) => DomProxyCollection<T>
 
+    /** Execute an asynchronous function and wait for it to resolve before continuing the chain (can be synchronous too)
+     * @param fn The async callback. This can receive the element as an argument.
+     * @returns This {@link DomProxyCollection}
+     * @example
+     * $$('.buttons')
+     * .css('color', 'red')
+     * .do(async (el) => { // The element is passed as an argument
+     *   const response = await fetch('/api')
+     *  const data = await response.json()
+     * el.text(data.message) // All the methods are still available
+     * })
+     * .css('color', 'blue')
+     */
+    do: (
+      fn: (el: DomProxyCollection) => Promise<void> | void
+    ) => DomProxyCollection<T>
+
+    /** Schedules a function for deferred execution on the elements. This will push the operation to the very end of the internal event loop.
+     *
+     * Usually, everything will happen in sequence anyways. Given the predictability of each queue, `defer` has limited use cases and should be used sparingly. The whole point of JessQuery is to make things predictable, so you should just put the function at the end of the chain if you can.
+     *
+     * The only problem is if you set up an event listener using a variable that has lots of queued behavior-- especially calls to the `wait` method. Just wrap the `wait` call and everything after it in `defer` to ensure that event handlers don't get stuck behind these in the queue.
+     *
+     * This will capture the state of the DomProxyCollection BEFORE THE CHAIN and pass it to the function, so this should not be mixed with context switching methods like `next` or `pick`.
+     *
+     * Honestly, I'm not sure if this even makes much sense. I just spent a bunch of time building a crazy queue system, and I feel like I need to expose it. If you have any ideas for how to make this more useful, please open an issue or PR.
+     *
+     * @param {function(DomProxyCollection): void} fn - The function to be deferred for later execution. It will be passed the DomProxy instance as an argument.
+     * @returns {DomProxyCollection} - The DomProxyCollection instance, allowing for method chaining.
+     *
+     * @example
+     * $$('.buttons')
+     *  .on('click', () => buttons.text('Clicked!'))
+     *  .wait(1000) // The event handler will be stuck behind this for 1 second
+     *
+     * $$('.buttons')
+     * .on('click', () => buttons.text('Clicked!'))
+     * .defer(() => buttons.wait(1000)) // The event handler will be executed immediately
+     *
+     * // Take note that this is only an issue if you're using the same variable for both the event handler and the queued behavior.
+     * $$('button')
+     * .on('click', () => $$('.buttons').text('Clicked!'))
+     * .wait(1000) // This is fine because the event handler is not sharing a queue with the `wait` call
+     *
+     * @example
+     * // Please limit the use of this method anywhere other than the end of a chain. That's confusing.
+     * // Only use it for race conditions or other edge cases.
+     * display
+     *    .defer((el) => el.css("color", "blue"))
+     *    .text("HALF A SECOND OF GLORY") // Text is black
+     *    .wait(500).text("Hello, world!") // Text is red
+     *    .css("color", "red"))
+     *    .wait(500).text("Goodbye, world!") // Text is blue
+     * // This is missing the point of JessQuery. Just put each method in sequence.
+     */
+    defer: (fn: (el: DomProxyCollection) => void) => DomProxyCollection<T>
+
     /**
      * Fetches a JSON resource from the provided URL, applies a transformation function on it and the proxy's target elements.
      * @param {string} url - The URL to fetch the JSON from.
@@ -1251,63 +1308,6 @@ declare module "jessquery" {
         onSuccess?: (data: any) => void
       }
     ) => DomProxyCollection<T>
-
-    /** Execute an asynchronous function and wait for it to resolve before continuing the chain (can be synchronous too)
-     * @param fn The async callback. This can receive the element as an argument.
-     * @returns This {@link DomProxyCollection}
-     * @example
-     * $$('.buttons')
-     * .css('color', 'red')
-     * .do(async (el) => { // The element is passed as an argument
-     *   const response = await fetch('/api')
-     *  const data = await response.json()
-     * el.text(data.message) // All the methods are still available
-     * })
-     * .css('color', 'blue')
-     */
-    do: (
-      fn: (el: DomProxyCollection) => Promise<void> | void
-    ) => DomProxyCollection<T>
-
-    /** Schedules a function for deferred execution on the elements. This will push the operation to the very end of the internal event loop.
-     *
-     * Usually, everything will happen in sequence anyways. Given the predictability of each queue, `defer` has limited use cases and should be used sparingly. The whole point of JessQuery is to make things predictable, so you should just put the function at the end of the chain if you can.
-     *
-     * The only problem is if you set up an event listener using a variable that has lots of queued behavior-- especially calls to the `wait` method. Just wrap the `wait` call and everything after it in `defer` to ensure that event handlers don't get stuck behind these in the queue.
-     *
-     * This will capture the state of the DomProxyCollection BEFORE THE CHAIN and pass it to the function, so this should not be mixed with context switching methods like `next` or `pick`.
-     *
-     * Honestly, I'm not sure if this even makes much sense. I just spent a bunch of time building a crazy queue system, and I feel like I need to expose it. If you have any ideas for how to make this more useful, please open an issue or PR.
-     *
-     * @param {function(DomProxyCollection): void} fn - The function to be deferred for later execution. It will be passed the DomProxy instance as an argument.
-     * @returns {DomProxyCollection} - The DomProxyCollection instance, allowing for method chaining.
-     *
-     * @example
-     * $$('.buttons')
-     *  .on('click', () => buttons.text('Clicked!'))
-     *  .wait(1000) // The event handler will be stuck behind this for 1 second
-     *
-     * $$('.buttons')
-     * .on('click', () => buttons.text('Clicked!'))
-     * .defer(() => buttons.wait(1000)) // The event handler will be executed immediately
-     *
-     * // Take note that this is only an issue if you're using the same variable for both the event handler and the queued behavior.
-     * $$('button')
-     * .on('click', () => $$('.buttons').text('Clicked!'))
-     * .wait(1000) // This is fine because the event handler is not sharing a queue with the `wait` call
-     *
-     * @example
-     * // Please limit the use of this method anywhere other than the end of a chain. That's confusing.
-     * // Only use it for race conditions or other edge cases.
-     * display
-     *    .defer((el) => el.css("color", "blue"))
-     *    .text("HALF A SECOND OF GLORY") // Text is black
-     *    .wait(500).text("Hello, world!") // Text is red
-     *    .css("color", "red"))
-     *    .wait(500).text("Goodbye, world!") // Text is blue
-     * // This is missing the point of JessQuery. Just put each method in sequence.
-     */
-    defer: (fn: (el: DomProxyCollection) => void) => DomProxyCollection<T>
 
     /** Animate the elements using the WAAPI
      *  - Returns the proxy so you can continue chaining. If you need to return the animation object, use the `animate` method instead.
