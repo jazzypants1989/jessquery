@@ -16,9 +16,9 @@ Rekindle your love for method chaining-- now in a lightweight, type-safe package
 
 - [Basic Usage](#basic-usage)
 - [Installation](#installation)
-- [The Rules](#the-rules)
 - [Demo and Key Concepts](#demo-and-key-concepts)
 - [TypeScript](#typescript)
+- [The Rules](#the-rules)
 - [Advanced Usage](#advanced-usage)
 - [Contributing](#contributing)
 
