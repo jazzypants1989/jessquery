@@ -20,6 +20,7 @@ Rekindle your love for method chaining-- now in a lightweight, type-safe package
 - [TypeScript](#typescript)
 - [The Rules](#the-rules)
 - [Advanced Usage](#advanced-usage)
+- [Interfaces](#interfaces)
 - [Contributing](#contributing)
 
 ## Basic Usage
