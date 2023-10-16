@@ -11,14 +11,6 @@
       <div class="card">
         <button id="counter" type="button"></button>
       </div>
-      <h2 class="truth">This will disappear.</h2>
-      <h3 class="truth">I love you.</h3>
-    </div>
-    <input type="text" />
-    <div class="container" id="parentTwo">
-      <input id="myFavorite" type="text" />
-      <h4 class="truth">Why are you still reading this?</h4>
-    </div>
     <script type="module">
       import { $, $$ } from "../index.js"
       let count = 0
@@ -39,6 +31,9 @@
         .css("border", "2px solid red")
         .parent()
         .css("border", "2px solid blue")
+        .kids()
+        .css("backgroundColor", "lightblue")
+        .pick("#counter")
     </script>
   </body>
 </html>

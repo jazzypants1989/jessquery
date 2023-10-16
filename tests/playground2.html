@@ -10,8 +10,7 @@
     <script type="module">
       import { $, $$ } from "../index.js"
 
-      $("#app").sanitize(
-        `<div class="container">
+      $("#app").sanitize(`<div class="container">
               <h1>jQuery is for old people.</h1>
               <div class="card">
                 <button id="counter" type="button"></button>
@@ -19,11 +18,14 @@
               <h2 class="truth">This will disappear.</h2>
               <h3 class="truth">I love you.</h3>
             </div>
-            <img onerror="alert('jQuery is forever!')" src="x" />
-            `
-      )
+            <input type="text" />
+            <div class="container" id="parentTwo">
+              <input id="myFavorite" type="text" />
+              <h4 class="truth">Why are you still reading this?</h4>
+            </div>`)
 
       let count = 0
+
       const counter = $("#counter")
 
       counter.text(count).on("click", () => {
@@ -31,7 +33,18 @@
         counter.text(count)
       }).style.border = "2px solid black"
 
+      const truth = $$(".truth")
+
+      truth.data({
+        truth: true,
+        lie: false,
+      })
+
+      truth.data("other", "other")
+
       const container = $(".container")
+
+      const card = $(".card")
 
       const randomColor = () => {
         const r = Math.floor(Math.random() * 256)
@@ -139,6 +152,42 @@
       //       .css("backgroundColor", "lightblue")
       //       .css("color", "black")
       //   )
+
+      const inputs = $$("input") // const inputs = document.querySelectorAll("input")
+
+      // inputs.on("input", (e) => {
+      //   // inputs.forEach((el) => {
+      //   //   el.addEventListener("input", (e) => {
+      //   inputs.do((el) => {
+      //   // inputs.forEach((el) => {
+      //     el.val(e.target.value) // el.value = e.target.value
+      //   })
+      // })
+
+      inputs.on("input", (e) => {
+        inputs.do((el) => {
+          el.val(e.target.value)
+        })
+      })
+
+      // inputs.map((el) => {
+      //   console.log(el)
+      //   el.addEventListener("input", (e) => {
+      //     inputs.forEach((el) => {
+      //       console.log(el)
+      //       el.value = e.target.value
+      //     })
+      //   })
+      // })
+
+      // $("#parentTwo")
+      //   .attach("<button id='truth'>Truth</button>")
+      //   .pick("#truth")
+      //   .on("click", () => {
+      //     $("#truth").textContent === "Truth"
+      //       ? $("#truth").text("Lies")
+      //       : $("#truth").text("Truth")
+      //   })
     </script>
   </body>
 </html>

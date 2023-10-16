@@ -15,9 +15,6 @@
     <script type="module">
       import { $, $$ } from "../index.js"
 
-      // Assume your $ and $$ functions return { raw: DOMElement }
-      // And the become function looks similar to the previous version
-
       function becomeMultiElementTest() {
         const output = document.createElement("div")
         document.getElementById("testContainer").appendChild(output)
@@ -25,9 +22,12 @@
         const toBeReplacedEls = $$("div.toBeReplaced")
         const replacementEls = $$("div.replacementElement")
 
-        // Validate that your $$ function is returning what you expect
-        console.log("toBeReplacedEls:", toBeReplacedEls) // Should be an array-like of { raw: DOMElement }
-        console.log("replacementEls:", replacementEls) // Should be an array-like of { raw: DOMElement }
+        replacementEls.forEach((el, i) => {
+          el.textContent += " " + i
+        })
+
+        console.log("toBeReplacedEls:", toBeReplacedEls)
+        console.log("replacementEls:", replacementEls)
 
         toBeReplacedEls.become(replacementEls, { mode: "move" })
 
