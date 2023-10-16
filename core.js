@@ -1,6 +1,6 @@
 import { defaultErrorHandler, giveContext } from "./errors.js"
-import { addMethods } from "./addMethods.js"
-import { getDOMElement } from "./utils.js"
+import { addMethods } from "./methods.js"
+import { getDOMElement } from "./DOM.js"
 
 export function $(string, fixed = false) {
   return addProxy("$", string, fixed)
@@ -11,16 +11,16 @@ export function $$(string, fixed = false) {
 }
 
 function addProxy(type, string, fixed = false) {
-  const element = getDOMElement(string, false, type === "$$")
+  const elements = getDOMElement(string, false, type === "$$")
 
-  if (!element[0]) {
+  if (!elements[0]) {
     return defaultErrorHandler(
-      new Error(`Error with element.`),
+      new Error(`No elements for ${type}(${string})`),
       giveContext(type, string)
     )
   }
 
-  return addMethods(type, string, element[1] ? element : element[0], fixed)
+  return addMethods(type, string, elements[1] ? elements : elements[0], fixed)
 }
 
 export function createQueue() {
@@ -81,10 +81,10 @@ export function createQueue() {
   }
 }
 
-export function createApplyFunc(addToQueue, proxy) {
+export function createQueueFunction(addToQueue, proxy) {
   const isThenable = (value) => value && typeof value.then === "function"
 
-  return function applyFunc(fn, context) {
+  return function queueFunction(fn, context) {
     return (...args) => {
       addToQueue(async () => {
         try {

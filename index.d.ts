@@ -343,13 +343,79 @@ declare module "jessquery" {
     purge: () => DomProxy<T>
 
     /**
+     * Sends an HTTP request using the current element as the body of the request unless otherwise specified.
+     *
+     * None of the options are required-- not even the URL.
+     *
+     * If you do not provide a URL the method will:
+     * - First, look to see if it's in a form with an action property.
+     * - Next, it will look to see if the element is a button with a formaction property.
+     * - Next, it will try to see if the element is part of a form that has an action property.
+     * - Finally, it will take the current URL and slice off everything after the last slash. (http://example.com/foo/index.html -> http://example.com/foo/)
+     *
+     * Unless the `body` option is provided, it will be created automatically based on the element type:
+     * - If it's a form, the entire form will be serialized using the formData API unless a custom serializer is provided.
+     * - If it's an input, textarea, or select, the value will be used.
+     * - If it isn't a form or one of the above elements, we will check to see if the element has a form property or one can be found with the `closest` method. If so, we will serialize the form using the formData API unless a custom serializer is provided.
+     * - If none of the above, the element's textContent will be used.
+     *
+     * If the `json` option is set to true, the request will be sent as JSON and the response will be parsed as JSON.
+     *
+     * Otherwise, the request will be sent as FormData and the response will be parsed as text.
+     *
+     * @param {Element} element - The DOM element to gather data from and determine type of the request.
+     * @param {object} options - Configuration for the AJAX request.
+     * @param {string} [options.url] - Endpoint for the request. Defaults to element’s action/formAction.
+     * @param {string} [options.method="POST"] - HTTP method for the request.
+     * @param {boolean} [options.json=false] - If true, sends and expects JSON, otherwise sends FormData.
+     * @param {any} [options.body] - Body of the request. Defaults to form/input field content.
+     * @param {Event} [options.event] - Event object to prevent default behavior.
+     * @param {function} [options.serializer] - Custom function to serialize form data.
+     * @param {string} [options.error] - Error message for display/update on failed request.
+     * @param {string} [options.fallback] - Message/content to display during request processing.
+     * @param {function} [options.onError] - Callback for request errors.
+     * @param {function} [options.onSuccess] - Callback for all requests, triggered finally.
+     *
+     * @returns {DomProxyCollection} - The matched elements with the updated content.
+     *
+     * @example
+     * // Send a JSON request using input value, providing fallback and completion messages.
+     * $('#myInput').send(myElement, {
+     *   url: '/api/data',
+     *   json: true,
+     *   fallback: 'Loading...',
+     *   onSuccess: (data) => console.log('Received:', data),
+     *   onError: (error) => console.log('Error occurred:', error),
+     * });
+     *
+     * @example
+     * // Send form data using a custom serializer.
+     * $('#myForm').send(myElement, {
+     *    url: '/api/data',
+     *    serializer: (form) => {
+     *    const formData = new FormData(form);
+     *    formData.append('extra', 'data');
+     *    return formData;
+     *  },
+     * });
+     */
+    send: (
+      options: {
+        url?: string
+        json?: boolean
+        event?: Event
+        serializer?: () => void
+      } & FetchOptions
+    ) => DomProxy<T>
+
+    /**
      * Fetches a JSON resource from the provided URL and applies a transformation function which uses the fetched JSON and the proxy's target element as arguments.
      * @param {string} url - The URL to fetch the JSON from.
      * @param {function} transformFunc - The function that applies transformations on the fetched JSON and the proxy's target element.
      * @param {FetchOptions} [options={}] - Options for the fetch operation.
      * @param {string} [options.error] - A message to display if the fetch fails.
      * @param {string} [options.fallback] - A message to display while the fetch is in progress.
-     * @param {function} [options.onComplete] - A callback to execute when the fetch is complete.
+     * @param {function} [options.onSuccess] - A callback to execute when the fetch is complete.
      *
      * @returns This {@link DomProxy}
      * @example
@@ -370,7 +436,7 @@ declare module "jessquery" {
      * {
      *   error: 'Failed to load news item',
      *   fallback: 'Loading news item...'
-     *   onComplete: () => console.log('News item loaded')
+     *   onSuccess: () => console.log('News item loaded')
      */
     fromJSON: (
       url: string,
@@ -396,6 +462,43 @@ declare module "jessquery" {
      * $('#content').fromHTML('/malicious-content.html', { sanitize: false });
      */
     fromHTML: (url: string, options?: FetchOptions) => DomProxy<T>
+
+    /**
+     * Dynamically fetches data from the provided URL and updates a single DOM element using a stream or Server-Sent Event (SSE).
+     *
+     * @param {string} url - The source URL to retrieve data from.
+     * @param {object} [options={}] - Configurations for the stream operation.
+     * @param {boolean} [options.sse=false] - If set to true, fetches data using SSE. Otherwise, uses a generic data stream.
+     * @param {boolean} [options.add=false] - For SSE, if set to true, appends new data to existing content. Otherwise, it replaces the content.
+     * @param {string} [options.error="An error occurred."] - The message displayed if the stream encounters an error.
+     * @param {string} [options.fallback="Loading..."] - The message displayed while the stream is connecting or data is loading.
+     * @param {boolean} [options.sanitize=true] - If set to true, sanitizes incoming HTML content before injecting it into the DOM to prevent potential XSS attacks.
+     * @param {function} [options.onSuccess] - Callback invoked upon stream completion or after each SSE message is received. Receives the last data chunk or SSE event as an argument.
+     *
+     * @returns {DomProxy} - Returns the instance of DomProxy for chaining.
+     *
+     * @example
+     * // Streaming generic data into a single element.
+     * $('#content').fromStream('/api/data');
+     *
+     * // Streaming with SSE and appending data to existing content.
+     * $('#liveFeed').fromStream('/api/live', {
+     *   sse: true,
+     *   add: true,
+     *   onSuccess: (data) => console.log('New data received:', data)
+     * });
+     */
+    fromStream: (
+      url: string,
+      options?: {
+        sse?: boolean
+        add?: boolean
+        error?: string
+        fallback?: string
+        sanitize?: boolean
+        onSuccess?: (data: any) => void
+      }
+    ) => DomProxy<T>
 
     /** Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too)
      * @param fn The async callback. This can receive the element as an argument.
@@ -1003,13 +1106,74 @@ declare module "jessquery" {
     purge: () => DomProxyCollection<T>
 
     /**
+     * Sends HTTP requests using each of the current element as the body of the requests unless otherwise specified.
+     *
+     * None of the options are required-- not even the URL.
+     *
+     * If you do not provide a URL the method will:
+     * - First, look to see if it's in a form with an action property and use that.
+     * - If it can't find that, it will look to see if the element is a button with a formaction property and use that.
+     * - If it can't find that, it will try to see if the element is part of a form that has an action property and use that.
+     * - Finally, if it can't find anything else, it will use the current URL.
+     *
+     * Unless the `body` option is provided, it will be created automatically based on the element type:
+     * - If it's a form, the entire form will be serialized using the formData API unless a custom serializer is provided.
+     * - If it's an input, textarea, or select, the value will be used.
+     * - If it isn't a form or one of the above elements, we will check to see if the element has a form property or one can be found with the `closest` method. If so, we will serialize the form using the formData API unless a custom serializer is provided.
+     * - If none of the above, the element's textContent will be used.
+     *
+     * If the `json` option is set to true, the request will be sent as JSON and the response will be parsed as JSON.
+     *
+     * Otherwise, the request will be sent as FormData and the response will be parsed as text.
+     *
+     * @param {Element} element - The DOM element to gather data from and determine type of the request.
+     * @param {object} options - Configuration for the AJAX request.
+     * @param {string} [options.url] - Endpoint for the request. Defaults to element’s action/formAction.
+     * @param {string} [options.method="POST"] - HTTP method for the request. This defaults to POST, but it accepts any valid HTTP method.
+     * @param {boolean} [options.json=false] - If true, sends and expects JSON, otherwise sends FormData.
+     * @param {any} [options.body] - Body of the request. Defaults to form/input field content.
+     * @param {Event} [options.event] - Event object to prevent default behavior.
+     * @param {function} [options.serializer] - Custom function to serialize form data.
+     * @param {string} [options.error] - Error message for display/update on failed request.
+     * @param {string} [options.fallback] - Message/content to display during request processing.
+     * @param {function} [options.onError] - Callback for request errors.
+     * @param {function} [options.onSuccess] - Callback for all requests, triggered finally.
+     *
+     * @returns {DomProxyCollection} - The matched elements with the updated content.
+     *
+     * @example
+     * $$('.buttons').send({ url: '/api/submit' });
+     * @example
+     * $$('.buttons').send({ url: '/api/submit', method: 'GET' });
+     * @example
+     * $$('.buttons').send({ url: '/api/submit', json: true });
+     * @example
+     * $$('.form').send({
+     *  url: '/api/submit',
+     *  body: { foo: 'bar' },
+     *  method: 'POST',
+     *  json: true,
+     *  onError: (err) => console.log(err),
+     *  onSuccess: () => console.log('Request complete.')
+     * });
+     */
+    send: (
+      options: {
+        url?: string
+        json?: boolean
+        event?: Event
+        serializer?: () => void
+      } & FetchOptions
+    ) => DomProxyCollection<T>
+
+    /**
      * Fetches a JSON resource from the provided URL, applies a transformation function on it and the proxy's target elements.
      * @param {string} url - The URL to fetch the JSON from.
      * @param {function} transformFunc - The function that applies transformations on the fetched JSON and each of the proxy's target elements.
      * @param {FetchOptions} [options={}] - Options for the fetch operation.
      * @param {string} [options.error] - A message to display if the fetch fails.
      * @param {string} [options.fallback] - A message to display while the fetch is in progress.
-     * @param {function} [options.onComplete] - A callback to execute when the fetch is complete.
+     * @param {function} [options.onSuccess] - A callback to execute when the fetch is complete.
      *
      * @returns This {@link DomProxyCollection}
      * @example
@@ -1034,7 +1198,7 @@ declare module "jessquery" {
      *  {
      *   fallback: 'Loading the article...',
      *   error: 'Failed to load the article.'
-     *   onComplete: () => console.log('Article loaded.')
+     *   onSuccess: () => console.log('Article loaded.')
      * });
      */
     fromJSON: (
@@ -1061,6 +1225,43 @@ declare module "jessquery" {
      * $$('.content').fromHTML('/malicious-content.html', { sanitize: false });
      */
     fromHTML: (url: string, options?: FetchOptions) => DomProxyCollection<T>
+
+    /**
+     * Dynamically fetches data from the provided URL and updates multiple DOM elements using a stream or Server-Sent Event (SSE).
+     *
+     * @param {string} url - The source URL to retrieve data from.
+     * @param {object} [options={}] - Configurations for the stream operation.
+     * @param {boolean} [options.sse=false] - If set to true, fetches data using SSE. Otherwise, uses a generic data stream.
+     * @param {boolean} [options.add=false] - For SSE, if set to true, appends new data to existing content of each element. Otherwise, it replaces the content in all targeted elements.
+     * @param {string} [options.error="An error occurred."] - The message displayed if the stream encounters an error.
+     * @param {string} [options.fallback="Loading..."] - The message displayed while the stream is connecting or data is loading.
+     * @param {boolean} [options.sanitize=true] - If set to true, sanitizes incoming HTML content before injecting it into the DOM to prevent potential XSS attacks.
+     * @param {function} [options.onSuccess] - Callback invoked upon stream completion or after each SSE message is received for each element. Receives the last data chunk or SSE event as an argument.
+     *
+     * @returns {DomProxyCollection} - Returns the instance of DomProxyCollection for chaining.
+     *
+     * @example
+     * // Streaming generic data into multiple elements.
+     * $$('.articles').fromStream('/api/articles');
+     *
+     * // Streaming with SSE and appending data to existing content in multiple elements.
+     * $$('.liveUpdates').fromStream('/api/updates', {
+     *   sse: true,
+     *   add: true,
+     *   onSuccess: (data) => console.log('New update:', data)
+     * });
+     */
+    fromStream: (
+      url: string,
+      options?: {
+        sse?: boolean
+        add?: boolean
+        error?: string
+        fallback?: string
+        sanitize?: boolean
+        onSuccess?: (data: any) => void
+      }
+    ) => DomProxyCollection<T>
 
     /** Execute an asynchronous function and wait for it to resolve before continuing the chain (can be synchronous too)
      * @param fn The async callback. This can receive the element as an argument.
@@ -1505,7 +1706,7 @@ declare module "jessquery" {
 
   interface FetchOptions extends RequestInit {
     fallback?: string
-    onComplete?: () => void
+    onSuccess?: () => void
     error?: string
     sanitize?: boolean
     sanitizer?: Function

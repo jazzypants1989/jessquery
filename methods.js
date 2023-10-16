@@ -1,33 +1,32 @@
-import { createApplyFunc, createQueue, handlerMaker } from "./core.js"
+import { createQueueFunction, createQueue, handlerMaker } from "./core.js"
 import { giveContext } from "./errors.js"
 import {
   addStyleSheet,
   attach,
   become,
-  stringOrObject,
+  Class,
   moveOrClone,
   setFormElementValue,
+  stringOrObject,
   transition,
-  wrappedFetch,
-  send,
-  fetchElements,
-} from "./utils.js"
+} from "./DOM.js"
+import { fetchElements, send, wrappedFetch } from "./ajax.js"
 
 export function addMethods(type, selector, target, fixed = false) {
   let proxy = null
   let isSingle = type === "$"
 
-  const toOneOrMany = (func) => {
+  const applyMethod = (func) => {
     return isSingle ? func(target) : target.forEach((el) => func(el))
   }
 
   const { addToQueue, prioritize, defer } = createQueue()
-  const applyFunc = createApplyFunc(addToQueue, () => proxy)
+  const queueFunction = createQueueFunction(addToQueue, () => proxy)
 
-  const makeMethod = (action, methodContext) => {
-    return applyFunc((...args) => {
-      toOneOrMany((el) => action(el, ...args))
-    }, giveContext(methodContext, selector))
+  const makeMethod = (action, context) => {
+    return queueFunction((...args) => {
+      applyMethod((el) => action(el, ...args))
+    }, giveContext(context, selector))
   }
 
   const customMethods = {
@@ -71,21 +70,20 @@ export function addMethods(type, selector, target, fixed = false) {
     val: makeMethod((el, newValue) => setFormElementValue(el, newValue), "val"),
 
     css: makeMethod(
-      (el, stylesOrProp, value) =>
-        stringOrObject(el.style, stylesOrProp, value),
+      (el, prop, value) => stringOrObject(el.style, prop, value),
       "css"
     ),
 
     addStyleSheet: makeMethod(
-      (el, rules) => addStyleSheet(rules),
+      (_, rules) => addStyleSheet(rules),
       "addStyleSheet"
     ),
 
-    addClass: makeMethod(classMethod("add"), "addClass"),
+    addClass: makeMethod(Class("add"), "addClass"),
 
-    removeClass: makeMethod(classMethod("remove"), "removeClass"),
+    removeClass: makeMethod(Class("remove"), "removeClass"),
 
-    toggleClass: makeMethod(classMethod("toggle"), "toggleClass"),
+    toggleClass: makeMethod(Class("toggle"), "toggleClass"),
 
     set: makeMethod(
       (el, attr, value = "") => stringOrObject(el, attr, value, true),
@@ -117,19 +115,19 @@ export function addMethods(type, selector, target, fixed = false) {
 
     purge: makeMethod((el) => el.remove(), "purge"),
 
-    send: makeMethod((el, options) => send(el, options), "send"),
+    send: makeMethod((el, options) => send(el, options, applyMethod), "send"),
 
-    fromStream: makeMethod((url, options = {}) => {
+    fromStream: makeMethod((el, url, options = {}) => {
       const type = options.sse ? "sse" : "stream"
-      fetchElements(type, url, options, target, toOneOrMany)
+      fetchElements(type, url, options, el, applyMethod)
     }, "fromStream"),
 
     fromHTML: makeMethod((el, url, options = {}) => {
-      fetchElements("text", url, options, el, toOneOrMany)
+      fetchElements("text", url, options, el, applyMethod)
     }, "fromHTML"),
 
     fromJSON: makeMethod((el, url, fn, options = {}) => {
-      wrappedFetch(url, options, "json", toOneOrMany).then((json) => {
+      wrappedFetch(url, options, "json", applyMethod).then((json) => {
         const wrappedElement = addMethods(type, selector, el)
         fn(wrappedElement, json)
       })
@@ -145,7 +143,7 @@ export function addMethods(type, selector, target, fixed = false) {
       defer(fn, [wrappedElement])
     }, "defer"),
 
-    transition: applyFunc(
+    transition: queueFunction(
       (keyframes, options) =>
         transition(
           Array.isArray(target) ? target : [target],
@@ -155,7 +153,7 @@ export function addMethods(type, selector, target, fixed = false) {
       giveContext("transition", selector)
     ),
 
-    wait: applyFunc(
+    wait: queueFunction(
       (duration) => new Promise((resolve) => setTimeout(resolve, duration)),
       giveContext("wait", selector)
     ),
@@ -170,29 +168,29 @@ export function addMethods(type, selector, target, fixed = false) {
 
     parent: contextSwitch("parentElement"),
 
-    ancestor: applyFunc((selector) => {
+    ancestor: queueFunction((selector) => {
       const ancestor = filterTarget((el) => el.closest(selector))
       return switchTarget(ancestor)
     }, giveContext("ancestor", selector)),
 
-    kids: applyFunc(() => {
+    kids: queueFunction(() => {
       const kidsArray = filterTarget((el) => Array.from(el.children))
       return switchTarget(kidsArray.flat())
     }, giveContext("kids", selector)),
 
-    siblings: applyFunc(() => {
+    siblings: queueFunction(() => {
       const siblings = filterTarget((el) =>
         Array.from(el.parentElement.children).filter((child) => child !== el)
       )
       return switchTarget(siblings)
     }, giveContext("siblings", selector)),
 
-    pick: applyFunc((selector) => {
+    pick: queueFunction((selector) => {
       const pickedElements = filterTarget((el) => el.querySelector(selector))
       return switchTarget(pickedElements)
     }, giveContext("pick", selector)),
 
-    pickAll: applyFunc((selector) => {
+    pickAll: queueFunction((selector) => {
       const pickedElements = filterTarget((el) =>
         Array.from(el.querySelectorAll(selector))
       )
@@ -209,7 +207,7 @@ export function addMethods(type, selector, target, fixed = false) {
   }
 
   function contextSwitch(prop) {
-    return applyFunc(() => {
+    return queueFunction(() => {
       const resultElements = filterTarget((el) => el[prop])
       return switchTarget(resultElements)
     }, giveContext(prop, selector))
@@ -232,10 +230,6 @@ export function addMethods(type, selector, target, fixed = false) {
     } else {
       return target.map(action).filter((el) => el)
     }
-  }
-
-  function classMethod(type) {
-    return (el, ...classes) => el.classList[type](...classes)
   }
 
   proxy = updateProxy(target)

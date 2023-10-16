@@ -165,7 +165,7 @@ button.on("click", () => {
 const fetchOptions = {
   error: "Failed to load data",
   fallback: "Loading...",
-  onComplete: () => dynamicSpans.attach("<h6>Data Loaded!</h6>"),
+  onSuccess: () => dynamicSpans.attach("<h6>Data Loaded!</h6>"),
   // This will reflect the DOM AFTER the fetch is done.
   headers: {
     "Cool-Header": "Cool-Value",
@@ -595,7 +595,7 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
   {
     error: 'Failed to load news item',
     fallback: 'Loading news item...'
-    onComplete: () => console.log('News item loaded')
+    onSuccess: () => console.log('News item loaded')
   }
   ```
 
@@ -1032,7 +1032,7 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
   {
     error: 'Failed to load news item',
     fallback: 'Loading news item...'
-    onComplete: () => console.log('News item loaded')
+    onSuccess: () => console.log('News item loaded')
   }
   ```
 
