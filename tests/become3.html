@@ -38,16 +38,6 @@
         const toBeReplacedElsRemove = $$("#remove .toBeReplaced")
         const replacementElsRemove = $$("#remove .replacementElement")
 
-        // toBeReplacedElsCycle.become(replacementElsCycle, {
-        //   mode: "move",
-        //   match: "cycle",
-        // })
-
-        // toBeReplacedElsRemove.become(replacementElsRemove, {
-        //   mode: "move",
-        //   match: "remove",
-        // })
-
         // Cycle Match Test
         toBeReplacedElsCycle.become(replacementElsCycle, {
           mode: "clone",
@@ -59,7 +49,7 @@
         ) {
           output.innerHTML += `<p>Cycle Match Test: <span style="color: green;">Passed</span></p>`
         } else {
-          console.log(replacementElsCycle.length)
+          console.log(replacementElsCycle.raw)
           output.innerHTML += `<p>Cycle Match Test: <span style="color: red;">Failed</span></p>`
         }
 
