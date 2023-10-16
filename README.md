@@ -248,11 +248,11 @@ $("#otherSubmitButton").on("click", (event) => {
     - [DomProxy.become](#DomProxybecome)
     - [DomProxy.purge](#DomProxypurge)
     - [DomProxy.send](#DomProxysend)
+    - [DomProxy.do](#DomProxydo)
+    - [DomProxy.defer](#DomProxydefer)
     - [DomProxy.fromJSON](#DomProxyfromJSON)
     - [DomProxy.fromHTML](#DomProxyfromHTML)
     - [DomProxy.fromStream](#DomProxyfromStream)
-    - [DomProxy.do](#DomProxydo)
-    - [DomProxy.defer](#DomProxydefer)
     - [DomProxy.transition](#DomProxytransition)
     - [DomProxy.wait](#DomProxywait)
     - [DomProxy.next](#DomProxynext)
@@ -290,11 +290,11 @@ $("#otherSubmitButton").on("click", (event) => {
     - [DomProxyCollection.become](#DomProxyCollectionbecome)
     - [DomProxyCollection.purge](#DomProxyCollectionpurge)
     - [DomProxyCollection.send](#DomProxyCollectionsend)
+    - [DomProxyCollection.do](#DomProxyCollectiondo)
+    - [DomProxyCollection.defer](#DomProxyCollectiondefer)
     - [DomProxyCollection.fromJSON](#DomProxyCollectionfromJSON)
     - [DomProxyCollection.fromHTML](#DomProxyCollectionfromHTML)
     - [DomProxyCollection.fromStream](#DomProxyCollectionfromStream)
-    - [DomProxyCollection.do](#DomProxyCollectiondo)
-    - [DomProxyCollection.defer](#DomProxyCollectiondefer)
     - [DomProxyCollection.transition](#DomProxyCollectiontransition)
     - [DomProxyCollection.wait](#DomProxyCollectionwait)
     - [DomProxyCollection.next](#DomProxyCollectionnext)
@@ -1144,6 +1144,34 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
   - Removes the elements from the DOM.
   - Example: `$$('.buttons').purge()`
 
+##### DomProxyCollection.send
+
+- **send(options: { url?: string, json?: boolean, event?: Event, serializer?: (elements) => void } & FetchOptions) => DomProxyCollection<T>**
+
+  - Sends HTTP requests using each of the current elements as the body of the requests unless otherwise specified.
+  - None of the options are required-- not even the URL.
+
+  - If you do not provide a URL the method will:
+
+    - First, look to see if it's in a form with an action property and use that.
+    - If it can't find that, it will look to see if the element is a button with a formaction property and use that.
+    - If it can't find that, it will try to see if the element is part of a form that has an action property and use that.
+    - Finally, if it can't find anything else, it will use the current URL.
+
+  - Unless the `body` option is provided, it will be created automatically based on the element type:
+
+    - If it's a form, the entire form will be serialized using the formData API unless a custom serializer is provided.
+    - If it's an input, textarea, or select, the value will be used.
+    - If it isn't a form or one of the above elements, we will check to see if the element has a form property or one can be found with the `closest` method. If so, we will serialize the form using the formData API unless a custom serializer is provided.
+    - If none of the above, the element's textContent will be used.
+
+  - If the `json` option is set to true, the request will be sent as JSON and the response will be parsed as JSON.
+  - Otherwise, the request will be sent as FormData and the response will be parsed as text.
+
+  - Example: `$$('button').send({ url: '/api/submit' })`
+  - Example: `$$('button').send({ url: '/api/submit', method: 'GET' })`
+  - Example: `$$('button').send({ url: '/api/submit', json: true })`
+
 ##### DomProxyCollection.do
 
 - **do(fn: (el: DomProxy) => Promise<void>): DomProxyCollection**
@@ -1192,34 +1220,6 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
   ) // NO PROBLEM HERE
   ``
   ```
-
-##### DomProxyCollection.send
-
-- **send(options: { url?: string, json?: boolean, event?: Event, serializer?: (elements) => void } & FetchOptions) => DomProxyCollection<T>**
-
-  - Sends HTTP requests using each of the current elements as the body of the requests unless otherwise specified.
-  - None of the options are required-- not even the URL.
-
-  - If you do not provide a URL the method will:
-
-    - First, look to see if it's in a form with an action property and use that.
-    - If it can't find that, it will look to see if the element is a button with a formaction property and use that.
-    - If it can't find that, it will try to see if the element is part of a form that has an action property and use that.
-    - Finally, if it can't find anything else, it will use the current URL.
-
-  - Unless the `body` option is provided, it will be created automatically based on the element type:
-
-    - If it's a form, the entire form will be serialized using the formData API unless a custom serializer is provided.
-    - If it's an input, textarea, or select, the value will be used.
-    - If it isn't a form or one of the above elements, we will check to see if the element has a form property or one can be found with the `closest` method. If so, we will serialize the form using the formData API unless a custom serializer is provided.
-    - If none of the above, the element's textContent will be used.
-
-  - If the `json` option is set to true, the request will be sent as JSON and the response will be parsed as JSON.
-  - Otherwise, the request will be sent as FormData and the response will be parsed as text.
-
-  - Example: `$$('button').send({ url: '/api/submit' })`
-  - Example: `$$('button').send({ url: '/api/submit', method: 'GET' })`
-  - Example: `$$('button').send({ url: '/api/submit', json: true })`
 
 ##### DomProxyCollection.fromJSON
 
