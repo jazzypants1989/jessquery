@@ -221,6 +221,8 @@ $("#otherSubmitButton").on("click", (event) => {
 
 - [$()](#$)
 - [$$()](#$$)
+- [setErrorHandler](#setErrorHandler)
+- [promisify](#promisify)
 - [DomProxy](#DomProxy)
   - [DomProxy Methods](#DomProxy-Methods)
     - [DomProxy.on](#DomProxyon)
@@ -245,8 +247,10 @@ $("#otherSubmitButton").on("click", (event) => {
     - [DomProxy.moveTo](#DomProxymoveTo)
     - [DomProxy.become](#DomProxybecome)
     - [DomProxy.purge](#DomProxypurge)
+    - [DomProxy.send](#DomProxysend)
     - [DomProxy.fromJSON](#DomProxyfromJSON)
     - [DomProxy.fromHTML](#DomProxyfromHTML)
+    - [DomProxy.fromStream](#DomProxyfromStream)
     - [DomProxy.do](#DomProxydo)
     - [DomProxy.defer](#DomProxydefer)
     - [DomProxy.transition](#DomProxytransition)
@@ -285,8 +289,10 @@ $("#otherSubmitButton").on("click", (event) => {
     - [DomProxyCollection.moveTo](#DomProxyCollectionmoveTo)
     - [DomProxyCollection.become](#DomProxyCollectionbecome)
     - [DomProxyCollection.purge](#DomProxyCollectionpurge)
+    - [DomProxyCollection.send](#DomProxyCollectionsend)
     - [DomProxyCollection.fromJSON](#DomProxyCollectionfromJSON)
     - [DomProxyCollection.fromHTML](#DomProxyCollectionfromHTML)
+    - [DomProxyCollection.fromStream](#DomProxyCollectionfromStream)
     - [DomProxyCollection.do](#DomProxyCollectiondo)
     - [DomProxyCollection.defer](#DomProxyCollectiondefer)
     - [DomProxyCollection.transition](#DomProxyCollectiontransition)
@@ -301,8 +307,6 @@ $("#otherSubmitButton").on("click", (event) => {
     - [DomProxyCollection.pickAll](#DomProxyCollectionpickAll)
     - [DomProxyCollection.siblings](#DomProxyCollectionsiblings)
     - [DomProxyCollection.kids](#DomProxyCollectionkids)
-- [setErrorHandler](#setErrorHandler)
-- [promisify](#promisify)
 
 ### $()
 
@@ -345,6 +349,69 @@ $$(".buttons")
   .text("Click me!").style.backgroundColor = "lightGreen" // This will work, but only because it's the last thing in the chain.
 // It's also important to note that the style method call is not queued, so it will happen before everything else.
 ```
+
+### setErrorHandler
+
+Sets an error handler that will be called when an error occurs somewhere in JessQuery. The default behavior is to just log it to the console. You can override this behavior with this method to do something else (or nothing... no judgement here! 😉)
+
+- **handler: (err: Error) => void**
+
+  - The error handler
+
+- Example:
+
+  ```javascript
+  setErrorHandler((err) => alert(err.message))
+  // Now, you'll get an annoying alert every time an error occurs like a good little developer
+  ```
+
+### promisify
+
+Wraps a function in a promise, allowing easy integration into DomProxy chains.. This is particularly useful for things like setTimeout, setInterval, and any older APIs that use callbacks. This works just like building a normal promise: call the resolve function when the function is successful, and call the reject function when it fails. The value that you pass will get passed to whatever method you use to consume the promise.
+
+If the function does not call either resolve or reject within the specified timeout, the promise will automatically reject. Every promise that rejects and any error found inside of a promisified function will get routed through the default error handler (which you can set with the [setErrorHandler](#seterrorhandler) function).
+
+The easiest way the function that you get from this method is to use it to provide values to one of the `DomProxy` methods like text() or html(), but you can also use the [DomProxy.do](#domproxydo) / [DomProxyCollection.do](#domproxycollectiondo) method to execute the function and use the result on the element / elements represented by them.
+
+- **fn: (...args: any[]) => void**
+
+  - The function to promisify
+
+- **timeout?: number**
+
+  - The number of milliseconds to wait before automatically rejecting the promise. If this is not provided, it will be set to 5000ms.
+
+- Example:
+
+  ```javascript
+  const fetchApiData = promisify((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open("GET", "https://jsonplaceholder.typicode.com/todos/1")
+    xhr.onload = () => resolve(xhr.responseText)
+    xhr.onerror = () => reject(xhr.statusText)
+    xhr.send()
+  })
+
+  setErrorHandler((err) => $("#display").text(err.message))
+
+  button.on("click", () => {
+    display
+      .text("Hold on! I'm about to use XHR")
+      .wait(500)
+      .do(async (el) => {
+        const data = await fetchApiData()
+        el.text(data)
+      })
+  })
+
+  // Or remember, you can just pass it into the text method!
+  button.on("click", async () => {
+    display
+      .text("I betcha don't even know what XHR is!")
+      .wait(1000)
+      .text(fetchApiData())
+  })
+  ```
 
 ### DomProxy
 
@@ -1320,69 +1387,6 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
   - This will throw an error if the proxy was created as "fixed" (with a second argument of true).
   - Example: `$$('.container').css('color', 'red').kids().css('color', 'blue')`
   - Expectation: The children of the container will turn blue. The container itself will remain red.
-
-### setErrorHandler
-
-Sets an error handler that will be called when an error occurs somewhere in JessQuery. The default behavior is to just log it to the console. You can override this behavior with this method to do something else (or nothing... no judgement here! 😉)
-
-- **handler: (err: Error) => void**
-
-  - The error handler
-
-- Example:
-
-  ```javascript
-  setErrorHandler((err) => alert(err.message))
-  // Now, you'll get an annoying alert every time an error occurs like a good little developer
-  ```
-
-### promisify
-
-Wraps a function in a promise, allowing easy integration into DomProxy chains.. This is particularly useful for things like setTimeout, setInterval, and any older APIs that use callbacks. This works just like building a normal promise: call the resolve function when the function is successful, and call the reject function when it fails. The value that you pass will get passed to whatever method you use to consume the promise.
-
-If the function does not call either resolve or reject within the specified timeout, the promise will automatically reject. Every promise that rejects and any error found inside of a promisified function will get routed through the default error handler (which you can set with the [setErrorHandler](#seterrorhandler) function).
-
-The easiest way the function that you get from this method is to use it to provide values to one of the `DomProxy` methods like text() or html(), but you can also use the [DomProxy.do](#domproxydo) / [DomProxyCollection.do](#domproxycollectiondo) method to execute the function and use the result on the element / elements represented by them.
-
-- **fn: (...args: any[]) => void**
-
-  - The function to promisify
-
-- **timeout?: number**
-
-  - The number of milliseconds to wait before automatically rejecting the promise. If this is not provided, it will be set to 5000ms.
-
-- Example:
-
-  ```javascript
-  const fetchApiData = promisify((resolve, reject) => {
-    const xhr = new XMLHttpRequest()
-    xhr.open("GET", "https://jsonplaceholder.typicode.com/todos/1")
-    xhr.onload = () => resolve(xhr.responseText)
-    xhr.onerror = () => reject(xhr.statusText)
-    xhr.send()
-  })
-
-  setErrorHandler((err) => $("#display").text(err.message))
-
-  button.on("click", () => {
-    display
-      .text("Hold on! I'm about to use XHR")
-      .wait(500)
-      .do(async (el) => {
-        const data = await fetchApiData()
-        el.text(data)
-      })
-  })
-
-  // Or remember, you can just pass it into the text method!
-  button.on("click", async () => {
-    display
-      .text("I betcha don't even know what XHR is!")
-      .wait(1000)
-      .text(fetchApiData())
-  })
-  ```
 
 ## Contributing
 
