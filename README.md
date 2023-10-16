@@ -369,9 +369,9 @@ Sets an error handler that will be called when an error occurs somewhere in Jess
 
 Wraps a function in a promise, allowing easy integration into DomProxy chains.. This is particularly useful for things like setTimeout, setInterval, and any older APIs that use callbacks. This works just like building a normal promise: call the resolve function when the function is successful, and call the reject function when it fails. The value that you pass will get passed to whatever method you use to consume the promise.
 
-If the function does not call either resolve or reject within the specified timeout, the promise will automatically reject. Every promise that rejects and any error found inside of a promisified function will get routed through the default error handler (which you can set with the [setErrorHandler](#seterrorhandler) function).
+If the function does not call either resolve or reject within the specified timeout, the promise will resolve with no value while sending an error to the errorHandler. This is so that the entire chain does not get blocked by a single promise failing to resolve in time, but I could be talked into changing this behavior. Every promise that rejects inside of a promisified function will get routed through the default errorHandler (which you can set with the [setErrorHandler](#seterrorhandler) function).
 
-The easiest way the function that you get from this method is to use it to provide values to one of the `DomProxy` methods like text() or html(), but you can also use the [DomProxy.do](#domproxydo) / [DomProxyCollection.do](#domproxycollectiondo) method to execute the function and use the result on the element / elements represented by them.
+The easiest way to use the function that you get from this method is call it to provide values to one of the `DomProxy` methods like text() or html(), but you can also use the [DomProxy.do](#domproxydo) / [DomProxyCollection.do](#domproxycollectiondo) method to execute the function and use the result on the element / elements represented by them.
 
 - **fn: (...args: any[]) => void**
 
