@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Canvas Animation</title>
+  </head>
+  <body>
+    <canvas
+      id="myCanvas"
+      width="200"
+      height="200"
+      style="border: 1px solid #000000"
+    ></canvas>
+    <button class="animate-btn">Animate Circle</button>
+
+    <script type="module">
+      import { $, promisify } from "../index.js"
+
+      const moveCircle = promisify(
+        (resolve) => {
+          const canvas = document.getElementById("myCanvas")
+          const ctx = canvas.getContext("2d")
+          let x = 0
+          let y = 0
+
+          const interval = setInterval(() => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height)
+            ctx.beginPath()
+            ctx.arc(x, y, 10, 0, 2 * Math.PI)
+            ctx.stroke()
+            x++
+            y++
+            if (x > canvas.width) {
+              clearInterval(interval)
+              resolve()
+            }
+          }, 10)
+        },
+        5000,
+        { fnName: "moveCircle" }
+      )
+
+      $(".animate-btn").on("click", () => {
+        $(".animate-btn")
+          .text("Animating...")
+          .do(moveCircle)
+          .text("Animation finished!")
+          .css("background-color", "lime")
+      })
+    </script>
+  </body>
+</html>

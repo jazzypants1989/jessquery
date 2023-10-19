@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>File Reader</title>
+  </head>
+  <body>
+    <input type="file" class="file-input" />
+    <div class="display">File contents will appear here...</div>
+
+    <script type="module">
+      import { $, promisify } from "../index.js"
+
+      const readFile = promisify(
+        (resolve, reject, file) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result)
+          reader.onerror = () => reject(reader.error)
+          reader.readAsText(file)
+        },
+        10000,
+        { fnName: "readFile" }
+      )
+
+      $(".file-input").on("change", (event) => {
+        const file = event.target.files[0]
+        if (file) {
+          $(".display")
+            .text("Reading file...")
+            .text(readFile(file))
+            .css("color", "green")
+        }
+      })
+    </script>
+  </body>
+</html>

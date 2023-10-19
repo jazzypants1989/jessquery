@@ -10,11 +10,14 @@
       <h1>jQuery is for old people.</h1>
       <div class="card">
         <button id="counter" type="button"></button>
+        <button id="counter" type="button"></button>
+
+        <button>I AM NOT THAT BUTTON</button>
       </div>
     <script type="module">
       import { $, $$ } from "../index.js"
       let count = 0
-      const counter = $("#counter").text(count)
+      const counter = $$("#counter").text(count)
       counter
         .text(count)
         .on("click", () => {
@@ -31,9 +34,10 @@
         .css("border", "2px solid red")
         .parent()
         .css("border", "2px solid blue")
-        .kids()
-        .css("backgroundColor", "lightblue")
-        .pick("#counter")
+        .refresh()
+        .css("backgroundColor", "lightgreen")
+        // .pick("#counter")
+        // .css("backgroundColor", "lightgreen")
     </script>
   </body>
 </html>

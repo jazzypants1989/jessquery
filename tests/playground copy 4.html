@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Web Audio API</title>
+  </head>
+  <body>
+    <button class="play-sound">Play Sound</button>
+
+    <script type="module">
+      import { $, promisify } from "../index.js"
+
+      const playSound = promisify(
+        (resolve) => {
+          const context = new AudioContext()
+          const osc = context.createOscillator()
+          osc.type = "sine"
+          osc.frequency.value = 440 // 440 Hz is the "Middle A" pitch
+          osc.connect(context.destination)
+          osc.start()
+          osc.stop(context.currentTime + 2) // play for 2 seconds
+          osc.onended = resolve
+        },
+        5000,
+        { fnName: "playSound" }
+      )
+
+      $(".play-sound").on("click", () => {
+        $(".play-sound")
+          .text("Playing...")
+          .do(playSound)
+          .text("Sound played!")
+          .css("background-color", "lime")
+      })
+    </script>
+  </body>
+</html>

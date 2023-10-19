@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div class="display">hi</div>
+    <button class="location">click me</button>
+
+    <script type="module">
+      import { $, promisify } from "../index.js"
+
+      const getLocation = promisify(
+        (resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject)
+        },
+        10000,
+        { fnName: "getLocation" }
+      )
+
+      async function getCoordsText() {
+        const pos = await getLocation()
+        return `Lat: ${pos.coords.latitude}, Lng: ${pos.coords.longitude}`
+      }
+
+      $(".location").on("click", () => {
+        $(".display")
+          .text("Fetching location...")
+          .text(getCoordsText())
+          .css("color", "blue")
+      })
+    </script>
+  </body>
+</html>

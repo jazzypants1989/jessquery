@@ -46,10 +46,12 @@
         .first()
         .css("backgroundColor", "lightblue")
         .next()
+        .wait(2000)
         .next()
         .css("color", "green")
         .prev()
         .prev()
+        .wait(2000)
         .css("color", "purple")
         .parent()
         .css({

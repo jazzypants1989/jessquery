@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IndexedDB</title>
+  </head>
+  <body>
+    <div class="display">Click to save data to IndexedDB...</div>
+    <button class="save">Save</button>
+    <button class="read">Read</button>
+
+    <script type="module">
+      import { $, promisify } from "../index.js"
+
+      const saveToDB = promisify(
+        (resolve, reject) => {
+          const openRequest = indexedDB.open("MyDatabase", 1)
+
+          openRequest.onupgradeneeded = (event) => {
+            const db = event.target.result
+            const store = db.createObjectStore("MyObjectStore", {
+              keyPath: "id",
+            })
+            store.createIndex("name", "name", { unique: false })
+          }
+
+          openRequest.onsuccess = (event) => {
+            const db = event.target.result
+            const transaction = db.transaction("MyObjectStore", "readwrite")
+            const store = transaction.objectStore("MyObjectStore")
+            const addRequest = store.add({ id: 5, name: "jessquery" })
+
+            addRequest.onsuccess = () => {
+              resolve("Data saved successfully!")
+            }
+
+            addRequest.onerror = () => {
+              reject("Error saving data.")
+            }
+          }
+
+          openRequest.onerror = (event) => {
+            reject("Error opening database.")
+          }
+        },
+        10000,
+        { fnName: "saveToDB" }
+      )
+
+      const readFromDB = promisify(
+        (resolve, reject) => {
+          const openRequest = indexedDB.open("MyDatabase", 1)
+
+          openRequest.onsuccess = (event) => {
+            const db = event.target.result
+            const transaction = db.transaction("MyObjectStore", "readonly")
+            const store = transaction.objectStore("MyObjectStore")
+            const getRequest = store.get(1)
+
+            getRequest.onsuccess = async () => {
+              await new Promise((resolve) => setTimeout(resolve, 2000))
+              resolve(getRequest.result.name)
+            }
+
+            getRequest.onerror = () => {
+              reject("Error reading data.")
+            }
+          }
+
+          openRequest.onerror = (event) => {
+            reject("Error opening database.")
+          }
+        },
+        10000,
+        { fnName: "readFromDB" }
+      )
+
+      $(".save").on("click", () => {
+        $(".display").text("Saving...").text(saveToDB()).css("color", "blue") // change color only after data is saved or 10 seconds are up
+      })
+
+      $(".read").on("click", () => {
+        $(".display").text("Reading...").text(readFromDB()).css("color", "blue") // change color only after data is read or 10 seconds are up
+      })
+    </script>
+  </body>
+</html>

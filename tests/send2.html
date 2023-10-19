@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test send Function</title>
+  </head>
+  <body>
+    <div id="OTHER">OTHER</div>
+    <form action="http://localhost:3000?delay=2000" id="myForm">
+      <input id="ME" name="title" value="My Title" />
+      <textarea name="body">HELLO!!</textarea>
+      <button id="submitButton">Submit</button>
+    </form>
+
+    <script type="module">
+      import { $, $$ } from "../index.js"
+
+      const submitButton = $("#submitButton")
+      const ME = $("#ME")
+      const myForm = $("#myForm")
+      const OTHER = $("#OTHER")
+
+      submitButton.on("click", (event) => {
+        submitButton.send({
+          event,
+          onWait: () =>
+            submitButton.attach("<p id='loading'>Waiting...</p>", {
+              position: "after",
+            }),
+          waitTime: 50,
+          json: true,
+          onSuccess: (data) => {
+            // $("#loading").purge()
+            $("#submitButton").next().css("backgroundColor", "green")
+            submitButton
+              .attach(`<p>${data}</p>`, {
+                position: "after",
+              })
+              .next()
+              .css("backgroundColor", "pink")
+          },
+        })
+      })
+    </script>
+  </body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Setting Loading Indicator</title>
+  </head>
+  <body>
+    <div class="display">Initial content</div>
+    <button class="fetch-data">Fetch Data</button>
+
+    <script type="module">
+      import { $, promisify } from "../index.js"
+
+      const setTemporaryLoadingIndicator = promisify(
+        (resolve) => {
+          resolve("Loading...") // This message will show up if data doesn't arrive in 500ms
+        },
+        500,
+        { fnName: "setTemporaryLoadingIndicator" }
+      )
+
+      const fakeFetchData = new Promise((resolve) => {
+        setTimeout(() => {
+          resolve({ title: "Fetched content!" })
+        }, 2000) // This simulates a fetch that takes 2 seconds
+      })
+
+      $(".fetch-data").on("click", async () => {
+        $(".display").text("Fetching data...")
+
+        let loadingIndicatorSet = false
+
+        const loadingIndicatorPromise = setTemporaryLoadingIndicator().then(
+          (message) => {
+            $(".display").text(message).css("color", "orange")
+            loadingIndicatorSet = true
+          }
+        )
+
+        const data = await fakeFetchData
+
+        if (loadingIndicatorSet) {
+          $(".display").text(data.title).css("color", "green")
+        } else {
+          // If the loading indicator was never set, replace "Fetching data..." with the actual data
+          $(".display").text(data.title).css("color", "green")
+        }
+      })
+    </script>
+  </body>
+</html>

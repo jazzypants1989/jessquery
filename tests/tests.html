@@ -16,6 +16,8 @@
     <button id="testButton">Button</button>
     <div id="delegateTest" class="testDiv">
       Delegate Test: <span>Click me</span>
+      <span>NO, click me.... Like, a lot!</span>
+      <button>Don't click me</button>
     </div>
     <div class="testDiv">Test Div 1</div>
     <div class="testDiv">Test Div 2</div>
@@ -43,10 +45,10 @@
       // $("#testButton").on("click", logClick)
       // $("#testButton").off("click", logClick)
 
-      // // 4. delegate
-      // $("#delegateTest").delegate("click", "span", (e) =>
-      //   console.log("Span within Delegate Test clicked")
-      // )
+      // 4. delegate
+      $("#delegateTest").delegate("click", "span", (e) =>
+        console.log("Span within Delegate Test clicked")
+      )
 
       // // 5. html
       // $("#testButton").html("<strong>New HTML</strong>")

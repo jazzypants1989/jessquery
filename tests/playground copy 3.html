@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Animation</title>
+    <style>
+      .movingBox {
+        position: relative;
+        width: 10px;
+        height: 10px;
+        background-color: red;
+      }
+
+      #container {
+        width: 50%;
+        height: 20vh;
+        background-color: black;
+        position: relative; /* Added to ensure positioning context */
+        overflow: hidden; /* Prevents the box from showing outside */
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container">
+      <div class="movingBox"></div>
+    </div>
+    <script type="module">
+      import { $, promisify } from "../index.js"
+
+      const moveBox = promisify(
+        (resolve) => {
+          let position = 0
+          const containerWidth = $("#container").offsetWidth
+          function step() {
+            position += 2
+            $(".movingBox").css("left", `${position}px`)
+            if (position < containerWidth - 10) {
+              requestAnimationFrame(step)
+            } else {
+              resolve()
+            }
+          }
+          requestAnimationFrame(step)
+        },
+        10000,
+        { fnName: "moveBox" }
+      )
+
+      // Trigger the animation immediately
+      $(".movingBox")
+        .wait(2000)
+        .css("background-color", "yellow") // start with yellow
+        .do(moveBox) // animate
+        .css("background-color", "green") // end with green color after animation
+    </script>
+  </body>
+</html>

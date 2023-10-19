@@ -25,16 +25,16 @@
       //       }, 1000)
       //     })
 
-      //     el.style.color = "green"
-      //     el.textContent = "do method test PASSED"
+      //     el.css({ backgroundColor: "hotpink" })
 
-      //     // el.css({ color: "green" }).text("do method test PASSED")
+      //     el.style.color = "darkgreen"
+      //     el.text("do method test PASSED")
       //   })
       // }
 
       // doMethodTest()
 
-      async function nowMethodTest() {
+      async function deferMethodTest() {
         const output = document.createElement("div")
         document.getElementById("testContainer").appendChild(output)
 
@@ -45,17 +45,19 @@
           .css({ color: "red" })
           .text("Hello, world!") // Text is red
           .wait(500)
-          .text("Goodbye, world!") // Text is blue
+          .do(async (el) => {
+            const json = await fetch(
+              "https://jsonplaceholder.typicode.com/users/1"
+            ).then((res) => res.json())
+
+            el.css({ color: "green" })
+            el.text(json.name) // Text is green
+          })
+          .wait(2000)
+          .text("Short and stout!") // Text is blue
       }
 
-      nowMethodTest()
-
-      //     el.style.color = "green"
-      //     el.textContent = "now method test PASSED"
-
-      //     // el.css({ color: "green" }).text("do method test PASSED")
-      //   })
-      // }
+      deferMethodTest()
     </script>
   </body>
 </html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TakeWhile Demo</title>
+    <style>
+      .highlight {
+        background-color: yellow;
+      }
+    </style>
+  </head>
+  <body>
+    <span>1</span>
+    <span>2</span>
+    <span>3</span>
+    <span>4</span>
+    <span>5</span>
+    <span>6</span>
+    <span>7</span>
+
+    <script type="module">
+      import { $$, $ } from "../index.js"
+
+      // const span = $("span").if({
+      //   is: (el) => parseInt(el.textContent) % 2 === 0,
+      //   then: (el) => el.css("background-color", "yellow"),
+      //   or: (el) => el.css("background-color", "pink"),
+      // })
+
+      const span = $("span")
+        .takeWhile((el) => parseInt(el.textContent) < 1)
+        .text(10)
+
+      span.refresh()
+
+      span.text(3)
+
+      // const elems = $$("span")
+      //   .takeWhile((el) => parseInt(el.textContent) < 5)
+      //   .css("background-color", "yellow")
+      //   .refresh()
+      //   .css("border", "2px solid black")
+
+      // const elems = $$("span")
+      // .text(3)
+      // .text(10)
+      // .text(3)
+      // .text(10)
+      // .text(3)
+      // .takeWhile((el) => parseInt(el.textContent) < 5)
+      // .css("background-color", "yellow")
+      // .do((el) => console.log(el.textContent)) // Everything highlighted because all elements are returned
+
+      // const elems = $$("span")
+      //   .if({
+      //     is: (el) => parseInt(el.textContent) % 2 === 0,
+      //     then: (el) => el.css("background-color", "yellow"),
+      //     or: (el) => el.css("background-color", "pink"),
+      //   })
+      //   .css("border", "2px solid black")
+      //   .do((el) => console.log(el.textContent)) // Everything highlighted because we are pushed back into the original proxy... I think?
+    </script>
+  </body>
+</html>

@@ -1,85 +1,92 @@
 import http from "http"
 
 // ** Submissions **
+import url from "url"
 
-// const port = 3000
+const server = http.createServer((req, res) => {
+  console.log(req.method, req.url)
 
-// const server = http.createServer((req, res) => {
-//   console.log(req.method)
-//   // Set CORS headers to allow requests from 'http://localhost:5500'
-//   res.setHeader("Access-Control-Allow-Origin", "http://localhost:5500")
-//   res.setHeader("Access-Control-Allow-Methods", "POST") // Adjust to your allowed methods
-//   res.setHeader("Access-Control-Allow-Headers", "Content-Type") // Adjust to your allowed headers
+  // Set CORS headers
+  res.setHeader("Access-Control-Allow-Origin", "http://localhost:5500")
+  res.setHeader("Access-Control-Allow-Methods", "POST")
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
 
-//   if (req.method === "OPTIONS") {
-//     // Respond to preflight requests with a 200 OK status
-//     res.statusCode = 200
-//     res.end()
-//     return
-//   }
+  if (req.method === "OPTIONS") {
+    res.statusCode = 200
+    res.end()
+    return
+  }
 
-//   if (req.method === "POST") {
-//     let requestData = ""
+  if (req.method === "POST") {
+    const queryParams = new url.URL(req.url, `http://${req.headers.host}`)
+      .searchParams
+    const delay = parseInt(queryParams.get("delay")) || 0
 
-//     req.on("data", (chunk) => {
-//       requestData += chunk
-//     })
+    let requestData = ""
 
-//     req.on("end", () => {
-//       console.log("Received data:")
-//       console.log(requestData)
-//       res.statusCode = 200
-//       res.end(
-//         requestData +
-//           "\n" +
-//           "JESSE IS THE BEST" +
-//           "\n" +
-//           new Date().toLocaleTimeString()
-//       )
-//     })
-//   } else {
-//     res.statusCode = 404
-//     res.end("Not Found")
-//   }
-// })
+    req.on("data", (chunk) => {
+      requestData += chunk
+    })
 
-// server.listen(port, () => {
-//   console.log(`Server is running on port ${port}`)
-// })
+    req.on("end", () => {
+      setTimeout(() => {
+        // Use setTimeout here
+        console.log("Received data:")
+        console.log(requestData)
+        res.statusCode = 200
+        res.end(
+          requestData +
+            "\n" +
+            "JESSE IS THE BEST" +
+            "\n" +
+            new Date().toLocaleTimeString()
+        )
+      }, delay) // Delay the response by the specified amount
+    })
+  } else {
+    res.statusCode = 404
+    res.end("Not Found")
+  }
+})
+
+server.listen(3000, () => {
+  console.log(`click here: http://localhost:3000`)
+})
 
 // ** STREAMING **
 
-const server = http.createServer((req, res) => {
-  // Allow requests from any origin
-  res.setHeader("Access-Control-Allow-Origin", "*")
+// const server = http.createServer((req, res) => {
+//   // Allow requests from any origin
+//   res.setHeader("Access-Control-Allow-Origin", "*")
 
-  // Set other CORS headers as needed
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
+//   // Set other CORS headers as needed
+//   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
+//   res.setHeader("Access-Control-Allow-Headers", "Content-Type")
 
-  // Respond with the data
-  res.writeHead(200, { "Content-Type": "application/octet-stream" })
+//   // Respond with the data
+//   res.writeHead(200, { "Content-Type": "application/octet-stream" })
 
-  res.write("Hello World\n")
+//   res.write("<h1>hello</h1>")
 
-  // Simulate streaming by sending chunks of data every 1 second
-  const intervalId = setInterval(() => {
-    res.write(`${new Date().toLocaleTimeString()}\n`)
-  }, 1000)
+//   // Simulate streaming by sending chunks of data every 1 second
+//   const intervalId = setInterval(() => {
+//     res.write(`<p>${new Date().toLocaleTimeString()} \n</p>`)
+//     res.write(`<script>console.log("hello")</script>`)
+//   }, 1000)
 
-  // End the stream and clear the interval after 5 seconds
-  setTimeout(() => {
-    clearInterval(intervalId)
-    res.end()
-  }, 5000)
+//   // End the stream and clear the interval after 5 seconds
+//   setTimeout(() => {
+//     clearInterval(intervalId)
+//     res.end()
+//   }, 5000)
 
-  // Clear the interval if the client disconnects before 5 seconds
-  res.on("close", () => clearInterval(intervalId))
-})
+//   // Clear the interval if the client disconnects before 5 seconds
+//   res.on("close", () => clearInterval(intervalId))
+// })
 
-server.listen(8080, () => {
-  console.log("Server is running on port 8080")
-})
+// server.listen(8080, () => {
+//   console.log("Server is running on port 8080")
+// })
 
 // ** SERVER SENT EVENTS **
 

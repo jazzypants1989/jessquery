@@ -6,18 +6,45 @@
     <title>Attach Test</title>
   </head>
   <body>
-    <div id="testContainer"></div>
+    <div id="testContainer">hi</div>
     <script type="module">
       import { $, $$ } from "../index.js"
 
+      const element = document.createElement("div")
+      element.id = "element"
+      element.innerHTML = `
+      <div>
+        <span class="multiple">Multiple</span>
+      <span class="multiple">Multiple</span>
+      <span class="multiple">Multiple</span>
+      </div>
+      `
+
+      const childrenOfElement = element.querySelectorAll(".multiple")
+
       $("#testContainer").attach([
         `
-        <div id="originalElement">Original Element</div>,
-        <div class="two">Two</div>,
-        <div class="two">Two</div>,
-        <div id="parent">Parent</div>,
+        <div id="parent">
+        <div id="originalElement">Original Element</div>
+        <div class="two">Two</div>
+        <div class="two">Two</div>
+        </div>
       `,
+        `
+        <div id="parent2">
+        <div id="originalElement2">WOW!</div>
+        <div class="two">Cool!</div>
+        <div class="two">NEAT!</div>
+        </div>
+      `,
+        childrenOfElement,
       ])
+
+      $$(".multiple").css("color", "red")
+
+      // $("#testContainer").attach(childrenOfElement, {
+      //   position: "after",
+      // })
     </script>
   </body>
 </html>

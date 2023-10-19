@@ -12,17 +12,29 @@
     <script type="module">
       import { $, $$ } from "../index.js"
 
-      $("#testDiv").fromJSON(
-        "https://jsonplaceholder.typicode.com/todos/1",
-        (element, data) => {
-          element.html(`<h1>Title: ${data.title}</h1>`).addClass("updated")
-        },
-        {
-          fallback: "I'M A CUSTOM FALLBACK",
-          error: "I'M A CUSTOM ERROR",
-          onSuccess: () => $$("body").attach("<h1>It worked!</h1>"),
-        }
-      )
+      $("#testDiv")
+        .text("Loading...")
+        .fromJSON(
+          "https://jsonplaceholder.typicode.com/todos/1",
+          (element, data) => {
+            const { title, userId, id, completed } = data
+            element
+              .wait(1000)
+              .html(
+                `<h1>${title}</h1>
+            <p>userId: ${userId}</p>
+            <p>id: ${id}</p>
+            <p>completed: ${completed}</p>`
+              )
+              .addClass("updated")
+          },
+          {
+            fallback: "I'M A CUSTOM FALLBACK",
+            error: "I'M A CUSTOM ERROR",
+            onSuccess: () => $$("body").attach("<h1>It worked!</h1>"),
+          }
+        )
+        .css("background-color", "hotpink")
     </script>
 
     <style>

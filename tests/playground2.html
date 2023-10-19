@@ -4,190 +4,45 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
+    <style>
+      body {
+        border: 2px solid black;
+      }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">0</div>
+    <button id="button2">Click Me</button>
     <script type="module">
       import { $, $$ } from "../index.js"
 
-      $("#app").sanitize(`<div class="container">
-              <h1>jQuery is for old people.</h1>
-              <div class="card">
-                <button id="counter" type="button"></button>
-              </div>
-              <h2 class="truth">This will disappear.</h2>
-              <h3 class="truth">I love you.</h3>
-            </div>
-            <input type="text" />
-            <div class="container" id="parentTwo">
-              <input id="myFavorite" type="text" />
-              <h4 class="truth">Why are you still reading this?</h4>
-            </div>`)
-
+      const buttons = $$("button")
+      const app = $("#app")
       let count = 0
 
-      const counter = $("#counter")
-
-      counter.text(count).on("click", () => {
+      buttons.on("click", () => {
         count++
-        counter.text(count)
-      }).style.border = "2px solid black"
 
-      const truth = $$(".truth")
+        app.data("count", count)
 
-      truth.data({
-        truth: true,
-        lie: false,
-      })
-
-      truth.data("other", "other")
-
-      const container = $(".container")
-
-      const card = $(".card")
-
-      const randomColor = () => {
-        const r = Math.floor(Math.random() * 256)
-        const g = Math.floor(Math.random() * 256)
-        const b = Math.floor(Math.random() * 256)
-        return `rgb(${r}, ${g}, ${b})`
-      }
-
-      container
-        .on("click", () => {
-          container.css("backgroundColor", randomColor()) // <-- This will not execute until we get to a wait call, and only once each time as each method call on the same variable is placed into the same queue.
-        })
-        .first()
-        .css("backgroundColor", "lightblue")
-        .next()
-        .next()
-        .css("color", "green")
-        .prev()
-        .prev()
-        .css("color", "purple")
-        .parent()
-        .css({
-          backgroundColor: "lightgreen",
-          border: "1px solid black",
+        app.css({
+          border: "2px solid black",
           padding: "10px",
-          margin: "10px",
+          borderRadius: "10px",
         })
-        .pick("button")
-        .css({
-          width: "100px",
-          height: "100px",
-          borderRadius: "50%",
-          border: "none",
-          backgroundColor: "red",
-          color: "white",
-          fontSize: "2rem",
-          cursor: "pointer",
-        })
-        .wait(2000)
-        .css("color", "black")
-        .parent()
-        .parent()
-        .pickAll(".truth")
-        .text("jQuery is forever!")
-        .css("textAlign", "center")
-        .wait(2000)
-        .do((el) => {
-          el.css("color", "white")
-          el.css("backgroundColor", "black")
-        })
-        .wait(2000)
-        .css("backgroundColor", "lightblue")
-        .css("color", "black")
 
-      // container
-      //   .on("click", () => {
-      //     container.css("backgroundColor", randomColor()) // <-- Now, this can actually be processed appropriately.
-      //   })
-      //   .first()
-      //   .css("backgroundColor", "lightblue")
-      //   .next()
-      //   .next()
-      //   .css("color", "green")
-      //   .prev()
-      //   .prev()
-      //   .css("color", "purple")
-      //   .parent()
-      //   .css({
-      //     backgroundColor: "lightgreen",
-      //     border: "1px solid black",
-      //     padding: "10px",
-      //     margin: "10px",
-      //   })
-      //   .pick("button")
-      //   .css({
-      //     width: "100px",
-      //     height: "100px",
-      //     borderRadius: "50%",
-      //     border: "none",
-      //     backgroundColor: "red",
-      //     color: "white",
-      //     fontSize: "2rem",
-      //     cursor: "pointer",
-      //   })
-      //   .defer((el) => {
-      //     console.log(el.raw)
-      //     el.wait(2000)
-      //       .css("color", "black")
-      //       .parent()
-      //       .parent()
-      //       .pickAll(".truth")
-      //       .text("jQuery is forever!")
-      //       .css("textAlign", "center")
-      //   })
-      //   .defer((el) => {
-      //     console.log(el.raw)
-      //     el.wait(2000).do((el) => {
-      //       el.css("color", "white")
-      //       el.css("backgroundColor", "black")
-      //     })
-      //   })
-      //   .defer((el) =>
-      //     el
-      //       .wait(2000)
-      //       .css("backgroundColor", "lightblue")
-      //       .css("color", "black")
-      //   )
-
-      const inputs = $$("input") // const inputs = document.querySelectorAll("input")
-
-      // inputs.on("input", (e) => {
-      //   // inputs.forEach((el) => {
-      //   //   el.addEventListener("input", (e) => {
-      //   inputs.do((el) => {
-      //   // inputs.forEach((el) => {
-      //     el.val(e.target.value) // el.value = e.target.value
-      //   })
-      // })
-
-      inputs.on("input", (e) => {
-        inputs.do((el) => {
-          el.val(e.target.value)
-        })
+        console.log(app.dataset.count)
+        app
+          .if({
+            is: () => count % 2 === 0,
+            then: (el) => el.text(count).css("color", "green"),
+            or: (el) => el.text(count).css("color", "red"),
+          })
+          .css({
+            backgroundColor: count % 2 === 0 ? "pink" : "yellow",
+            border: "2px solid black",
+          })
       })
-
-      // inputs.map((el) => {
-      //   console.log(el)
-      //   el.addEventListener("input", (e) => {
-      //     inputs.forEach((el) => {
-      //       console.log(el)
-      //       el.value = e.target.value
-      //     })
-      //   })
-      // })
-
-      // $("#parentTwo")
-      //   .attach("<button id='truth'>Truth</button>")
-      //   .pick("#truth")
-      //   .on("click", () => {
-      //     $("#truth").textContent === "Truth"
-      //       ? $("#truth").text("Lies")
-      //       : $("#truth").text("Truth")
-      //   })
     </script>
   </body>
 </html>

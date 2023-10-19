@@ -7,14 +7,12 @@
   </head>
   <body>
     <button id="btn1">Button 1</button>
-    <button id="btn2">Button 2</button>
-    <button id="btn3">Button 3</button>
     <script type="module">
       import { $, $$ } from "../index.js"
 
       const body = $("body")
 
-      body.fromHTML("http://localhost:5500/tests/playground.html", {
+      body.fromStream("http://localhost:8080", {
         onSuccess: () => $("body").attach("<h1>It worked!</h1>"),
         runScripts: true,
         sanitize: false,
