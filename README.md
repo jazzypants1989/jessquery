@@ -134,18 +134,29 @@ async function fetchData() {
   return data.name
 }
 
+// Every promise is resolved automatically
+// The next function never runs until the previous one is finished.
+button.on("click", () => {
+  display
+    .text(fetchData()) // You don't have to await anything. It will just work!
+    .css(color, display.textContent === "Jesse Pence" ? "green" : "red")
+  // Each proxy has full access to the DOM API-- useful for conditional logic.
+})
+
 // promisify is for setTimeout/anything async that doesn't return a promise.
 // (You can also just return a promise yourself if you want.)
-const onlyWarnIfLoadIsSlow = promisify((resolve) => {
-  setTimeout(() => {
-    // Each proxy has full access to the DOM API-- useful for conditional logic.
-    if (display.textContent === "") {
-      resolve("Loading...")
-      // Promisify is great for when you forget to cover all conditions like this troubling example,
-      // The next function will try to wait (five seconds by default).
-      // If it still hasn't resolved, the chain will keep moving (while passing an error to the error handler).
+const pollAPIUntilItWorks = promisify((resolve, reject) => {
+  const interval = setInterval(async () => {
+    const response = await fetch("https://someCrappyAPI.com")
+    // It's great for when you forget to cover all conditions like this troubling example,
+    if (response.ok) {
+      clearInterval(interval)
+      resolve()
     }
-  }, 200)
+  }, 1000)
+  // The next function will try to wait (five seconds by default).
+  // If it still hasn't resolved, the chain will keep moving
+  // (while passing an error to the error handler).
 })
 
 // The default error handler catches all errors and promise rejections
@@ -154,13 +165,12 @@ setErrorHandler((err) => {
   sendErrorToAnalytics(err)
 })
 
-// Every promise is resolved automatically
-// The next function never runs until the previous one is finished.
-button.on("click", () => {
+display.on("mouseover", () => {
   display
-    .text(onlyWarnIfLoadIsSlow()) // NEVER shows text UNLESS data doesn't load in 200ms
-    .text(fetchData()) // You don't have to await anything. It will just work!
-    .css("background-color", "red") // This won't happen until the fetch is done.
+    .text(pollAPIUntilItWorks())
+    .attach(
+      `This will wait for five seconds, but it will still show up if the API fails!`
+    )
 })
 
 // There's also internal `fromJSON` and `fromHTML` methods which automatically handle fetching and parsing.
@@ -497,7 +507,12 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
 
 - **css(prop: string | Record<string, string>, value?: string): DomProxy**
 
-  - Adds one or more CSS Rules to the element. If the first argument is an object, each key-value pair will be added as a CSS Rule. If the first argument is a string, it will be treated as a CSS property and the second argument will be treated as its value.
+  - Adds one or more CSS Rules to the element.
+
+  - If the first argument is an object, each key-value pair will be added as a CSS Rule.
+
+  - If the first argument is a string, it will be treated as a CSS property and the second argument will be treated as its value.
+
   - Example: `$('button').css('color', 'red')`
   - Example: `$('button').css({ color: 'red', backgroundColor: 'blue' })`
 
@@ -506,35 +521,85 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
 - **addStyleSheet(cssString: string): DomProxy**
 
   - Adds a stylesheet to the ENTIRE DOCUMENT (this is useful for things like :hover styles). Got an good idea for how to make this scoped to a single element? Open a PR!
-  - Example: `$('button').addStyleSheet('button:hover { color: red }')`
+
+  - This should be used only when you need to do something like set a pseudo-class on the fly. Otherwise, just write a real stylesheet.
+
+  - Got a good idea for how to make this scoped to a single element? Open a PR! I was thinking something like the `@scope` rule being automatically inserted, but that's still only in Chromium browsers.
+
+  - [Here's the explainer for @scope.](https://css.oddbird.net/scope/explainer/).
+
+  -- Right now, every rule will be given an !important flag, so it will override any existing styles. This is drastic I know, but it's the only way to make this work if you're creating other inline styles.
+
+  - Example: `$('button').addStyleSheet('button:hover { color: red; }')`
 
 ##### DomProxy.addClass
 
 - **addClass(className: string): DomProxy**
 
-  - Adds a class to the element.
+  - Add one or more classes to the element.
+
+  - Just add a comma in between each class name, or use spread syntax from an array.
+
   - Example: `$('button').addClass('btn')`
+
+  - Example: `$('button').addClass('btn', 'btn-primary')`
+
+  - Example:
+
+  ```javascript
+  const classes = ["btn", "btn-primary"]
+  $("button").addClass(...classes)
+  ```
 
 ##### DomProxy.removeClass
 
 - **removeClass(className: string): DomProxy**
 
-  - Removes a class from the element.
+  - Removes one or more classes from the element.
+
+  - Just add a comma in between each class name, or use spread syntax from an array.
+
   - Example: `$('button').removeClass('btn')`
+
+  - Example: `$('button').removeClass('btn', 'btn-primary')`
+
+  - Example:
+
+  ```javascript
+  const classes = ["btn", "btn-primary"]
+  $("button").removeClass(...classes)
+  ```
 
 ##### DomProxy.toggleClass
 
 - **toggleClass(className: string): DomProxy**
 
-  - Toggles a class on the element.
+  - Toggles a class on the element. If given a second argument, it will add the class if the second argument is truthy, and remove it if the second argument is falsy.
   - Example: `$('button').toggleClass('btn')`
+  - Example:
+
+  ```javascript
+  const mediumScreen = window.matchMedia("(min-width: 768px)").matches
+  $("button").toggleClass("btn", mediumScreen)
+  ```
 
 ##### DomProxy.set
 
-- **set(attr: string, value: string?): DomProxy**
+- **set(attr: attr: string | { [key: string]: string },value?: string): DomProxy**
 
-  - Sets an attribute on the element. If the value is undefined, it will be set to `""`, which is useful for boolean attributes like disabled or hidden.
+  - Sets one or more attributes on the element.
+
+  - If the first argument is an object, each key-value pair will be treated as an attribute name and value.
+
+  - If the first argument is a string, it will be treated as the attribute name and the second argument will be treated as the attribute value.
+
+  - If the value is undefined, it will be set to `""`, which is useful for boolean attributes like disabled or hidden.
+
   - Example: `$('button').set('disabled')`
+
+  - Example: `$('button').set('disabled', 'true')`
+
+  - Example: `$('button').set({ disabled: 'true', hidden: '' })`
 
 ##### DomProxy.unset
 
@@ -547,15 +612,29 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
 
 - **toggle(attr: string): DomProxy**
 
-  - Toggles an attribute on the element.
+  - Toggles an attribute on the element. If given a second argument, it will add the attribute if the second argument is truthy, and remove it if the second argument is falsy.
   - Example: `$('button').toggle('disabled')`
+
+  - Example:
+
+  ```javascript
+  const mediumScreen = window.matchMedia("(min-width: 768px)").matches
+  $("button").toggle("disabled", mediumScreen)
+  ```
 
 ##### DomProxy.data
 
-- **data(key: string, value?: string): DomProxy**
+- **datakey: string | { [key: string]: string }, value?: string: DomProxy**
 
-  - Sets a data attribute on the element.
+  - Sets one or more data attributes on the element.
+
+  - If the first argument is an object, each key-value pair will be treated as a data attribute name and value.
+
+  - If the first argument is a string, it will be treated as the data attribute name and the second argument will be treated as the data attribute value.
+
   - Example: `$('button').data('id', '123')`
+
+  - Example: `$('button').data({ id: '123', cool: 'true' })`
 
 ##### DomProxy.attach
 
@@ -1003,35 +1082,81 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 - **addStyleSheet(cssString: string): DomProxyCollection**
 
   - Adds a stylesheet to the ENTIRE DOCUMENT (this is useful for things like :hover styles). Got an good idea for how to make this scoped to a single element? Open a PR!
+  - This should be used only when you need to do something like set a pseudo-class on the fly. Otherwise, just write a real stylesheet.
+  - Got a good idea for how to make this scoped to a single element? Open a PR! I was thinking something like the `@scope` rule being automatically inserted, but that's still only in Chromium browsers.
+  - [Here's a link to the explainer for @scope](https://css.oddbird.net/scope/explainer/)
+  - Right now, every rule will be given an !important flag, so it will override any existing styles. This is drastic I know, but it's the only way to make this work if you're creating other inline styles.
   - Example: `$$('button').addStyleSheet('button:hover { color: red }')`
 
 ##### DomProxyCollection.addClass
 
 - **addClass(className: string): DomProxyCollection**
 
-  - Adds a class to the elements.
+  - Adds one or more classes to the elements.
+
+  - To add multiple classes, separate them with commas.
+
+  - Alternatively, you can just spread out an array.
   - Example: `$$('.buttons').addClass('btn')`
+  - Example: `$$('.buttons').addClass('btn', 'btn-primary')`
+  - Example:
+
+    ```javascript
+    const classes = ["btn", "btn-primary"]
+    $$(".buttons").addClass(...classes)
+    ```
 
 ##### DomProxyCollection.removeClass
 
 - **removeClass(className: string): DomProxyCollection**
 
-  - Removes a class from the elements.
+  - Removes one or more classes from the elements.
+
+  - To remove multiple classes, separate them with commas.
+
+  - Alternatively, you can just spread out an array.
+
   - Example: `$$('.buttons').removeClass('btn')`
+
+  - Example: `$$('.buttons').removeClass('btn', 'btn-primary')`
+
+  - Example:
+
+    ```javascript
+    const classes = ["btn", "btn-primary"]
+    $$(".buttons").removeClass(...classes)
+    ```
 
 ##### DomProxyCollection.toggleClass
 
-- **toggleClass(className: string): DomProxyCollection**
+- **toggleClass(className: string, value?: boolean): DomProxyCollection**
 
-  - Toggles a class on the elements.
+  - Toggles a class on the elements. If given a second argument, it will add the class if the second argument is truthy, and remove it if the second argument is falsy.
   - Example: `$$('.buttons').toggleClass('btn')`
+  - Example:
+
+    ```javascript
+    const mediumScreen = window.matchMedia("(min-width: 768px)").matches
+    $$(".buttons").toggleClass("btn", mediumScreen)
+    ```
 
 ##### DomProxyCollection.set
 
-- **set(attr: string, value: string?): DomProxyCollection**
+- **set(attr: string | Record<string, string>, value?: string): DomProxyCollection**
 
-  - Sets an attribute on the elements. If the value is undefined, it will be set to `""`, which is useful for boolean attributes like disabled or hidden.
+  - Sets an attribute on the elements.
+
+  - If the first argument is an object, each key-value pair will be treated as an attribute name and value.
+
+  - If the first argument is a string, it will be treated as the attribute name and the second argument will be treated as the attribute value.
+
+  - If the value is undefined, it will be set to `""`, which is useful for boolean attributes like disabled or hidden.
+
   - Example: `$$('button').set('disabled')`
+
+  - Example: `$$('button').set('disabled', 'true')`
+
+  - Example: `$$('button').set({ disabled: 'true', hidden: 'true' })`
 
 ##### DomProxyCollection.unset
 
@@ -1042,17 +1167,34 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 
 ##### DomProxyCollection.toggle
 
-- **toggle(attr: string): DomProxyCollection**
+- **toggle(attr: string, value?: boolean): DomProxyCollection**
 
   - Toggles an attribute on the elements.
+
+  - If given a second argument, it will set the attribute if the second argument is truthy, and remove it if the second argument is falsy.
+
   - Example: `$$('button').toggle('disabled')`
+
+  - Example:
+
+    ```javascript
+    const mediumScreen = window.matchMedia("(min-width: 768px)").matches
+    $$(".buttons").toggle("disabled", mediumScreen)
+    ```
 
 ##### DomProxyCollection.data
 
-- **data(key: string, value?: string): DomProxyCollection**
+- **data(attr: string | { [key: string]: string}, value?: string): DomProxyCollection**
 
-  - Sets a data attribute on the elements.
+  - Sets one or more data attributes on the elements.
+
+  - If the first argument is an object, each key-value pair will be treated as a data attribute name and value.
+
+  - If the first argument is a string, it will be treated as the data attribute name and the second argument will be treated as the data attribute value.
+
   - Example: `$$('button').data('id', '123')`
+
+  - Example: `$$('button').data({ id: '123', name: 'myButton' })`
 
 ##### DomProxyCollection.attach
 

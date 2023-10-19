@@ -1,5 +1,3 @@
-import { addMethods } from "./methods.js"
-
 export function setFormElementValue(element, value) {
   if (element instanceof HTMLInputElement) {
     const inputTypes = {
@@ -30,11 +28,7 @@ export function setFormElementValue(element, value) {
   }
 }
 
-export function Class(type) {
-  return (el, ...classes) => el.classList[type](...classes)
-}
-
-export function stringOrObject(prop, stringOrObj, value, attr) {
+export function parseArgument(prop, stringOrObj, value, attr) {
   if (typeof stringOrObj === "string") {
     attr ? prop.setAttribute(stringOrObj, value) : (prop[stringOrObj] = value)
   } else if (typeof stringOrObj === "object") {
@@ -43,9 +37,14 @@ export function stringOrObject(prop, stringOrObj, value, attr) {
 }
 
 export function addStyleSheet(rules) {
+  const importantRules = rules.trim().split(";").join(" !important;")
   const style = document.createElement("style")
-  style.textContent = rules
+  style.textContent = importantRules
   document.head.appendChild(style)
+}
+
+export function Class(type) {
+  return (el, ...classes) => el.classList[type](...classes)
 }
 
 export function attach(element, ...args) {
@@ -57,11 +56,15 @@ export function attach(element, ...args) {
 
   const children = args.flat()
 
+  if ((children instanceof NodeList || Array.isArray(children)) && !options) {
+    options.all = true
+  }
+
   modifyDOM(element, children, options)
 }
 
 export function moveOrClone(elements, parentSelector, options = {}) {
-  let parents = getDOMElement(parentSelector, options.sanitize, options.all)
+  let parents = getDOMElement(parentSelector, options)
 
   const children = Array.isArray(elements) ? elements : [elements].flat()
 
@@ -94,6 +97,7 @@ export function become(elements, replacements, options = { mode: "clone" }) {
 }
 
 export function transition(elements, keyframes, options) {
+  elements = Array.isArray(elements) ? elements : [elements].flat()
   const animations = elements.map((element) =>
     element.animate(keyframes, options)
   )
@@ -101,39 +105,46 @@ export function transition(elements, keyframes, options) {
 }
 
 export function modifyDOM(parent, children, options) {
-  const { position = "append", sanitize = true, mode = "move" } = options
+  const {
+    position = "append",
+    sanitize = true,
+    mode = "move",
+    sanitizer,
+    all,
+  } = options
 
   const DOMActions = {
     append: (parent, child) => parent.append(child),
     prepend: (parent, child) => parent.prepend(child),
     before: (parent, child) => parent.before(child),
     after: (parent, child) => parent.after(child),
-    replace: (parent, child) => parent.replaceWith(child),
   }
 
   const getCloneOrNode =
     mode === "clone" ? (el) => el.cloneNode(true) : (el) => el
 
   children.forEach((child) => {
-    const domElements = getDOMElement(child, sanitize)
+    const domElements = getDOMElement(child, { sanitize, sanitizer, all })
     domElements.forEach((domElement) => {
       DOMActions[position](parent, getCloneOrNode(domElement))
     })
   })
 }
 
-export function getDOMElement(item, sanitize = true, all = false) {
-  return typeof item === "string" && item.trim().startsWith("<") // If it's an HTML string, create DOM elements from it
-    ? createDOMFromString(item, sanitize) // If it's an HTML string, create DOM elements from it
-    : item instanceof HTMLElement
-    ? [item]
-    : all // If the all flag is set, return all matching elements from the DOM
-    ? Array.from(document.querySelectorAll(item))
+export function getDOMElement(item, options) {
+  return typeof item === "string" && item.trim().startsWith("<") // If it's an HTML string,
+    ? createDOMFromString(item, options) // create DOM elements from it
+    : item instanceof HTMLElement // If it's already a DOM element
+    ? [item] // return it as an array
+    : item instanceof NodeList // If it's a NodeList
+    ? Array.from(item) // return it as an array
+    : options.all // If the all flag is set
+    ? Array.from(document.querySelectorAll(item)) // return all matching elements from the DOM as an array
     : [document.querySelector(item)] // Otherwise, return the first matching element from the DOM as an array
 }
 
-export function createDOMFromString(string, sanitize = true) {
+export function createDOMFromString(string, { sanitize = true, sanitizer }) {
   const div = document.createElement("div")
-  sanitize ? div.setHTML(string) : (div.innerHTML = string)
+  sanitize ? div.setHTML(string, sanitizer) : (div.innerHTML = string)
   return Array.from(div.children)
 }

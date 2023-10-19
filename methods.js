@@ -1,13 +1,13 @@
-import { createQueueFunction, createQueue, handlerMaker } from "./core.js"
-import { giveContext } from "./errors.js"
+import { createQueue, handlerMaker, queueAndReturn } from "./core.js"
+import { errorHandler, giveContext } from "./errors.js"
 import {
   addStyleSheet,
   attach,
   become,
   Class,
   moveOrClone,
+  parseArgument,
   setFormElementValue,
-  stringOrObject,
   transition,
 } from "./DOM.js"
 import { fetchElements, send, wrappedFetch } from "./ajax.js"
@@ -16,12 +16,14 @@ export function addMethods(type, selector, target, fixed = false) {
   let proxy = null
   let isSingle = type === "$"
 
+  let originalTarget = Array.isArray(target) ? [...target] : [target]
+
   const applyMethod = (func) => {
     return isSingle ? func(target) : target.forEach((el) => func(el))
   }
 
   const { addToQueue, prioritize, defer } = createQueue()
-  const queueFunction = createQueueFunction(addToQueue, () => proxy)
+  const queueFunction = queueAndReturn(addToQueue, () => proxy)
 
   const makeMethod = (action, context) => {
     return queueFunction((...args) => {
@@ -70,7 +72,7 @@ export function addMethods(type, selector, target, fixed = false) {
     val: makeMethod((el, newValue) => setFormElementValue(el, newValue), "val"),
 
     css: makeMethod(
-      (el, prop, value) => stringOrObject(el.style, prop, value),
+      (el, prop, value) => parseArgument(el.style, prop, value),
       "css"
     ),
 
@@ -86,7 +88,7 @@ export function addMethods(type, selector, target, fixed = false) {
     toggleClass: makeMethod(Class("toggle"), "toggleClass"),
 
     set: makeMethod(
-      (el, attr, value = "") => stringOrObject(el, attr, value, true),
+      (el, attr, value = "") => parseArgument(el, attr, value, true),
       "set"
     ),
 
@@ -95,7 +97,7 @@ export function addMethods(type, selector, target, fixed = false) {
     toggle: makeMethod((el, attr) => el.toggleAttribute(attr), "toggle"),
 
     data: makeMethod(
-      (el, keyOrObj, value) => stringOrObject(el.dataset, keyOrObj, value),
+      (el, key, value) => parseArgument(el.dataset, key, value),
       "data"
     ),
 
@@ -106,7 +108,7 @@ export function addMethods(type, selector, target, fixed = false) {
     }, "cloneTo"),
 
     moveTo: makeMethod((el, parentSelector, options) => {
-      moveOrClone(el, parentSelector, { mode: "move", ...options })
+      moveOrClone(el, parentSelector, options)
     }, "moveTo"),
 
     become: makeMethod((el, replacements, options) => {
@@ -119,7 +121,8 @@ export function addMethods(type, selector, target, fixed = false) {
 
     do: makeMethod((el, fn) => {
       const wrappedElement = addMethods(type, selector, el)
-      fn(wrappedElement)
+      const result = fn(wrappedElement)
+      prioritize(() => result)
     }, "do"),
 
     defer: makeMethod((el, fn) => {
@@ -144,12 +147,7 @@ export function addMethods(type, selector, target, fixed = false) {
     }, "fromStream"),
 
     transition: queueFunction(
-      (keyframes, options) =>
-        transition(
-          Array.isArray(target) ? target : [target],
-          keyframes,
-          options
-        ),
+      (keyframes, options) => transition(target, keyframes, options),
       giveContext("transition", selector)
     ),
 
@@ -196,6 +194,47 @@ export function addMethods(type, selector, target, fixed = false) {
       )
       return switchTarget(pickedElements.flat())
     }, giveContext("pickAll", selector)),
+
+    takeWhile: queueFunction((predicate) => {
+      const array = Array.isArray(target) ? target : [target]
+      const result = []
+      for (const item of array) {
+        try {
+          if (predicate(item.raw || item)) {
+            result.push(item)
+          } else {
+            break
+          }
+        } catch (error) {
+          errorHandler(error, giveContext("takeWhile", selector))
+        }
+      }
+      return switchTarget(result)
+    }, giveContext("takeWhile", selector)),
+
+    if: queueFunction(
+      ({ is, then, or }) => {
+        const array = Array.isArray(target) ? target : [target]
+        array.forEach((el) => {
+          const wrappedElement = addMethods(type, selector, el, fixed)
+          try {
+            if (is(wrappedElement)) {
+              then && then(wrappedElement)
+            } else {
+              or && or(wrappedElement)
+            }
+          } catch (error) {
+            errorHandler(error, giveContext("if", selector))
+          }
+        })
+      },
+      giveContext("if", selector),
+      false
+    ),
+
+    refresh: queueFunction(() => {
+      target = [...originalTarget]
+    }, giveContext("refresh", selector)),
   }
 
   function updateProxy(newTarget) {
@@ -216,9 +255,8 @@ export function addMethods(type, selector, target, fixed = false) {
   function switchTarget(newTarget) {
     if (fixed)
       throw new Error(`Proxy is fixed. Create new proxy to switch targets.`)
-    if (!newTarget || (Array.isArray(newTarget) && newTarget.length === 0))
-      throw new Error(`No elements found.`)
-    target = newTarget
+    // if (newTarget.length === 0) return null // newTarget = [document.body]
+    target = newTarget.length > 0 ? newTarget : []
     proxy = updateProxy(target)
     return proxy
   }

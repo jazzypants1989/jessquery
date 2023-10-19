@@ -11,13 +11,13 @@ export function $$(string, fixed = false) {
 }
 
 function addProxy(type, string, fixed = false) {
-  const elements = getDOMElement(string, false, type === "$$")
+  const elements = getDOMElement(string, {
+    all: type === "$$",
+    sanitize: false,
+  })
 
   if (!elements[0]) {
-    return errorHandler(
-      new Error(`No elements for ${type}(${string})`),
-      giveContext(type, string)
-    )
+    return errorHandler(new Error(`No elements.`), giveContext(type, string))
   }
 
   return addMethods(type, string, elements[1] ? elements : elements[0], fixed)
@@ -81,17 +81,17 @@ export function createQueue() {
   }
 }
 
-export function createQueueFunction(addToQueue, proxy) {
-  return function queueFunction(fn, context) {
+export function queueAndReturn(addToQueue, getProxy) {
+  return function queueFunction(fn, context, eager = true) {
     return (...args) => {
       addToQueue(async () => {
         try {
-          await eachArgument(fn, args)
+          await eachArgument(fn, args, eager)
         } catch (error) {
           errorHandler(error, context)
         }
       })
-      return proxy()
+      return getProxy()
     }
   }
 }
@@ -112,25 +112,16 @@ export function handlerMaker(element, customMethods) {
           ? element[prop].bind(element)
           : element[prop]
       }
-
       return element[prop]
-    },
-    set(_, prop, value) {
-      if (prop in customMethods) {
-        customMethods[prop] = value
-        return true
-      }
-      element[prop] = value
-      return true
     },
   }
 }
 
-async function eachArgument(fn, args) {
+async function eachArgument(fn, args, eager = true) {
   const isThenable = (value) => value && typeof value.then === "function"
   const resolvedArgs = []
   for (const arg of args) {
-    resolvedArgs.push(isThenable(arg) ? await arg : arg)
+    resolvedArgs.push(isThenable(arg) && eager ? await arg : arg)
   }
   const result = fn(...resolvedArgs)
   if (isThenable(result)) {

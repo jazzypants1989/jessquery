@@ -43,6 +43,9 @@ declare module "jessquery" {
    * - {@link DomProxy.pickAll} - Switch to a collection of all the descendants that match a selector in the middle of a chain
    * - {@link DomProxy.kids} - Switch to a collection of all the children of the element in the middle of a chain
    * - {@link DomProxy.siblings} - Switch to a collection of all the siblings of the element in the middle of a chain
+   * - {@link DomProxy.if} - Uses a predicate function to conditionally apply methods to the proxy in the middle of the chain.
+   * - {@link DomProxy.takeWhile} - Uses a predicate function to determine whether the element should remain in the proxy. If the predicate returns false, the proxy will be emptied and no further methods will be executed.
+   * - {@link DomProxy.refresh} - Refresh the proxy to the original target element (what you selected with $).
    */
   export type DomProxy<T extends HTMLElement = HTMLElement> = T & {
     /** Add an event listener to the element.
@@ -88,7 +91,7 @@ declare module "jessquery" {
       handler: EventListenerOrEventListenerObject
     ) => DomProxy<T>
 
-    /** Change the HTML of the element with an **UNSANITIZED** string of new HTML. This is useful if you want to add a script tag or something. If you want to sanitize the HTML, use {@link DomProxy.sanitize} instead.
+    /** Change the HTML of the element with an **UNSANITIZED** string of new HTML. If you want to sanitize the HTML, use {@link DomProxy.sanitize} instead.
      * @param newHtml The new HTML
      * @returns This {@link DomProxy}
      * @example
@@ -105,7 +108,8 @@ declare module "jessquery" {
      * @returns {DomProxy} - The provided element with the sanitized content set.
      *
      * @example
-     * const maliciousHTML = '<span>Safe Content</span><script>alert("hacked!")</script>';
+     * const maliciousHTML = `<span>Safe Content</span>
+     *                        <script>alert("hacked!")</script>`;
      * const customSanitizer = new Sanitizer({
      *   allowElements: ['span']
      * });
@@ -159,6 +163,14 @@ declare module "jessquery" {
     ) => DomProxy<T>
 
     /** Add a stylesheet to the ENTIRE DOCUMENT (this is useful for things like :hover styles). Got a good idea for how to make this scoped to a single element? Open a PR!
+     *
+     * - This should be used only when you need to do something like set a pseudo-class on the fly. Otherwise, just write a real stylesheet.
+     *
+     * - Got a good idea for how to make this scoped to a single element? Open a PR! I was thinking something like the `@scope` rule being automatically inserted, but that's still only in Chromium browsers.
+     *
+     * {@link https://css.oddbird.net/scope/explainer/}
+     *
+     * - Right now, every rule will be given an !important flag, so it will override any existing styles. This is drastic I know, but it's the only way to make this work if you're creating other inline styles.
      * @param css The CSS to add
      * @returns This {@link DomProxy}
      * @example
@@ -167,39 +179,61 @@ declare module "jessquery" {
      */
     addStylesheet: (css: string) => DomProxy<T>
 
-    /** Add a class to the element
+    /** Add one or more classes to the element. Just add a comma in between each class name, or use spread syntax from an array.
      * @param className The class name
      * @returns This {@link DomProxy}
      * @example
      * $('button').addClass('btn')
+     *
+     * @example
+     * const classes = ['btn', 'btn-primary']
+     * $('button').addClass(...classes)
+     *
+     * @example
+     * $('button').addClass('btn', 'btn-primary')
      */
     addClass: (className: string) => DomProxy<T>
 
-    /** Remove a class from the element
+    /** Remove one or more classes from the element. Just add a comma in between each class name, or use spread syntax from an array.
      * @param className The class name
      * @returns This {@link DomProxy}
      * @example
      * $('button').removeClass('btn')
+     *
+     * @example
+     * const classes = ['btn', 'btn-primary']
+     * $('button').removeClass(...classes)
+     *
+     * @example
+     * $('button').removeClass('btn', 'btn-primary')
      */
     removeClass: (className: string) => DomProxy<T>
 
-    /** Toggle a class on the element
+    /** Toggle a class on the element. If given a second argument, it will be used as a boolean to determine whether to add or remove the class. Otherwise, it will be toggled from whatever it is currently.
      * @param className The class name
      * @returns This {@link DomProxy}
      * @example
      * $('button').toggleClass('btn')
+     *
+     * @example
+     * const mediaQuery = window.matchMedia('(max-width: 600px)')
+     * $('button').toggleClass('lilBtn', mediaQuery.matches)
      */
     toggleClass: (className: string) => DomProxy<T>
 
-    /** Set an attribute on the element. If the value is undefined, it will be set to `""`, which is useful for boolean attributes like disabled or hidden.
-     * @param attr The attribute name
+    /** Set one or more attributes on the element. If the first argument is an object, it will be treated as a map of attributes and values. Otherwise, you can pass a string as a key for a single attribute and the second argument will be treated as the value. If the value is undefined, it will be set to `""`, which is useful for boolean attributes like disabled or hidden.
+     * @param attr The attribute name or object containing attributes and values
      * @param value The attribute value (optional)
      * @returns This {@link DomProxy}
      * @example
      * $('button').set('disabled')
      * $('button').set('formaction', '/submit')
+     * $('button').set({ disabled: true, formaction: '/submit' })
      */
-    set: (attr: string, value?: string) => DomProxy<T>
+    set: (
+      attr: string | { [key: string]: string },
+      value?: string
+    ) => DomProxy<T>
 
     /** Remove an attribute from the element
      * @param attr The attribute name
@@ -209,16 +243,21 @@ declare module "jessquery" {
      */
     unset: (attr: string) => DomProxy<T>
 
-    /** Toggle an attribute on the element
+    /** Toggle an attribute on the element. It can take a second argument, which will be used as a boolean to determine whether to add or remove the attribute. Otherwise, it will be toggled from whatever it is currently.
+     *
      * @param attr The attribute name
      * @returns This {@link DomProxy}
      * @example
      * $('button').toggle('disabled')
+     *
+     * @example
+     * let clickedTooManyTimes = false
+     * $('button').toggle('disabled', clickedTooManyTimes)
      */
-    toggle: (attr: string) => DomProxy<T>
+    toggle: (attr: string, value?: boolean) => DomProxy<T>
 
     /**
-     * Set a data attribute on the element.
+     * Set a data attribute on the element. If the first argument is an object, it will be treated as a map of data attributes and values. Otherwise, it will be treated as a single data attribute and the second argument will be treated as the value.
      * @param key The dataset key
      * @param value The corresponding value for the dataset key
      * @returns This {@link DomProxy}
@@ -226,7 +265,10 @@ declare module "jessquery" {
      * $('div').data('info', 'extraDetails')
      * This implies: element.dataset.info = 'extraDetails'
      */
-    data: (key: string, value: string) => DomProxy<T>
+    data: (
+      key: string | { [key: string]: string },
+      value?: string
+    ) => DomProxy<T>
 
     /**
      * Attaches children to the element based on the provided options.
@@ -346,7 +388,7 @@ declare module "jessquery" {
      * - First, look to see if it's in a form with an action property.
      * - Next, it will look to see if the element is a button with a formaction property.
      * - Next, it will try to see if the element is part of a form that has an action property.
-     * - Finally, it will take the current URL and slice off everything after the last slash. (http://example.com/foo/index.html -> http://example.com/foo/)
+     * - Finally, it will use the current URL.
      *
      * Unless the `body` option is provided, it will be created automatically based on the element type:
      * - If it's a form, the entire form will be serialized using the formData API unless a custom serializer is provided.
@@ -421,11 +463,13 @@ declare module "jessquery" {
     /**
      * Schedules a function for deferred execution on the element. This will push the operation to the very end of the internal event loop.
      *
+     * This captures the element's state at the moment it is called which is usually **at the very beginning of the queue**. Generally, you will have changed things since then, so it should not be mixed with:
+     * - context switching methods like `next`, `prev`, `first`, `last`, `parent`, `ancestor`, `pick`, `pickAll`, `kids`, or `siblings`.
+     * - conditional methods like `if` or `takeWhile`
+     *
      * Usually, everything will happen in sequence anyways. Given the predictability of each queue, `defer` has limited use cases and should be used sparingly. The whole point of JessQuery is to make things predictable, so you should just put the function at the end of the chain if you can.
      *
-     * The only problem is if you set up an event listener using the same variable that has lots of queued behavior-- especially calls to the `wait` method. Just wrap the `wait` call and everything after it in `defer` to ensure that event handlers don't get stuck behind these in the queue.
-     *
-     * This captures the collection's state at the time of the call, so it should not be mixed with context-sensitive methods like `next`, `prev`, `first`, `last`, `parent`, `ancestor`, `pick`, `pickAll`, `kids`, or `siblings`.
+     * The only problem is if you set up an event listener using the same variable that has lots of queued behavior-- especially calls to the `wait` method. Just wrap the `wait` call and everything after it in `defer` to ensure that event handlers don't get stuck behind these in the queue. Or, do the smart thing and just make a new variable.
      *
      * Honestly, I'm not sure if this even makes much sense. I just spent a bunch of time building a crazy queue system, and I feel like I need to expose it. If you have any ideas for how to make this more useful, please open an issue or PR.
      *
@@ -468,6 +512,10 @@ declare module "jessquery" {
 
     /**
      * Fetches a JSON resource from the provided URL and applies a transformation function which uses the fetched JSON and the proxy's target element as arguments.
+     *
+     * **While you get access to the element inside, this will be an entirely new queue! So, nothing queued after this method will wait for it.**
+     *
+     * - This might seem like a huge issue, but all you have to do is make sure that you do everything inside of the function. You'll have full access to the element, but the nesting is admittedly not ideal.
      * @param {string} url - The URL to fetch the JSON from.
      * @param {function} transformFunc - The function that applies transformations on the fetched JSON and the proxy's target element.
      * @param {FetchOptions} [options={}] - Options for the fetch operation.
@@ -481,20 +529,27 @@ declare module "jessquery" {
      *     element.text(json.value);
      * });
      * @example
-     * $('#item').fromJSON('/api/data', (element, json) => {
-     *    element.html(`<span>${json.description}</span>`);
-     * });
+     * $('#employee')
+     *    .fromJSON('/api/data',
+     *        (element, json) => {
+     *          const { name, title, salary } = json;
+     *           element
+     *              .html(`
+     *                  <h1>${name}</h1>
+     *                  <h2>${title}</h2>
+     *                  <p>${salary}</p>`);
+     *          })
+     *    .css('color', 'red'); // DOES NOT WAIT FOR FETCH TO COMPLETE
      * @example
-     * $('#news-item').fromJSON('/api/news-item', (element, json) => {
-     *    const { title, summary } = json;
+     * $('#news-item')
+     *       .fromJSON('/api/news-item', (element, json) => {
+     *            const { title, summary } = json;
      *
-     *   element.html(`<h1>${title}</h1>
+     *        element
+     *          .html(`<h1>${title}</h1>
      *                 <p>${summary}</p>`);
-     * },
-     * {
-     *   error: 'Failed to load news item',
-     *   fallback: 'Loading news item...'
-     *   onSuccess: () => console.log('News item loaded')
+     *          .css('color', 'red'); // THIS IS FINE
+     *          },
      */
     fromJSON: (
       url: string,
@@ -743,6 +798,98 @@ declare module "jessquery" {
      * // The button itself will remain red
      */
     siblings: () => DomProxyCollection<T>
+
+    /**
+     * Executes conditional logic on the element based on its current state.
+     *
+     * This method operates based on a predicate function that receives the element and returns a boolean. If the predicate returns `true`, the `then` function will be executed. Otherwise, the `or` function will be executed.
+     *
+     * It receives an object with three properties.
+     *
+     * @param options Object containing the following properties:
+     *   - `is`: The predicate function that receives the element and returns a boolean.
+     *   - `then`: Function to be executed if the predicate returns `true`. It receives the element as an argument.
+     *   - `or`: Function to be executed if the predicate returns `false`. It receives the element as an argument.
+     * @returns This {@link DomProxy}
+     *
+     * @example
+     * // Simple example
+     * $('button')
+     * .if({
+     *   is: (el) => el.text() === 'Click me!',
+     *   then: (el) => el.css('color', 'green'),
+     *   or: (el) => el.css('color', 'red')
+     * })
+     *
+     * @example
+     * // Complex example
+     * $('div')
+     * .if({
+     *   is: (el) => el.hasClass('active'),
+     *   then: (el) => {
+     *     el.addClass('highlight')
+     *     .pick('span').css('font-weight', 'bold');
+     *   },
+     *   or: (el) => {
+     *     el.removeClass('highlight')
+     *     .do(async (innerEl) => {
+     *       const data = await fetchData(); // some async function
+     *       innerEl.text(data.message);
+     *     });
+     *   }
+     * })
+     */
+    if: (options: {
+      is: (el: DomProxy<T>) => boolean
+      then?: (el: DomProxy<T>) => void
+      or?: (el: DomProxy<T>) => void
+    }) => DomProxy<T>
+
+    /**
+     * Filters the current element in the proxy based on a predicate.
+     * If the current element does not satisfy the predicate, the proxy will be emptied.
+     *
+     * It's essential to use this method with caution as it can empty the proxy
+     * if the current element does not match the predicate. The `refresh()` method
+     * can be used to restore the proxy to its original state.
+     *
+     * Usually, the {@link DomProxy.if} method is a better choice for conditional logic.
+     *
+     * @param {Function} predicate A function that tests the element for a specific condition.
+     * @returns This {@link DomProxy} either filtered or emptied based on the predicate.
+     *
+     * @example
+     * // Simple example
+     * $('button').takeWhile(el => el.hasAttribute('disabled'))
+     * // If the button has the 'disabled' attribute, it will stay in the proxy, otherwise, the proxy will be emptied.
+     *
+     * @example
+     * // Complex example
+     * $('div.container')
+     * .css('background-color', 'blue')
+     * .takeWhile(el => el.children.length > 3)
+     * .css('border', '1px solid red')
+     * // Only applies the border style if the div with class 'container' has more than 3 children.
+     */
+    takeWhile: (predicate: (el: Element) => boolean) => DomProxy<T>
+
+    /**
+     * Restores the proxy to its original state (when the variable was created).
+     * It can be especially useful after applying methods that may modify or empty the proxy, such as `takeWhile()`.
+     *
+     * @returns This {@link DomProxy} restored to its original state.
+     *
+     * @example
+     * let btnProxy = $('button').css('background-color', 'blue')
+     *
+     * btnProxy.takeWhile(el => el.hasAttribute('disabled'))
+     * // will only apply the border style if the button has the 'disabled' attribute
+     * btnProxy.css('border', '1px solid red')
+     *
+     * // Restore the proxy to its original state
+     * btnProxy.refresh()
+     */
+    refresh: () => DomProxy<T>
   }
 
   /**
@@ -789,6 +936,9 @@ declare module "jessquery" {
    * - {@link DomProxyCollection.pickAll} - Switch to a collection of all of the descendants of the elements that match a selector in the middle of a chain
    * - {@link DomProxyCollection.kids} - Switch to a collection of any existing children of the elements in the middle of a chain
    * - {@link DomProxyCollection.siblings} - Switch to a collection of any existing siblings of the elements in the middle of a chain
+   * - {@link DomProxyCollection.if} - Executes conditional logic on the elements based on their current state.
+   * - {@link DomProxyCollection.takeWhile} - Filters the current elements in the proxy based on a predicate.
+   * - {@link DomProxyCollection.refresh} - Restores the proxy to its original state (when the variable was created).
    */
   export interface DomProxyCollection<T extends HTMLElement = HTMLElement>
     extends Array<T> {
@@ -899,7 +1049,7 @@ declare module "jessquery" {
       newValue: string | number | (string | number)[] | FileList
     ) => DomProxyCollection<T>
 
-    /** Adds one or more CSS rule(s) to the elements. If the first argument is an object, it will be treated as a map of CSS properties and values. Otherwise, it will be treated as a single CSS property and the second argument will be treated as the value.
+    /** Adds one or more CSS rule(s) to the elements. If the first argument is an object, it will be treated as a map of CSS properties and values. Otherwise, it will be treated as a key for a single CSS property and the second argument will be treated as the value.
      * @param prop The CSS property
      * @param value The CSS value
      * @returns This {@link DomProxyCollection}
@@ -913,40 +1063,67 @@ declare module "jessquery" {
       value?: string
     ) => DomProxyCollection<T>
 
-    /** Add a stylesheet to the ENTIRE DOCUMENT (this is useful for things like :hover styles). Got a good idea for how to make this scoped to a single element? Open a PR!
+    /** Add a stylesheet to the ENTIRE DOCUMENT (this is useful for things like :hover styles).
+     *
+     * - This should be used only when you need to do something like set a pseudo-class on the fly. Otherwise, just write a real stylesheet.
+     *
+     * - Got a good idea for how to make this scoped to a single element? Open a PR! I was thinking something like the `@scope` rule being automatically inserted, but that's still only in Chromium browsers.
+     *
+     * {@link https://css.oddbird.net/scope/explainer/}
+     *
+     * - Right now, every rule will be given an `!important` flag, so it will override any existing styles. This is drastic I know, but it's the only way to make this work if you're creating other inline styles.
+     *
      * @param css The CSS to add
      * @returns This {@link DomProxyCollection}
      * @example
-     * $$('.buttons').addStylesheet('button:hover { color: red; }')
+     * $('button')
+     *    .addStylesheet(`
+     *        button:hover {
+     *          color: red;
+     *          }
+     *        `)
      * // Now all buttons on the page will turn red when hovered
      */
     addStylesheet: (css: string) => DomProxyCollection<T>
 
-    /** Add a class to the elements
+    /** Add one or more classes to the elements. If you want to add more than one, just separate them by a comma. Or, you can put them all in an array and use spread syntax.
      * @param className The class name
      * @returns This {@link DomProxyCollection}
      * @example
      * $$('.buttons').addClass('btn')
+     * @example
+     * const classes = ['btn', 'btn-primary']
+     * $$('.buttons').addClass(...classes)
+     * @example
+     * $$('.buttons').addClass('btn', 'btn-primary')
      */
     addClass: (className: string) => DomProxyCollection<T>
 
-    /** Remove a class from the elements
+    /** Remove one or more classes from the elements. If you want to remove more than one, just separate them by a comma. Or, you can put them all in an array and use spread syntax.
      * @param className The class name
      * @returns This {@link DomProxyCollection}
      * @example
      * $$('.buttons').removeClass('btn')
+     * @example
+     * const classes = ['btn', 'btn-primary']
+     * $$('.buttons').removeClass(...classes)
+     * @example
+     * $$('.buttons').removeClass('btn', 'btn-primary')
      */
     removeClass: (className: string) => DomProxyCollection<T>
 
-    /** Toggle a class on the elements
+    /** Toggle a class on the elements. If given a second argument, it will force the class to be added or removed based on the truthiness of the second argument. Otherwise, it will toggle the class.
      * @param className The class name
      * @returns This {@link DomProxyCollection}
      * @example
      * $$('.buttons').toggleClass('btn')
+     * @example
+     * const mediaQuery = window.matchMedia('(max-width: 768px)')
+     * $$('.buttons').toggleClass('windowIsSmall', mediaQuery.matches)
      */
     toggleClass: (className: string) => DomProxyCollection<T>
 
-    /** Set an attribute on the elements. If the value is undefined, it will be set to `""`, which is useful for boolean attributes like disabled or hidden.
+    /** Set one or more attributes on all of the elements. If the first argument is an object, it will be treated as a map of attributes and values. Otherwise, it will be treated as a single attribute and the second argument will be treated as the value. If the first argument is a string, and the value is undefined, it will be set to `""`, which is useful for boolean attributes like disabled or hidden.
      * @param attr The attribute name
      * @param value The attribute value
      * @returns This {@link DomProxyCollection}
@@ -954,7 +1131,10 @@ declare module "jessquery" {
      * $$('.buttons').set('disabled')
      * $$('.buttons').set('formaction', '/submit')
      */
-    set: (attr: string, value: string) => DomProxyCollection<T>
+    set: (
+      attrOrObj: string | { [key: string]: string | number },
+      value?: string
+    ) => DomProxyCollection<T>
 
     /** Remove an attribute from the elements
      * @param attr The attribute name
@@ -964,23 +1144,39 @@ declare module "jessquery" {
      */
     unset: (attr: string) => DomProxyCollection<T>
 
-    /** Toggle an attribute on the elements
+    /** Toggle an attribute on the elements. It can take a second argument to force the attribute to be added or removed based on the truthiness of the second argument. Otherwise, it will toggle the attribute.
      * @param attr The attribute name
      * @returns This {@link DomProxyCollection}
      * @example
      * $$('.buttons').toggle('disabled')
+     * @example
+     * let clickedTooManyTimes = false
+     * $$('.buttons').toggle('disabled', clickedTooManyTimes)
      */
     toggle: (attr: string) => DomProxyCollection<T>
 
-    /** Set a data attribute on the elements.
+    /** Set a data attribute on the elements. If the first argument is an object, it will be treated as a map of data attributes and values. Otherwise, it will be treated as a key for a single data attribute and the second argument will be treated as the value.
      * @param key The dataset key
      * @param value The corresponding value for the dataset key
      * @returns This {@link DomProxyCollection}
      * @example
      * $$('.buttons').data('info', 'extraDetails')
-     * This implies: element.dataset.info = 'extraDetails'
+     * // document
+     * //   .querySelectorAll('.buttons')
+     * //   .forEach(el => el.dataset.info = 'extraDetails')
+     *
+     * $$('.buttons').data({ info: 'extraDetails', id: 123 })
+     * // document
+     * //   .querySelectorAll('.buttons')
+     * //   .forEach(el => {
+     * //     el.dataset.info = 'extraDetails'
+     * //     el.dataset.id = 123
+     * //   })
      */
-    data: (key: string, value: string) => DomProxyCollection<T>
+    data: (
+      keyOrObj: string | { [key: string]: string | number },
+      value?: string
+    ) => DomProxyCollection<T>
 
     /**
      * Attaches children to the elements based on the provided options.
@@ -1155,13 +1351,15 @@ declare module "jessquery" {
       } & FetchOptions
     ) => DomProxyCollection<T>
 
-    /** Execute an asynchronous function and wait for it to resolve before continuing the chain (can be synchronous too)
-     * @param fn The async callback. This can receive the element as an argument.
+    /** Executes an asynchronous function on all of the elements and waits for it to resolve before continuing the chain (can be synchronous too)
+     *
+     * - The functions will operate on each element unconditionally. If you need to use conditional logic, either use the `if` method or first filter the collection with `takeWhile` or the `filter` array method.
+     * @param fn The async callback. This can receive the elements as an argument.
      * @returns This {@link DomProxyCollection}
      * @example
      * $$('.buttons')
      * .css('color', 'red')
-     * .do(async (el) => { // The element is passed as an argument
+     * .do(async (el) => { // The elements are passed as an argument
      *   const response = await fetch('/api')
      *  const data = await response.json()
      * el.text(data.message) // All the methods are still available
@@ -1172,13 +1370,16 @@ declare module "jessquery" {
       fn: (el: DomProxyCollection) => Promise<void> | void
     ) => DomProxyCollection<T>
 
-    /** Schedules a function for deferred execution on the elements. This will push the operation to the very end of the internal event loop.
+    /**
+     * Schedules a function for deferred execution on all of the elements. This will push the operation to the very end of the internal event loop.
+     *
+     * This captures the collection's state at the moment it is called which is usually **at the very beginning of the queue**. Generally, you will have changed things since then, so it should not be mixed with:
+     * - context switching methods like `next`, `prev`, `first`, `last`, `parent`, `ancestor`, `pick`, `pickAll`, `kids`, or `siblings`.
+     * - conditional methods like `if` or `takeWhile`
      *
      * Usually, everything will happen in sequence anyways. Given the predictability of each queue, `defer` has limited use cases and should be used sparingly. The whole point of JessQuery is to make things predictable, so you should just put the function at the end of the chain if you can.
      *
-     * The only problem is if you set up an event listener using a variable that has lots of queued behavior-- especially calls to the `wait` method. Just wrap the `wait` call and everything after it in `defer` to ensure that event handlers don't get stuck behind these in the queue.
-     *
-     * This will capture the state of the DomProxyCollection BEFORE THE CHAIN and pass it to the function, so this should not be mixed with context switching methods like `next` or `pick`.
+     * The only problem is if you set up an event listener using the same variable that has lots of queued behavior-- especially calls to the `wait` method. Just wrap the `wait` call and everything after it in `defer` to ensure that event handlers don't get stuck behind these in the queue. Or, do the smart thing and just make a new variable.
      *
      * Honestly, I'm not sure if this even makes much sense. I just spent a bunch of time building a crazy queue system, and I feel like I need to expose it. If you have any ideas for how to make this more useful, please open an issue or PR.
      *
@@ -1202,7 +1403,7 @@ declare module "jessquery" {
      * @example
      * // Please limit the use of this method anywhere other than the end of a chain. That's confusing.
      * // Only use it for race conditions or other edge cases.
-     * display
+     * displays
      *    .defer((el) => el.css("color", "blue"))
      *    .text("HALF A SECOND OF GLORY") // Text is black
      *    .wait(500).text("Hello, world!") // Text is red
@@ -1214,6 +1415,10 @@ declare module "jessquery" {
 
     /**
      * Fetches a JSON resource from the provided URL, applies a transformation function on it and the proxy's target elements.
+     *
+     *  **While you get access to the element inside, this will be an entirely new queue! So, nothing queued after this method will wait for it.**
+     *
+     * - This might seem like a huge issue, but all you have to do is make sure that you do everything inside of the function. You'll have full access to the element, but the nesting is admittedly not ideal.
      * @param {string} url - The URL to fetch the JSON from.
      * @param {function} transformFunc - The function that applies transformations on the fetched JSON and each of the proxy's target elements.
      * @param {FetchOptions} [options={}] - Options for the fetch operation.
@@ -1225,27 +1430,31 @@ declare module "jessquery" {
      * @example
      * $$('.items').fromJSON('/api/data', (element, json) => {
      *     element.text(json.value);
+     * },
+     * {
+     *   fallback: 'Loading item...',
+     *   error: 'Failed to load item.',
+     *   onSuccess: () => console.log('Article loaded.')
      * });
      * @example
      * $$('.items').fromJSON('/api/data', (element, json) => {
      *    const {author, quote} = json;
      *
-     *    element.html(`<p>${quote}</p>
-     *      <footer>${author}</footer>`);
-     * });
+     *    element
+     *         .html(`<p>${quote}</p>
+     *              <p>-${author}</p>
+     *              `)
+     * }).css('color', 'red'); // THIS WILL NOT WAIT FOR THE FETCH TO COMPLETE!
      * @example
      * $$('.news').fromJSON('/api/news', (element, json) => {
      *   const {title, description, url} = json;
      *
-     *  element.html(`<h2>${title}</h2>
-     *   <p>${description}</p>
-     *  <a href="${url}">Read more</a>`);
-     *  },
-     *  {
-     *   fallback: 'Loading the article...',
-     *   error: 'Failed to load the article.'
-     *   onSuccess: () => console.log('Article loaded.')
-     * });
+     *  element
+     *    .html(`<h2>${title}</h2>
+     *      <p>${description}</p>
+     *      <a href="${url}">Read more</a>`)
+     *    .css('color', 'red'); // THIS IS FINE!
+     *  })
      */
     fromJSON: (
       url: string,
@@ -1498,12 +1707,111 @@ declare module "jessquery" {
      * // The buttons themselves will remain red
      */
     siblings: () => DomProxyCollection<T>
+
+    /**
+     * Executes conditional logic on each of the elements based on a predicate and applies functions accordingly.
+     *
+     * The predicate function receives the elements as an argument and returns a boolean.
+     *
+     * Each function will operate on each element individually, so you can get extremely specific with your logic.
+     *
+     * If you need to operate on the entire collection as a whole, use {@link DomProxyCollection.do} instead.
+     *
+     * @param options Object containing the following properties:
+     *   - is: The predicate function that receives the elements and returns a boolean.
+     *   - then: Function to be executed on each element if the predicate returns `true`. It receives the elements as an argument.
+     *   - or: Function to be executed on each element if the predicate returns `false`. It receives the elements as an argument.
+     * @returns This {@link DomProxyCollection}
+     *
+     * @example
+     * // Simple example
+     * $$('.buttons')
+     * .if({
+     *   is: (el) => el.text() === 'Click me!',
+     *   then: (el) => el.css('color', 'green'),
+     *   or: (el) => el.css('color', 'red')
+     * })
+     *
+     * @example
+     * // Complex example
+     * $$('.containers')
+     * .if({
+     *   is: (el) => el.hasClass('active'),
+     *   then: (el) => {
+     *     el.addClass('highlight')
+     *     .pickAll('span').css('font-weight', 'bold');
+     *   },
+     *   or: (el) => {
+     *     el.removeClass('highlight')
+     *     .do(async (innerEl) => {
+     *       const data = await fetchData(); // some async function
+     *       innerEl.text(data.message);
+     *     });
+     *   }
+     * })
+     */
+    if: (options: {
+      is: (el: DomProxyCollection<T>) => boolean
+      then?: (el: DomProxyCollection<T>) => void
+      or?: (el: DomProxyCollection<T>) => void
+    }) => DomProxyCollection<T>
+
+    /**
+     * Filters the collection of elements in the proxy based on a predicate.
+     * The collection will be modified to contain only those elements that
+     * satisfy the predicate consecutively from the start.
+     *
+     * This method provides a more natural way to filter elements in the proxy.
+     * It's powerful but should be used with caution. The `refresh()` method
+     * can be employed to restore the proxy to its original state if the filtering becomes confusing.
+     *
+     * For simple conditional logic, use the {@link DomProxyCollection.if} method instead.
+     *
+     * @param {Function} predicate A function that tests each element for a specific condition.
+     * @returns This {@link DomProxyCollection} filtered based on the predicate.
+     *
+     * @example
+     * // Simple example
+     * $$('.items').takeWhile(el => el.classList.contains('active'))
+     * // Filters the collection to only have consecutive 'active' items from the start.
+     *
+     * @example
+     * // Complex example
+     * $$('.list-items')
+     * .css('color', 'blue')
+     * .takeWhile(el => el.dataset.value && parseInt(el.dataset.value, 10) > 5)
+     * .css('font-weight', 'bold')
+     * // Only makes the list items bold if they have a data-value attribute greater than 5, and it's consecutive from the start.
+     */
+    takeWhile: (predicate: (el: Element) => boolean) => DomProxyCollection<T>
+
+    /**
+     * Restores the proxy collection to its original state (when the variable was created).
+     * Particularly handy after using methods that might modify or filter out elements from the proxy, like `takeWhile()`.
+     *
+     * @returns This {@link DomProxyCollection} restored to its original state.
+     *
+     * @example
+     * let listItems = $$('.list-items').css('color', 'blue')
+     *
+     * listItems.takeWhile(el => el.classList.contains('active'))
+     *
+     * listItems.text('I only work on the filtered elements!')
+     *
+     * listItems.refresh()
+     *
+     * listItems.text("I still work on every original element!)
+     * // will override the previous text
+     */
+    refresh: () => DomProxyCollection<T>
   }
 
   /**
    * Finds the first element in the DOM that matches a CSS selector and returns it with some extra, useful methods.
    *
-   * These methods can be chained together to create a sequence of actions that will be executed in order (including asynchronous tasks).
+   * If given a string that starts with `<`, it will create a new element with the given tag name and return it as a {@link DomProxy} object.
+   *
+   * It gives Dom Elements 43 methods that can be chained together to create a sequence of actions that will be executed in order (including asynchronous tasks).
    *
    * If the 'fixed' parameter is set to true, the proxy reference is fixed and cannot be switched to target another DOM element.
    *
@@ -1542,7 +1850,11 @@ declare module "jessquery" {
   /**
    * Finds all elements in the DOM that match a CSS selector and returns them with some extra, useful methods.
    *
-   * These methods can be chained together to create a sequence of actions that will be executed in order (including asynchronous tasks).
+   * If given a string that starts with `<`, it will create a new element with the given tag name and return it as a {@link DomProxyCollection} object.
+   *
+   * It can also accept HTMLElements and NodeLists, which will be converted to a {@link DomProxyCollection} object.
+   *
+   * These contain 43 methods that can be chained together to create a sequence of actions that will be executed in order (including asynchronous tasks).
    *
    * If the 'fixed' parameter is set to true, the proxy reference is fixed and cannot be switched to target another set of DOM elements.
    *
