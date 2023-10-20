@@ -6,31 +6,77 @@
     <title>Document</title>
   </head>
   <body>
-    <div class="test" id="hey">hi</div>
-    <div class="test" id="hey">yo</div>
+    <div id="container">
+      <div class="test" id="hey">hi</div>
+      <div class="test" id="hey">yo</div>
+      <div class="test" id="hey">sup</div>
+      <div class="display"></div>
+    </div>
     <button>click me</button>
     <button>click me too!</button>
 
     <script type="module">
       import { $, $$ } from "../index.js"
 
-      let count = 0
+      async function fetchData() {
+        const response = await fetch(
+          "https://api.github.com/users/jazzypants1989"
+        )
+        const data = await response.json()
+        return data.name
+      }
 
-      $$("button").set("id", "ME")
+      const button = $("button")
+      const display = $(".display")
 
-      $$("#ME")
-        .on("click", () => {
-          count++
-          $("#hey").text(count.toString())
-        })
-        .css({
-          backgroundColor: "red",
-          fontSize: "2rem",
-          padding: "1rem",
-          borderRadius: "5px",
-          border: "none",
-          cursor: "pointer",
-        })
+      const first = $(".test")
+      button.on("click", async () => {
+        // display
+        //   // You don't have to await anything. It will just work!
+        //   .text(fetchData())
+        //   // The next function never runs until the previous one is finished.
+        //   .css("color", display.textContent === "Jesse Pence" ? "green" : "red")
+        // // Each proxy has full access to the DOM API-- useful for conditional logic.
+
+        await display
+          .do(async (el) => {
+            // For more complex async logic, you can use the do method.
+            // It will hold the queue indefinitely while you do whatever you want.
+            el.text("Loading...")
+            const response = await fetch(
+              "https://api.github.com/users/jazzypants1989"
+            )
+            const data = await response.json()
+
+            await new Promise((resolve) => setTimeout(resolve, 3000))
+            el.text(data.name).css("color", "green")
+          })
+          .wait(1000)
+          .css("color", "red")
+      })
+
+      // first.do((el) => console.log(el.textContent))
+      // first.next().do((el) => console.log(el.textContent))
+      // first.parent().do((el) => console.log(el.textContent))
+      // first.refresh().do((el) => console.log(el.textContent))
+
+      // let count = 0
+
+      // $$("button").set("id", "ME")
+
+      // $$("#ME")
+      //   .on("click", () => {
+      //     count++
+      //     $("#hey").text(count.toString())
+      //   })
+      //   .css({
+      //     backgroundColor: "red",
+      //     fontSize: "2rem",
+      //     padding: "1rem",
+      //     borderRadius: "5px",
+      //     border: "none",
+      //     cursor: "pointer",
+      //   })
     </script>
   </body>
 </html>

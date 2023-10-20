@@ -16,10 +16,9 @@
         .text("Loading...")
         .fromJSON(
           "https://jsonplaceholder.typicode.com/todos/1",
-          (element, data) => {
+          async (element, data) => {
             const { title, userId, id, completed } = data
             element
-              .wait(1000)
               .html(
                 `<h1>${title}</h1>
             <p>userId: ${userId}</p>
@@ -31,10 +30,10 @@
           {
             fallback: "I'M A CUSTOM FALLBACK",
             error: "I'M A CUSTOM ERROR",
-            onSuccess: () => $$("body").attach("<h1>It worked!</h1>"),
+            onSuccess: () => $$("p").css("color", "green"),
           }
         )
-        .css("background-color", "hotpink")
+        .do((el) => el.wait(250).pick("h1").css("color", "red"))
     </script>
 
     <style>

@@ -1,3 +1,5 @@
+import { addMethods } from "./methods.js"
+
 export async function wrappedFetch(url, options, type, toOneOrMany) {
   const { onWait, waitTime, onSuccess, onError } = options
 

@@ -110,7 +110,13 @@ Generally, just try to keep each discrete chain of DOM operations for a single e
 
 ## Advanced Usage
 
-### Creating DomProxies
+- [DomProxy Lifecycle](#domproxy-lifecycle)
+- [Conditional Logic](#conditional-logic)
+- [Async Flow](#async-flow)
+- [Helper Functions: `promisify` and `setErrorHandler`](#helper-functions-promisify-and-seterrorhandler)
+- [AJAX](#ajax)
+
+### DomProxy Lifecycle
 
 - While you can use `$()` and `$$()` as direct replacements for `querySelector` and `querySelectorAll`, you can also use them to create elements on the fly.
 
@@ -119,6 +125,10 @@ Generally, just try to keep each discrete chain of DOM operations for a single e
 - You can also pass an HTMLElement or NodeList, which will be converted to a DomProxyCollection.
 
 - Once the proxy has been created, it can be mutated to represent something else in the DOM.
+
+- If you use a method like `next()` or `siblings()`, the proxy will represent those elements instead.
+
+- The `refresh()` method will reset the proxy to its original state (What you passed to `$()` or `$$()`).
 
 ```javascript
 import { $, $$, promisify, setErrorHandler } from "jessquery"
@@ -139,6 +149,19 @@ button.html(`<h3>I am not a button</h3>`) // Not confusing at all!
 // You can also use become to use something from elsewhere in the DOM.
 const buttons = $$(".button")
 buttons.become($(".other-button"))
+
+// /**
+//  * <div class="container">
+//  *   <p id="ME">1</p>
+//  *   <p>2</p>
+//  *   <p>3</p>
+//  * </div>
+//  */
+const ME = $("#ME")
+ME.do((el) => console.log(el.textContent)) // 1
+ME.next().do((el) => console.log(el.textContent)) // 2
+ME.parent().do((el) => console.log(el.textContent)) // 123
+ME.refresh().do((el) => console.log(el.textContent)) // 1
 ```
 
 ### Conditional Logic
@@ -158,13 +181,13 @@ button.on("click", () => {
     .if({
       is: (el) => el.textContent === "Click me!",
       then: (el) => el.text("Clicked!").css("color", "green"),
-      else: (el) => el.text("Click me!").css("color", "red"),
+      or: (el) => el.text("Click me!").css("color", "red"),
     })
     .wait(1000)
     .if({
       is: (el) => el.textContent === "Clicked!",
       then: (el) => el.text("Click me!").css("color", "red"),
-      else: (el) => el.text("Clicked!").css("color", "green"),
+      or: (el) => el.text("Clicked!").css("color", "green"),
     })
 })
 ```
@@ -203,7 +226,6 @@ buttons
 
 ```javascript
 async function fetchData() {
-  await new Promise((resolve) => setTimeout(resolve, 2000))
   const response = await fetch("https://api.github.com/users/jazzypants1989")
   const data = await response.json()
   return data.name
@@ -217,6 +239,22 @@ button.on("click", () => {
     // The next function never runs until the previous one is finished.
     .css(color, display.textContent === "Jesse Pence" ? "green" : "red")
   // Each proxy has full access to the DOM API-- useful for conditional logic.
+
+  display
+    .do(async (el) => {
+      // For more complex async logic, you can use the do method.
+      // It will hold the queue indefinitely while you do whatever you want.
+      el.text("Loading...")
+      const response = await fetch(
+        "https://api.github.com/users/jazzypants1989"
+      )
+      const data = await response.json()
+      el.text(data.name).css("color", "green")
+      await new Promise((resolve) => setTimeout(resolve, 3000))
+    })
+    .text(
+      "This will be green and replace the element's text, but only after three seconds of waiting!"
+    )
 })
 ```
 
@@ -270,23 +308,27 @@ display.on("mouseover", () => {
 
 - There's also internal `fromJSON`, `fromHTML`, and `fromStream` methods
 
-- These automatically handle fetching and parsing.
+- (Above, I just wanted to show off the `promisify` method and how you don't have to await anything.)
 
-- I just wanted to show off the `promisify` method and how you don't have to await anything.
+- These automatically handle fetching and parsing.
 
 - These functions expand fetch to incude additional event hooks and error handling.
 
 ```javascript
 const fetchOptions = {
-  onWait: "Loading...",
-  waitTime: 5000,
-  onSuccess: () => dynamicSpans.attach("<h6>Data Loaded!</h6>"),
-  // This will reflect the DOM AFTER the fetch is done.
+  // This custom loading message will replace the element's text while it waits.
+  onWait: "Hold your horses! I'm loading data!",
+  // But, only if it doesn't load within one second. (default is 250ms and no message)
+  waitTime: 1000,
+  // This custom error message will replace the element's text if it fails.
+  error: "Aw, shucks! I couldn't load the data!",
+  // You can replace that with a function that does whatever you want.
   onError: (err) => sendFetchErrorToAnalytics(err).
-  error: "Failed to load data",
+  // This will reflect the DOM AFTER the fetch is done.
+  onSuccess: () => dynamicSpans.attach("<h6>Data Loaded!</h6>"),
+  // the full range of fetch options (requestInit) are still supported.
   headers: {
     "Cool-Header": "Cool-Value",
-    // the full range of fetch options (requestInit) are still supported.
   },
 }
 

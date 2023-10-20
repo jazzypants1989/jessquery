@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Do Method Test</title>
+  </head>
+  <body>
+    <div id="testContainer"></div>
+    <button class="testButton">Click Me</button>
+    <button class="testButton">Click Me</button>
+
+    <script type="module">
+      import { $, $$ } from "../index.js"
+
+      // async function doMethodTest() {
+      //   const output = document.createElement("div")
+      //   document.getElementById("testContainer").appendChild(output)
+
+      //   $$(".testButton").do(async (el) => {
+      //     // throw new Error("do method test FAILED")
+      //     await new Promise((resolve, reject) => {
+      //       setTimeout(() => {
+      //         resolve()
+      //       }, 1000)
+      //     })
+
+      //     el.css({ backgroundColor: "hotpink" })
+
+      //     el.style.color = "darkgreen"
+      //     el.text("do method test PASSED")
+      //   })
+      // }
+
+      // doMethodTest()
+
+      async function deferMethodTest() {
+        const output = document.createElement("div")
+        document.getElementById("testContainer").appendChild(output)
+
+        $(".testButton")
+          .defer((el) => el.css({ color: "blue" }))
+          .text("HALF A SECOND OF GLORY") // Text is black
+          .wait(500)
+          .css({ color: "red" })
+          .text("Hello, world!") // Text is red
+          .wait(500)
+          .do(async (el) => {
+            const json = await fetch(
+              "https://jsonplaceholder.typicode.com/users/1"
+            ).then((res) => res.json())
+
+            el.css({ color: "green" })
+            el.text(json.name) // Text is green
+          })
+          .wait(2000)
+          .text("Short and stout!") // Text is blue
+      }
+
+      deferMethodTest()
+    </script>
+  </body>
+</html>

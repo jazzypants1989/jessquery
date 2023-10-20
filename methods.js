@@ -26,8 +26,8 @@ export function addMethods(type, selector, target, fixed = false) {
   const queueFunction = queueAndReturn(addToQueue, () => proxy)
 
   const makeMethod = (action, context) => {
-    return queueFunction((...args) => {
-      applyMethod((el) => action(el, ...args))
+    return queueFunction(async (...args) => {
+      return await applyMethod((el) => action(el, ...args))
     }, giveContext(context, selector))
   }
 
@@ -119,10 +119,10 @@ export function addMethods(type, selector, target, fixed = false) {
 
     send: makeMethod((el, options) => send(el, options, applyMethod), "send"),
 
-    do: makeMethod((el, fn) => {
+    do: makeMethod(async (el, fn) => {
       const wrappedElement = addMethods(type, selector, el)
-      const result = fn(wrappedElement)
-      prioritize(() => result)
+      const result = await fn(wrappedElement)
+      return result
     }, "do"),
 
     defer: makeMethod((el, fn) => {
