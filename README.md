@@ -155,17 +155,17 @@ const display = $(".display")
 
 button.on("click", () => {
   display
-    .if(
-      () => display.textContent === "Click me!",
-      (el) => el.text("Clicked!"),
-      (el) => el.text("I'm already clicked!")
-    )
+    .if({
+      is: (el) => el.textContent === "Click me!",
+      then: (el) => el.text("Clicked!").css("color", "green"),
+      else: (el) => el.text("Click me!").css("color", "red"),
+    })
     .wait(1000)
-    .if(
-      () => display.textContent === "Clicked!",
-      (el) => el.text("Click me!"),
-      (el) => el.text("I'm already clicked!")
-    )
+    .if({
+      is: (el) => el.textContent === "Clicked!",
+      then: (el) => el.text("Click me!").css("color", "red"),
+      else: (el) => el.text("Clicked!").css("color", "green"),
+    })
 })
 ```
 
