@@ -29,7 +29,7 @@
         console.log("toBeReplacedEls:", toBeReplacedEls)
         console.log("replacementEls:", replacementEls)
 
-        toBeReplacedEls.become(replacementEls, { mode: "move" })
+        toBeReplacedEls.become(replacementEls, { mode: "move", match: "fill" })
 
         const replacedElements = document.querySelectorAll(
           ".replacementElement"

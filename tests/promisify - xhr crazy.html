@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Promisify XHR Example</title>
+    <style>
+      #display {
+        padding: 10px;
+        border: 1px solid black;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <button id="successful-fetch">Successful Fetch</button>
+    <button id="network-error-fetch">Network Error Fetch (404)</button>
+    <button id="timeout-fetch">Timeout Fetch</button>
+    <button id="thrown-error-fetch">Thrown Error Inside Function</button>
+
+    <div id="display"></div>
+
+    <script type="module">
+      import { promisify, $, setErrorHandler } from "../index.js"
+
+      const successfulFetch = promisify(
+        async (resolve, reject) => {
+          const xhr = new XMLHttpRequest()
+          xhr.open("GET", "https://jsonplaceholder.typicode.com/todos/1")
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve(xhr.response)
+            } else {
+              reject(`Error: ${xhr.status}`)
+            }
+          }
+          xhr.onerror = () => reject(`Network Error: ${xhr.status}`)
+          xhr.send()
+        },
+        {
+          fnName: "successfulFetch",
+          timeout: 5000,
+        }
+      )
+
+      const networkErrorFetch = promisify(
+        async (resolve, reject) => {
+          const xhr = new XMLHttpRequest()
+          xhr.open(
+            "GET",
+            "https://jsonplaceholder.typicode.com/todos/nonexistent"
+          )
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve(xhr.response)
+            } else {
+              reject(`Error: ${xhr.status}`)
+            }
+          }
+          xhr.onerror = () => reject(`Network Error: ${xhr.status}`)
+          xhr.send()
+        },
+        {
+          fnName: "networkErrorFetch",
+          timeout: 5000,
+        }
+      )
+
+      const timeoutFetch = promisify(
+        async (resolve, reject) => {
+          await new Promise((r) => setTimeout(r, 6000)) // This will trigger the timeout error.
+          reject("This won't be reached because of the timeout error.")
+        },
+        {
+          fnName: "timeoutFetch",
+          timeout: 500,
+        }
+      )
+
+      const thrownErrorFetch = promisify(
+        (resolve, reject) => {
+          throw new Error("An error was thrown inside the function!")
+          reject("This won't be reached because of the thrown error.")
+        },
+        {
+          fnName: "thrownErrorFetch",
+          timeout: 5000,
+        }
+      )
+
+      setErrorHandler((err, context) => {
+        $("#display").html(
+          `<pre style="white-space: pre-wrap; word-break: break-all">${
+            err.message
+          }, ${JSON.stringify(context, null, 2)}</pre>`
+        )
+      })
+
+      $("#successful-fetch").on("click", () => {
+        $("#display")
+          .text("Fetching successful data...")
+          .wait(500)
+          .text(successfulFetch())
+      })
+
+      $("#network-error-fetch").on("click", () => {
+        $("#display")
+          .text("Fetching with network error...")
+          .wait(500)
+          .text(networkErrorFetch())
+      })
+
+      $("#timeout-fetch").on("click", () => {
+        $("#display")
+          .text("Fetching with timeout...")
+          .wait(500)
+          .text(timeoutFetch())
+      })
+
+      $("#thrown-error-fetch").on("click", () => {
+        $("#display")
+          .text("Fetching with thrown error...")
+          .wait(500)
+          .text(thrownErrorFetch())
+      })
+    </script>
+  </body>
+</html>

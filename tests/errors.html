@@ -16,23 +16,9 @@
         document.body.innerHTML += `<p style="color: red;">${error.message}, ${context}</p>`
       })
 
-      // Test adding a class to an element that doesn't exist
-      $("#nonExistentDiv").addClass("example-class")
+      $("#nonExistentDiv")
 
-      // Test toggling a class on an element that doesn't exist
-      $("#nonExistentDiv").toggleClass("example-class")
-
-      // Test appending HTML to an element that doesn't exist
-      $("#nonExistentDiv").append("<p>Appended content</p>")
-
-      // Test appending an element to another element
-      $("#test-div").append("<p>Appended content</p>")
-
-      // Test toggling an attribute on an element that doesn't exist
-      $("#nonExistentDiv").toggle("disabled")
-
-      // Test setting an attribute on an element that doesn't exist
-      $("#nonExistentDiv").set("data-example", "123")
+      $("#test-div").become("Just use .text()! or even .html()!")
     </script>
   </body>
 </html>

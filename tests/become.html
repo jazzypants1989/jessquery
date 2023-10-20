@@ -17,17 +17,25 @@
         const output = document.createElement("div")
 
         const toBeReplacedEl = $("#toBeReplaced")
-        // const replacementEls = $$(".replacementElements")
+        const replacementEls = $$(".replacementElements")
+        // const replacementEls = document.querySelectorAll(".replacementElements")
         // const replacementEls =
         //   $(`<div class="replacementElements">hey what's up?
         //   <h2>Test</h2>
         //   </div>`)
-        const replacementEls = document.querySelectorAll(".replacementElements")
-
-        document.getElementById("testContainer").appendChild(output)
 
         toBeReplacedEl.become(replacementEls, { mode: "move" })
+        // toBeReplacedEl.become(
+        //   [
+        //     `<div class="replacementElements"><p>hey what's up?</p>
+        //   <h2>Test</h2>
+        //   </div>`,
+        //     `<div class="replacementElements"><p>pussy?</p>`,
+        //   ],
+        //   { mode: "move" }
+        // ) //NO
 
+        document.getElementById("testContainer").appendChild(output)
         if (
           !document.getElementById("toBeReplaced") &&
           document.querySelectorAll(".replacementElements").length === 1
@@ -39,8 +47,6 @@
           output.textContent = "become test FAILED"
         }
       }
-
-      // Add an event listener to ensure the DOM is fully loaded before running the code.
       document.addEventListener("DOMContentLoaded", becomeTest)
     </script>
   </body>

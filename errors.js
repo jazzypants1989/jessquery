@@ -1,7 +1,5 @@
 export let errorHandler = (error, context) => {
-  typeof context === "string"
-    ? console.error(`${context}\n`, error)
-    : console.error(context, error)
+  console.error(context, error)
 }
 
 export function setErrorHandler(handler) {
@@ -11,9 +9,9 @@ export function setErrorHandler(handler) {
 export function giveContext(methodName, selector) {
   const message =
     methodName === "$"
-      ? `$${selector}`
+      ? `$('${selector}')`
       : methodName === "$$"
-      ? `$$${selector}`
+      ? `$$('${selector}')`
       : `Method: ${methodName} called on: ${selector}`
 
   return message

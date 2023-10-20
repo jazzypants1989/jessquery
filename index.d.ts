@@ -1933,15 +1933,14 @@ declare module "jessquery" {
    * Transforms any function into one that returns a Promise, enabling easy integration into DomProxy chains. This is particularly useful for things like setTimeout, setInterval, or older APIs that are callback-based. It works just like returning a promise normally, but there are a few conveniences built in:
    *
    * - All promise rejections are automatically caught and directed through the default error handler, which can be customized.
-   * - If neither resolve or reject are called within a specified timeout, the promise resolves automatically with no value. This prevents the chain from hanging indefinitely when you simply forget to meet a condition. Remember-- you can always reject the promise at any time.
+   * - If neither resolve or reject are called within a specified timeout, the promise will reject with a timeout error. This prevents the chain from hanging indefinitely when you simply forget to meet a condition. Remember-- you can always reject the promise at any time.
    * - A `meta` object can be optionally passed to add additional metadata for debugging or error handling. The `meta` object is fully extensible. Any extra fields you add will be accessible in the default error handler, making it highly flexible for diagnostic purposes.
    *
    * Usage in a chain allows you to feed its values into a DomProxy method like `text()` or `html()`, or use it within the {@link DomProxy.do} method to use the element itself as an argument.
    *
    * @param {(...args: any[]) => any} fn - The function to be promisified. Must call either the `resolve` or `reject` function.
-   * @param {number} [timeout=5000] - The amount of time in milliseconds to wait before resolving the promise automatically. Defaults to 5000 (5 seconds).
    * @param {object} [meta={}] - Metadata for debugging and error-handling. Can include any key-value pairs. Custom fields will be available in the default error handler.
-   *
+   * @param {number} [meta.timeout=5000] - The amount of time in milliseconds to wait before resolving the promise automatically. Defaults to 5000 (5 seconds).
    * @returns {(...args: any[]) => Promise<any>} - Returns a new function that, when invoked, returns a Promise.
    *
    * @example
@@ -2001,8 +2000,10 @@ declare module "jessquery" {
    */
   export function promisify(
     fn: (...args: any[]) => void,
-    timeout?: number,
-    meta?: { [key: string]: any }
+    meta?: {
+      timeout?: number
+      [key: string]: any
+    }
   ): (...args: any[]) => Promise<any>
 
   interface FetchOptions extends RequestInit {

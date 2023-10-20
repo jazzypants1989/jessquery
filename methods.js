@@ -195,23 +195,6 @@ export function addMethods(type, selector, target, fixed = false) {
       return switchTarget(pickedElements.flat())
     }, giveContext("pickAll", selector)),
 
-    takeWhile: queueFunction((predicate) => {
-      const array = Array.isArray(target) ? target : [target]
-      const result = []
-      for (const item of array) {
-        try {
-          if (predicate(item.raw || item)) {
-            result.push(item)
-          } else {
-            break
-          }
-        } catch (error) {
-          errorHandler(error, giveContext("takeWhile", selector))
-        }
-      }
-      return switchTarget(result)
-    }, giveContext("takeWhile", selector)),
-
     if: queueFunction(
       ({ is, then, or }) => {
         const array = Array.isArray(target) ? target : [target]
@@ -231,6 +214,23 @@ export function addMethods(type, selector, target, fixed = false) {
       giveContext("if", selector),
       false
     ),
+
+    takeWhile: queueFunction((predicate) => {
+      const array = Array.isArray(target) ? target : [target]
+      const result = []
+      for (const item of array) {
+        try {
+          if (predicate(item.raw || item)) {
+            result.push(item)
+          } else {
+            break
+          }
+        } catch (error) {
+          errorHandler(error, giveContext("takeWhile", selector))
+        }
+      }
+      return switchTarget(result)
+    }, giveContext("takeWhile", selector)),
 
     refresh: queueFunction(() => {
       target = [...originalTarget]

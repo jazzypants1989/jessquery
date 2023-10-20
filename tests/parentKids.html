@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test parent function</title>
+  </head>
+  <body>
+    <div>
+      <div id="child">kid</div>
+    </div>
+    <div id="parent">
+      <div>kid</div>
+    </div>
+    <div id="testContainer"></div>
+
+    <script type="module">
+      import { $, $$ } from "../index.js"
+
+      const parent = $("#child").parent()
+
+      parent.text("Parent text").css("color", "blue")
+
+      const child = $("#parent").kids()
+
+      child.text("Child text").css("color", "red")
+    </script>
+  </body>
+</html>

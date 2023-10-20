@@ -17,12 +17,8 @@
               </div>
               <h2 class="truth">This will disappear.</h2>
               <h3 class="truth">I love you.</h3>
-            </div>
-            <input type="text" />
-            <div class="container" id="parentTwo">
-              <input id="myFavorite" type="text" />
-              <h4 class="truth">Why are you still reading this?</h4>
             </div>`)
+
       const container = $(".container")
 
       let count = 0
@@ -78,16 +74,6 @@
         .pickAll(".truth")
         .text("jQuery is forever!")
         .css("textAlign", "center")
-
-      const inputs = $$("input")
-
-      inputs.on("input", (e) => {
-        // inputs.addEventListener("input", (e) => {
-        inputs.do((el) => {
-          // inputs.forEach((el) => {
-          el.val(e.target.value) // el.value = e.target.value
-        })
-      })
     </script>
   </body>
 </html>

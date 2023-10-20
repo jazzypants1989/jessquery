@@ -13,6 +13,8 @@
   <body>
     <div id="app">0</div>
     <button id="button2">Click Me</button>
+
+    <button id="button2">Click Me</button>
     <script type="module">
       import { $, $$ } from "../index.js"
 
@@ -23,15 +25,6 @@
       buttons.on("click", () => {
         count++
 
-        app.data("count", count)
-
-        app.css({
-          border: "2px solid black",
-          padding: "10px",
-          borderRadius: "10px",
-        })
-
-        console.log(app.dataset.count)
         app
           .if({
             is: () => count % 2 === 0,

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <button id="button">Click me!</button>
+    <button id="button">Click me!</button>
+    <div class="display"></div>
+    <script type="module">
+      import { $, $$ } from "../index.js"
+
+      const fadeIn = { opacity: 1 }
+      const fadeOut = { opacity: 0 }
+      const oneSecond = 1000
+      const buttons = $$("button")
+
+      buttons
+        .addClass("btn")
+        .wait(1000)
+        .attach(
+          `<p>
+              "These buttons will animate in 2 seconds. They will fade in and out twice
+              then disappear."
+          </p>`
+        )
+        .wait(2000)
+        .transition(fadeIn, oneSecond)
+        .transition(fadeOut, oneSecond)
+        .transition(fadeIn, oneSecond)
+        .transition(fadeOut, oneSecond)
+        .purge()
+    </script>
+  </body>
+</html>

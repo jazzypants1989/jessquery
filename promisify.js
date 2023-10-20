@@ -1,10 +1,7 @@
 import { errorHandler } from "./errors.js"
 
-export function promisify(
-  fn,
-  timeout = 5000,
-  meta = { fnName: "anonymous", fnArgs: "unknown" }
-) {
+export function promisify(fn, meta) {
+  const { timeout = 5000 } = meta
   return (...args) => {
     return new Promise((resolve, reject) => {
       let settled = false
@@ -19,19 +16,24 @@ export function promisify(
       const Reject = (reason) => {
         if (!settled) {
           settled = true
-          reject(reason)
+          meta.error = reason
+          reject(meta)
         }
       }
 
       setTimeout(() => {
         if (!settled) {
           settled = true
-          resolve()
-          errorHandler(new Error(`Timeout: ${timeout}ms exceeded.`), meta)
+          meta.error = `Timeout: ${timeout}ms exceeded`
+          reject(meta)
         }
       }, timeout)
 
-      fn(Resolve, Reject, ...args)
+      try {
+        fn(Resolve, Reject, ...args)
+      } catch (e) {
+        errorHandler(e, meta)
+      }
     })
   }
 }

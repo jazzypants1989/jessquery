@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Promisify XHR Example</title>
+    <style>
+      #display {
+        padding: 10px;
+        border: 1px solid black;
+      }
+    </style>
+  </head>
+  <body>
+    <button id="button">Fetch Data</button>
+    <div id="display"></div>
+
+    <script type="module">
+      import { promisify, $, setErrorHandler } from "../index.js"
+
+      const fetchApiData = promisify(
+        async (resolve, reject) => {
+          await new Promise((resolve) => setTimeout(resolve, 1000))
+          const xhr = new XMLHttpRequest()
+          xhr.open("GET", "https://jsonplaceholder.typicode.com/todos/1")
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve(xhr.response)
+            } else {
+              reject(`Error: ${xhr.status}`)
+            }
+          }
+          xhr.onerror = () => reject(xhr.status)
+          xhr.send()
+        },
+        {
+          fnName: "fetchApiData (XHR!)",
+          url: "https://jsonplaceholder.typicode.com/todos/1",
+          timeout: 500,
+        }
+      )
+
+      setErrorHandler((err, context) => {
+        $("#display").html(
+          `<pre style="white-space: pre-wrap; word-break: break-all;">${JSON.stringify(
+            err,
+            null,
+            2
+          )}, ${JSON.stringify(context, null, 2)}</pre>`
+        )
+      })
+
+      const display = $("#display")
+      const button = $("#button")
+
+      button.on("click", async () => {
+        display.text("about to use XHR").wait(500).text(fetchApiData())
+      })
+
+      // button.on("click", async () => {
+      //   display
+      //     .text("about to use XHR")
+      //     .wait(500)
+      //     .do(async (el) => {
+      //       const data = await fetchApiData()
+      //       el.text(data)
+      //     })
+      // })
+    </script>
+  </body>
+</html>
