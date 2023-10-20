@@ -20,11 +20,10 @@ function addProxy(type, string, fixed = false) {
     return errorHandler(new Error(`No elements.`), giveContext(type, string))
   }
 
-  return addMethods(type, string, elements[1] ? elements : elements[0], fixed)
+  return addMethods(type, string, elements, fixed)
 }
 
 export function createQueue() {
-  const priorityQueue = []
   const mainQueue = []
   const deferredQueue = []
   let isRunning = false
@@ -33,21 +32,12 @@ export function createQueue() {
     if (isRunning) return
     isRunning = true
 
-    while (priorityQueue.length > 0 || mainQueue.length > 0) {
-      if (priorityQueue.length > 0) {
-        const { fn, args } = priorityQueue.shift()
-        await eachArgument(fn, args)
-      } else if (mainQueue.length > 0) {
-        const fn = mainQueue.shift()
-        await fn()
-      }
+    while (mainQueue.length > 0) {
+      const fn = mainQueue.shift()
+      await fn()
     }
 
-    if (
-      deferredQueue.length > 0 &&
-      mainQueue.length === 0 &&
-      priorityQueue.length === 0
-    ) {
+    if (deferredQueue.length > 0 && mainQueue.length === 0) {
       while (deferredQueue.length > 0) {
         const { fn, args } = deferredQueue.shift()
         await eachArgument(fn, args)
@@ -62,11 +52,6 @@ export function createQueue() {
     runQueue()
   }
 
-  function prioritize(fn, args = []) {
-    priorityQueue.push({ fn, args })
-    runQueue()
-  }
-
   function defer(fn, args = []) {
     deferredQueue.push({ fn, args })
     if (!isRunning) {
@@ -76,7 +61,6 @@ export function createQueue() {
 
   return {
     addToQueue,
-    prioritize,
     defer,
   }
 }
@@ -99,6 +83,10 @@ export function queueAndReturn(addToQueue, getProxy) {
 export function handlerMaker(element, customMethods) {
   return {
     get(_, prop) {
+      if (element.length && element.length === 1) {
+        element = element[0]
+      }
+
       if (prop === "raw") {
         return element
       }

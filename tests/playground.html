@@ -48,10 +48,8 @@
             )
             const data = await response.json()
 
-            await new Promise((resolve) => setTimeout(resolve, 3000))
-            el.text(data.name).css("color", "green")
+            el.text(data.name).wait(3000).css("color", "green")
           })
-          .wait(1000)
           .css("color", "red")
       })
 

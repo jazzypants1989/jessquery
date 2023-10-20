@@ -14,44 +14,34 @@ import { fetchElements, send, wrappedFetch } from "./ajax.js"
 
 export function addMethods(type, selector, target, fixed = false) {
   let proxy = null
-  let isSingle = type === "$"
+  let originalTarget = [...target]
 
-  let originalTarget = Array.isArray(target) ? [...target] : [target]
-
-  const applyMethod = (func) => {
-    return isSingle ? func(target) : target.forEach((el) => func(el))
-  }
-
-  const { addToQueue, prioritize, defer } = createQueue()
+  const { addToQueue, defer } = createQueue()
   const queueFunction = queueAndReturn(addToQueue, () => proxy)
 
   const makeMethod = (action, context) => {
     return queueFunction(async (...args) => {
-      return await applyMethod((el) => action(el, ...args))
+      let promises = []
+      target.forEach((el) => {
+        promises.push(action(el, ...args))
+      })
+      await Promise.all(promises)
     }, giveContext(context, selector))
   }
 
   const customMethods = {
     on: makeMethod((el, ev, fn) => {
-      el.addEventListener(ev, (...args) => {
-        prioritize(fn, args)
-      })
+      el.addEventListener(ev, fn)
     }, "on"),
 
     once: makeMethod((el, ev, fn) => {
-      el.addEventListener(
-        ev,
-        (...args) => {
-          prioritize(fn, args)
-        },
-        { once: true }
-      )
+      el.addEventListener(ev, fn, { once: true })
     }, "once"),
 
-    delegate: makeMethod((el, event, subSelector, handler) => {
-      el.addEventListener(event, (e) => {
-        if (e.target.matches(subSelector)) {
-          prioritize(handler, [e])
+    delegate: makeMethod((el, ev, selector, fn) => {
+      el.addEventListener(ev, (event) => {
+        if (event.target.matches(selector)) {
+          fn(event)
         }
       })
     }, "delegate"),
@@ -117,33 +107,33 @@ export function addMethods(type, selector, target, fixed = false) {
 
     purge: makeMethod((el) => el.remove(), "purge"),
 
-    send: makeMethod((el, options) => send(el, options, applyMethod), "send"),
+    send: makeMethod((el, options) => send(el, options, target), "send"),
 
     do: makeMethod(async (el, fn) => {
-      const wrappedElement = addMethods(type, selector, el)
+      const wrappedElement = addMethods(type, selector, [el])
       const result = await fn(wrappedElement)
       return result
     }, "do"),
 
     defer: makeMethod((el, fn) => {
-      const wrappedElement = addMethods(type, selector, el)
+      const wrappedElement = addMethods(type, selector, [el])
       defer(fn, [wrappedElement])
     }, "defer"),
 
     fromJSON: makeMethod((el, url, fn, options = {}) => {
-      wrappedFetch(url, options, "json", applyMethod).then((json) => {
-        const wrappedElement = addMethods(type, selector, el)
+      wrappedFetch(url, options, "json", target).then((json) => {
+        const wrappedElement = addMethods(type, selector, [el])
         fn(wrappedElement, json)
       })
     }, "fromJSON"),
 
     fromHTML: makeMethod((el, url, options = {}) => {
-      fetchElements("text", url, options, el, applyMethod)
+      fetchElements("text", url, options, [el])
     }, "fromHTML"),
 
     fromStream: makeMethod((el, url, options = {}) => {
       const type = options.sse ? "sse" : "stream"
-      fetchElements(type, url, options, el, applyMethod)
+      fetchElements(type, url, options, [el])
     }, "fromStream"),
 
     transition: queueFunction(
@@ -197,9 +187,8 @@ export function addMethods(type, selector, target, fixed = false) {
 
     if: queueFunction(
       ({ is, then, or }) => {
-        const array = Array.isArray(target) ? target : [target]
-        array.forEach((el) => {
-          const wrappedElement = addMethods(type, selector, el, fixed)
+        target.forEach((el) => {
+          const wrappedElement = addMethods(type, selector, [el])
           try {
             if (is(wrappedElement)) {
               then && then(wrappedElement)
@@ -216,9 +205,8 @@ export function addMethods(type, selector, target, fixed = false) {
     ),
 
     takeWhile: queueFunction((predicate) => {
-      const array = Array.isArray(target) ? target : [target]
       const result = []
-      for (const item of array) {
+      for (const item of target) {
         try {
           if (predicate(item.raw || item)) {
             result.push(item)
@@ -241,7 +229,6 @@ export function addMethods(type, selector, target, fixed = false) {
     const handler = handlerMaker(newTarget, customMethods)
     const proxy = new Proxy(customMethods, handler)
     proxy.raw = newTarget
-    isSingle = !(newTarget instanceof Array)
     return proxy
   }
 
@@ -255,19 +242,13 @@ export function addMethods(type, selector, target, fixed = false) {
   function switchTarget(newTarget) {
     if (fixed)
       throw new Error(`Proxy is fixed. Create new proxy to switch targets.`)
-    // if (newTarget.length === 0) return null // newTarget = [document.body]
     target = newTarget.length > 0 ? newTarget : []
     proxy = updateProxy(target)
     return proxy
   }
 
   function filterTarget(action) {
-    if (isSingle) {
-      const result = action(target)
-      return result ? [result] : []
-    } else {
-      return target.map(action).filter((el) => el)
-    }
+    return target.map(action).filter((el) => el)
   }
 
   proxy = updateProxy(target)

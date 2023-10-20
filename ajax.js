@@ -1,6 +1,4 @@
-import { addMethods } from "./methods.js"
-
-export async function wrappedFetch(url, options, type, toOneOrMany) {
+export async function wrappedFetch(url, options, type, target) {
   const { onWait, waitTime, onSuccess, onError } = options
 
   let waitTimeout = null
@@ -9,18 +7,19 @@ export async function wrappedFetch(url, options, type, toOneOrMany) {
   try {
     const response = await fetch(url, options)
     clearTimeout(waitTimeout)
-    const data = await handleResponse(response, type, toOneOrMany, options)
+    const data = await handleResponse(response, type, target, options)
     onSuccess && requestIdleCallback(() => onSuccess(data))
     return data
   } catch (error) {
     const errorMessage = error || `Failed to load ${type}`
+    console.log(target)
     onError
       ? requestIdleCallback(() => onError(error))
-      : toOneOrMany((el) => (el.innerHTML = errorMessage))
+      : target.forEach((el) => (el.innerHTML = errorMessage))
   }
 }
 
-export function send(element, options = {}, toOneOrMany) {
+export function send(element, options = {}, target) {
   let { url, method = "POST", json = false, body, event, headers } = options
 
   event && event.preventDefault()
@@ -45,14 +44,14 @@ export function send(element, options = {}, toOneOrMany) {
     body,
   }
 
-  return wrappedFetch(url, fetchOptions, "text", toOneOrMany)
+  return wrappedFetch(url, fetchOptions, "text", target)
 }
 
-export function fetchElements(type, url, options = {}, target, toOneOrMany) {
+export function fetchElements(type, url, options = {}, target) {
   if (type === "sse") {
     const eventSource = new EventSource(url)
     eventSource.onmessage = (event) => {
-      toOneOrMany((el) => {
+      target.forEach((el) => {
         if (options.add) {
           sanitizeOrNot(el, event.data + "<br />" + el.innerHTML, options)
         } else {
@@ -66,7 +65,7 @@ export function fetchElements(type, url, options = {}, target, toOneOrMany) {
     return
   }
 
-  wrappedFetch(url, options, type, toOneOrMany).then((data) => {
+  wrappedFetch(url, options, type, target).then((data) => {
     if (!data) throw new Error(`No data received from ${url}`)
     if (type === "text") {
       sanitizeOrNot(target, data, options)
@@ -75,30 +74,30 @@ export function fetchElements(type, url, options = {}, target, toOneOrMany) {
   })
 }
 
-function handleResponse(response, type, toOneOrMany, options) {
+function handleResponse(response, type, target, options) {
   if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
 
   if (type === "json") return response.json()
   if (type === "stream") {
     const reader = response.body.getReader()
-    return recursiveRead(reader, toOneOrMany, type, options)
+    return recursiveRead(reader, target, type, options)
   }
 
   return response.text()
 }
 
-function recursiveRead(reader, toOneOrMany, type, options, chunks = []) {
+function recursiveRead(reader, target, type, options, chunks = []) {
   return reader.read().then(({ done, value }) => {
     const decodedChunk = new TextDecoder("utf-8").decode(value)
     const allChunks = [...chunks, decodedChunk]
 
-    toOneOrMany((el) => {
+    target.forEach((el) => {
       sanitizeOrNot(el, allChunks.join(""), options)
     })
 
     return done
       ? allChunks.join("")
-      : recursiveRead(reader, toOneOrMany, type, options, allChunks)
+      : recursiveRead(reader, target, type, options, allChunks)
   })
 }
 
@@ -141,10 +140,12 @@ function sanitizeOrNot(target, data, options) {
 }
 
 function runScripts(target) {
-  target.querySelectorAll("script").forEach((script) => {
-    const newScript = document.createElement("script")
-    newScript.textContent = script.textContent
-    newScript.type = script.type
-    script.replaceWith(newScript)
-  })
+  target.forEach((el) =>
+    el.querySelectorAll("script").forEach((script) => {
+      const newScript = document.createElement("script")
+      newScript.textContent = script.textContent
+      newScript.type = script.type
+      script.replaceWith(newScript)
+    })
+  )
 }

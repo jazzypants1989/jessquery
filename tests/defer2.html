@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Defer Method Test</title>
+  </head>
+  <body>
+    <div id="testContainer"></div>
+    <button class="testButton">Click Me</button>
+
+    <script type="module">
+      import { $, $$ } from "../index.js"
+
+      let count = 0
+      const testButton = $(".testButton")
+      testButton
+        .on("click", () => {
+          testButton.text(`Clicked ${++count} times`)
+        })
+        .wait(2000)
+        .css({ color: "red" }) // BAD!
+
+      // testButton
+      //   .on("click", () => {
+      //     testButton.text(`Clicked ${++count} times`)
+      //   })
+      //   .defer((el) => el.wait(2000).css({ color: "red" })) // Good!
+
+      // testButton
+      //   .on("click", () => {
+      //     $(".testButton").text(`Clicked ${++count} times`)
+      //   })
+      //   .wait(2000)
+      //   .css({ color: "red" }) // Less good, but still better!
+
+      // testButton
+      //   .do((el) => el.wait(2000).css({ color: "green" }).wait(2000)) // NO CHAINING AFTER WAIT CALLS IN DO or fromJSON!!!
+      //   .css({ color: "red" })
+    </script>
+  </body>
+</html>

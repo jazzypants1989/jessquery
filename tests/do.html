@@ -34,11 +34,16 @@
         display
           .do(async (el) => {
             el.text("Loading...")
+
+            await new Promise((resolve) => setTimeout(resolve, 2000))
+
             const response = await fetch(
               "https://api.github.com/users/jazzypants1989"
             )
             const data = await response.json()
+
             el.text(data.name).css("color", "green")
+
             await new Promise((resolve) => setTimeout(resolve, 3000))
           })
           .text(

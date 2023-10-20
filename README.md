@@ -362,11 +362,11 @@ dynamicSpans.fromJSON(
 - You can also pass a URL and body directly if you want.
 
 ```javascript
-$("#bigForm").send()
 // This will automatically serialize the form
 // It will send it to the action attribute if it exists (The page's URL if not)
 // You can also customize each aspect of the request if you want.
 // EVERYTHING is optional. You can just pass a URL if you want.
+$("#bigForm").send()
 
 $("#otherSubmitButton").on("click", (event) => {
   $$("#bigForm").send({
@@ -1779,11 +1779,10 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 - **takeWhile: (predicate: (el: DomProxyCollection<T>) => boolean) => DomProxyCollection<T>**
 
   - Filters the current elements in the proxy based on a predicate.
-  - If the current elements do not satisfy the predicate, the proxy will be emptied.
-  - This will throw an error if the proxy was created as "fixed" (with a second argument of true).
   - The predicate is a function that receives the elements as an argument and returns a boolean.
   - It's essential to use this method with caution as it can empty the proxy if the current elements do not match the predicate.
   - The `refresh()` method can be used to restore the proxy to its original state.
+  - This will throw an error if the proxy was created as "fixed" (with a second argument of true).
   - For simple, conditional logic, use the `if` method instead.
 
   - Example:
@@ -1801,8 +1800,8 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 - **refresh(): DomProxyCollection**
 
   - Restores the proxy to its original state.
-  - Example: `$$('button').css('color', 'red').next().css('color', 'blue').refresh().css('color', 'green')`
-  - Expectation: The button will turn green. The next sibling will remain red.
+  - Example: `$$('button').next().css('color', 'blue').refresh().css('color', 'green')`
+  - Expectation: Every button will turn green. Each of their next siblings will remain blue.
 
 ## Contributing
 

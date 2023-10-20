@@ -1,92 +1,92 @@
 import http from "http"
 
-// ** Submissions **
-import url from "url"
+// // ** Submissions **
+// import url from "url"
 
-const server = http.createServer((req, res) => {
-  console.log(req.method, req.url)
+// const server = http.createServer((req, res) => {
+//   console.log(req.method, req.url)
 
-  // Set CORS headers
-  res.setHeader("Access-Control-Allow-Origin", "http://localhost:5500")
-  res.setHeader("Access-Control-Allow-Methods", "POST")
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
+//   // Set CORS headers
+//   res.setHeader("Access-Control-Allow-Origin", "http://localhost:5500")
+//   res.setHeader("Access-Control-Allow-Methods", "POST")
+//   res.setHeader("Access-Control-Allow-Headers", "Content-Type")
 
-  if (req.method === "OPTIONS") {
-    res.statusCode = 200
-    res.end()
-    return
-  }
+//   if (req.method === "OPTIONS") {
+//     res.statusCode = 200
+//     res.end()
+//     return
+//   }
 
-  if (req.method === "POST") {
-    const queryParams = new url.URL(req.url, `http://${req.headers.host}`)
-      .searchParams
-    const delay = parseInt(queryParams.get("delay")) || 0
+//   if (req.method === "POST") {
+//     const queryParams = new url.URL(req.url, `http://${req.headers.host}`)
+//       .searchParams
+//     const delay = parseInt(queryParams.get("delay")) || 0
 
-    let requestData = ""
+//     let requestData = ""
 
-    req.on("data", (chunk) => {
-      requestData += chunk
-    })
+//     req.on("data", (chunk) => {
+//       requestData += chunk
+//     })
 
-    req.on("end", () => {
-      setTimeout(() => {
-        // Use setTimeout here
-        console.log("Received data:")
-        console.log(requestData)
-        res.statusCode = 200
-        res.end(
-          requestData +
-            "\n" +
-            "JESSE IS THE BEST" +
-            "\n" +
-            new Date().toLocaleTimeString()
-        )
-      }, delay) // Delay the response by the specified amount
-    })
-  } else {
-    res.statusCode = 404
-    res.end("Not Found")
-  }
-})
+//     req.on("end", () => {
+//       setTimeout(() => {
+//         // Use setTimeout here
+//         console.log("Received data:")
+//         console.log(requestData)
+//         res.statusCode = 200
+//         res.end(
+//           requestData +
+//             "\n" +
+//             "JESSE IS THE BEST" +
+//             "\n" +
+//             new Date().toLocaleTimeString()
+//         )
+//       }, delay) // Delay the response by the specified amount
+//     })
+//   } else {
+//     res.statusCode = 404
+//     res.end("Not Found")
+//   }
+// })
 
-server.listen(3000, () => {
-  console.log(`click here: http://localhost:3000`)
-})
+// server.listen(3000, () => {
+//   console.log(`click here: http://localhost:3000`)
+// })
 
 // ** STREAMING **
 
-// const server = http.createServer((req, res) => {
-//   // Allow requests from any origin
-//   res.setHeader("Access-Control-Allow-Origin", "*")
+const server = http.createServer((req, res) => {
+  // Allow requests from any origin
+  res.setHeader("Access-Control-Allow-Origin", "*")
 
-//   // Set other CORS headers as needed
-//   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
-//   res.setHeader("Access-Control-Allow-Headers", "Content-Type")
+  // Set other CORS headers as needed
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
 
-//   // Respond with the data
-//   res.writeHead(200, { "Content-Type": "application/octet-stream" })
+  // Respond with the data
+  res.writeHead(200, { "Content-Type": "application/octet-stream" })
 
-//   res.write("<h1>hello</h1>")
+  res.write("<h1>hello</h1>")
 
-//   // Simulate streaming by sending chunks of data every 1 second
-//   const intervalId = setInterval(() => {
-//     res.write(`<p>${new Date().toLocaleTimeString()} \n</p>`)
-//     res.write(`<script>console.log("hello")</script>`)
-//   }, 1000)
+  // Simulate streaming by sending chunks of data every 1 second
+  const intervalId = setInterval(() => {
+    res.write(`<p>${new Date().toLocaleTimeString()} \n</p>`)
+    res.write(`<script>console.log("hello")</script>`)
+  }, 1000)
 
-//   // End the stream and clear the interval after 5 seconds
-//   setTimeout(() => {
-//     clearInterval(intervalId)
-//     res.end()
-//   }, 5000)
+  // End the stream and clear the interval after 5 seconds
+  setTimeout(() => {
+    clearInterval(intervalId)
+    res.end()
+  }, 5000)
 
-//   // Clear the interval if the client disconnects before 5 seconds
-//   res.on("close", () => clearInterval(intervalId))
-// })
+  // Clear the interval if the client disconnects before 5 seconds
+  res.on("close", () => clearInterval(intervalId))
+})
 
-// server.listen(8080, () => {
-//   console.log("Server is running on port 8080")
-// })
+server.listen(8080, () => {
+  console.log("Server is running on port 8080")
+})
 
 // ** SERVER SENT EVENTS **
 
