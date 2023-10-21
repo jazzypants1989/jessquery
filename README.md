@@ -145,13 +145,23 @@ const dynamicSpans = $$(".dynamic-spans")
 $(`<h1>I'm #1</h1>`).moveTo(".container", { position: "prepend" }) // append is the default
 
 // You can completely replace the element(s). The proxy is what's stable-- not the element(s) inside.
+// These changes are permanent as they operate on the DOM directly.
 const button = $(".button")
 button.html(`<h3>I am not a button</h3>`, true)
 // The second argument determines if the parent element should be replaced as well.
 
-// You can also use become() to transform the elements into something from elsewhere in the DOM.
+// You can also use become() to transform the elements into something from elsewhere in the DOM. (Again, permanent.)
 const buttons = $$(".button")
 buttons.become($(".other-button"))
+
+// moveTo, cloneTo, and attach allow you to move elements around the DOM.
+// They are all permanent, but you can use cloneTo to make a copy.
+const coolDiv = $(".cool-div")
+coolDiv.cloneTo(".container", { position: "prepend" })
+
+// But remember, you can use the same proxy to operate on different elements over time.
+coolDiv.next().text("I'm the next element!")
+// The coolDiv proxy will no longer operate on elements with the class "cool-div"
 
 // Just remember: use refresh() to reset the proxy to its original state.
 // /**
