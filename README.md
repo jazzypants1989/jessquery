@@ -155,7 +155,9 @@ const buttons = $$(".button")
 buttons.become($(".other-button"))
 
 // moveTo, cloneTo, and attach allow you to move elements around the DOM.
-// They are all permanent, but you can use cloneTo to make a copy.
+// If you don't want to move things permanently, you can:
+//  - use cloneTo to make a copy of the current element(s) and attach it to another element
+//  - set the mode to `clone` on attach to copy another element from elsewhere in the DOM
 const coolDiv = $(".cool-div")
 coolDiv.cloneTo(".container", { position: "prepend" })
 
