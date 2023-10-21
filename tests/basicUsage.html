@@ -8,7 +8,7 @@
   <body>
     <button id="button">Click me!</button>
     <button id="button">Click me!</button>
-    <div class="display"></div>
+    <div class="display">In one second!</div>
     <script type="module">
       import { $, $$ } from "../index.js"
 
@@ -16,21 +16,14 @@
       const fadeOut = { opacity: 0 }
       const oneSecond = 1000
       const buttons = $$("button")
+      const display = $(".display")
 
-      buttons
-        .addClass("btn")
+      display
         .wait(1000)
-        .attach(
-          `<p>
-              "These buttons will animate in 2 seconds. They will fade in and out twice
-              then disappear."
-          </p>`
-        )
+        .html("<span>hi</span>", true)
         .wait(2000)
-        .transition(fadeIn, oneSecond)
-        .transition(fadeOut, oneSecond)
-        .transition(fadeIn, oneSecond)
-        .transition(fadeOut, oneSecond)
+        .html("bye")
+        .wait(1000)
         .purge()
     </script>
   </body>

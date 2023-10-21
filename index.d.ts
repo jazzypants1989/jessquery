@@ -92,12 +92,21 @@ declare module "jessquery" {
     ) => DomProxy<T>
 
     /** Change the HTML of the element with an **UNSANITIZED** string of new HTML. If you want to sanitize the HTML, use {@link DomProxy.sanitize} instead.
+     *
+     * - By default, only the element's children will be replaced (innerHTML). If you want to replace the element itself (outerHTML), set the second argument to true.
+     *
      * @param newHtml The new HTML
+     * @param outerHTML Whether to replace the element itself or just its children
      * @returns This {@link DomProxy}
      * @example
      * $('button').html('<span>Click me!</span>')
+     * // <button><span>Click me!</span></button>
+     *
+     * @example
+     * $('button').html('<span>Click me!</span>', true)
+     * // <span>Click me!</span>
      */
-    html: (newHtml: string) => DomProxy<T>
+    html: (newHtml: string, outerHTML?: boolean) => DomProxy<T>
 
     /**
      * Sanitizes a string of untrusted HTML using the setHTML API, and sets the sanitized HTML to the provided element.
@@ -994,13 +1003,23 @@ declare module "jessquery" {
       handler: EventListenerOrEventListenerObject
     ) => DomProxyCollection<T>
 
-    /** Change the HTML of the element The string will **NOT** be sanitized. If you want to sanitize the HTML, use `sanitize` instead.
+    /** Change the HTML of the element
+     *
+     * - The string will **NOT** be sanitized. If you want to sanitize the HTML, use `sanitize` instead.
+     *
+     * - By default, only the element's children will be replaced (innerHTML). If you want to replace the element itself (outerHTML), set the second argument to true.
+     *
      * @param newHtml The new HTML
+     * @param outerHTML If true, the element itself will be replaced (outerHTML)
      * @returns This {@link DomProxyCollection}
      * @example
      * $('.container').html('<span>New Content</span>')
+     * // Every element with the class 'container' will now contain the span
+     * @example
+     * $('.container').html('<span>New Content</span>', true)
+     * // Every element with the class 'container' will now be replaced with the span
      */
-    html: (newHtml: string) => DomProxyCollection<T>
+    html: (newHtml: string, outerHTML?: boolean) => DomProxyCollection<T>
 
     /**
      * Sanitizes a string of untrusted HTML using the setHTML API, and sets the sanitized HTML to the matched element(s).
@@ -1039,11 +1058,11 @@ declare module "jessquery" {
      * - For `select[multiple]`: Expects an array of values to select multiple options.
      * @returns This {@link DomProxyCollection}.
      * @example
-     * $('input[type="text"]').value('New Value')
-     * $('input[type="checkbox"]').value(true)
-     * $('input[type="radio"]').value('radio1')
-     * $('input[type="file"]').value(myFileList)
-     * $('select[multiple]').value(['option1', 'option2'])
+     * $('input[type="text"]').val('New Value')
+     * $('input[type="checkbox"]').val(true)
+     * $('input[type="radio"]').val('radio1')
+     * $('input[type="file"]').val(myFileList)
+     * $('select[multiple]').val(['option1', 'option2'])
      */
     val: (
       newValue: string | number | (string | number)[] | FileList
@@ -1941,6 +1960,7 @@ declare module "jessquery" {
    * @param {(...args: any[]) => any} fn - The function to be promisified. Must call either the `resolve` or `reject` function.
    * @param {object} [meta={}] - Metadata for debugging and error-handling. Can include any key-value pairs. Custom fields will be available in the default error handler.
    * @param {number} [meta.timeout=5000] - The amount of time in milliseconds to wait before resolving the promise automatically. Defaults to 5000 (5 seconds).
+   * @param {number} [meta.interval] - The amount of time in milliseconds to wait before trying again. Defaults to 100 (0.1 seconds).
    * @returns {(...args: any[]) => Promise<any>} - Returns a new function that, when invoked, returns a Promise.
    *
    * @example
@@ -1977,17 +1997,16 @@ declare module "jessquery" {
    * });
    *
    * @example
-   * // Demonstrating timeout and metadata
-   * const onlyWarnIfLoadIsSlow = promisify(
-   *   (resolve, reject) => {
-   *     const textContent = display.textContent;
-   *     if (textContent === "Loading..." || "") {
-   *            resolve("Sorry for the delay!");
-   *          }
-   *   },
-   *   500,
+   * // Advanced example: Using metadata to customize error handling
+   * const poorlyNamedFunction = promisify(
+   *  (resolve, reject) => {
+   *   // Do something
+   *  resolve();
+   * },
    *   {
-   *     fnName: "onlyWarnIfLoadIsSlow",
+   *     timeout: 1000, // will reject after 1 second
+   *     interval: 500, // will try again every half second
+   *     fnName: "poorlyNamedFunction",
    *     fnArgs: ["arg1", "arg2"],
    *     customDebugInfo: "Additional custom information"
    *   }

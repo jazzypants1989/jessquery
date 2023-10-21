@@ -80,27 +80,24 @@ export function queueAndReturn(addToQueue, getProxy) {
   }
 }
 
-export function handlerMaker(element, customMethods) {
+export function handlerMaker(elements, customMethods) {
   return {
     get(_, prop) {
-      if (element.length && element.length === 1) {
-        element = element[0]
+      if (elements.length && elements.length === 1) {
+        elements = elements[0]
       }
 
       if (prop === "raw") {
-        return element
+        return elements
       }
 
       if (prop in customMethods) {
         return customMethods[prop]
       }
 
-      if (Array.isArray(element) && element[prop]) {
-        return typeof element[prop] === "function"
-          ? element[prop].bind(element)
-          : element[prop]
-      }
-      return element[prop]
+      return typeof elements[prop] === "function"
+        ? elements[prop].bind(elements)
+        : elements[prop]
     },
   }
 }

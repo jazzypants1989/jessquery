@@ -26,6 +26,7 @@
             <p>completed: ${completed}</p>`
               )
               .addClass("updated")
+              .css("backgroundColor", "skyblue")
           },
           {
             fallback: "I'M A CUSTOM FALLBACK",
@@ -33,7 +34,6 @@
             onSuccess: () => $$("p").css("color", "green"),
           }
         )
-        .do((el) => el.wait(250).pick("h1").css("color", "red"))
     </script>
 
     <style>

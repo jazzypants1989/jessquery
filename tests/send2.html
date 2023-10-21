@@ -6,7 +6,9 @@
     <title>Test send Function</title>
   </head>
   <body>
-    <div id="OTHER">OTHER</div>
+    <div style="width: 100px; height: 100px; background-color: red" id="OTHER">
+      I AIN'T DOIN' NOTHIN'
+    </div>
     <form action="http://localhost:3000?delay=2000" id="myForm">
       <input id="ME" name="title" value="My Title" />
       <textarea name="body">HELLO!!</textarea>
@@ -25,20 +27,15 @@
         submitButton.send({
           event,
           onWait: () =>
-            submitButton.attach("<p id='loading'>Waiting...</p>", {
-              position: "after",
-            }),
+            OTHER.text("Waiting...").css("backgroundColor", "yellow"),
           waitTime: 50,
           json: true,
           onSuccess: (data) => {
-            // $("#loading").purge()
-            $("#submitButton").next().css("backgroundColor", "green")
-            submitButton
-              .attach(`<p>${data}</p>`, {
-                position: "after",
-              })
-              .next()
-              .css("backgroundColor", "pink")
+            $("body").pick("#data").purge()
+            submitButton.attach(`<p id="data">${data}</p>`, {
+              position: "after",
+            })
+            OTHER.text("Success!").css("backgroundColor", "green")
           },
         })
       })

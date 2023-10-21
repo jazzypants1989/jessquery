@@ -9,9 +9,9 @@ Rekindle your love for method chaining-- now in a lightweight, type-safe package
 | Library   | Size before gzip | Size after gzip |
 | --------- | ---------------- | --------------- |
 | jQuery    | 88.3kb           | 31.7kb          |
-| jessquery | 8.72kb           | 3.69kb          |
+| jessquery | 8.46kb           | 3.59kb          |
 
-![It's only 3.69kb! I swear! This badge proves it.](https://deno.bundlejs.com/badge?q=jessquery@2.3.4)
+![It's only 3.59kb! I swear! This badge proves it.](https://deno.bundlejs.com/badge?q=jessquery@2.3.4)
 [![npm version](https://badge.fury.io/js/jessquery.svg)](https://badge.fury.io/js/jessquery)
 
 - [Basic Usage](#basic-usage)
@@ -144,12 +144,14 @@ $(`<h1>I'm #1</h1>`).moveTo(".container", { position: "prepend" }) // append is 
 
 // You can completely replace the element(s). The proxy is what's stable-- not the element(s) inside.
 const button = $(".button")
-button.html(`<h3>I am not a button</h3>`) // Not confusing at all!
+button.html(`<h3>I am not a button</h3>`, true)
+// The second argument determines if the parent element should be replaced as well.
 
 // You can also use become to use something from elsewhere in the DOM.
 const buttons = $$(".button")
 buttons.become($(".other-button"))
 
+// Just remember: use refresh() to reset the proxy to its original state.
 // /**
 //  * <div class="container">
 //  *   <p id="ME">1</p>
@@ -166,16 +168,26 @@ ME.refresh().do((el) => console.log(el.textContent)) // 1
 
 ### Conditional Logic
 
-- `if` and `takeWhile` allow you to conditionally execute functions based on the state of the element(s) in the proxy.
+- Usually, your best move is to simply use whatever DOM API you need to check the state of the element(s) in the proxy.
+
+- `if` and `takeWhile` allow you to conditionally execute functions in the middle of a chain.
 
 - They use a predicate function that returns a boolean to determine their behavior.
 
 - `if` is used for conditionally executing functions based on the state of the element(s) in the proxy.
 
+- `takeWhile` is used for conditionally filtering the elements held within the proxy.
+
 ```javascript
 const button = $(".button")
 const display = $(".display")
 
+// My first suggestion is to use a simple ternary with the DOM API.
+button.on("click", () => {
+  display.text(display.textContent === "Click me!" ? "Clicked!" : "Click me!")
+})
+
+// But, the if method allows you to chain things together.
 button.on("click", () => {
   display
     .if({
@@ -190,11 +202,8 @@ button.on("click", () => {
       or: (el) => el.text("Clicked!").css("color", "green"),
     })
 })
-```
 
-- `takeWhile` will conditionally filter the elements held within the proxy.
-
-```javascript
+// `takeWhile` actually changes the elements held within the proxy.
 const buttons = $$(".button")
 
 buttons
@@ -206,7 +215,7 @@ buttons
 
 - It's important to remember that `takeWhile` will alter the elements held within the proxy, and that any methods that follow it will **only** operate on the filtered elements.
 
-- To restore the proxy to its original state, you can use the `refresh` method.
+- As always, you can use the `refresh` method to restore the proxy to its original state.
 
 ```javascript
 const buttons = $$(".button")
@@ -225,6 +234,7 @@ buttons
 - No need to try/catch anything. All methods are surrounded by the error handler.
 
 ```javascript
+// You can do anything you want for however long you want.
 async function fetchData() {
   const response = await fetch("https://api.github.com/users/jazzypants1989")
   const data = await response.json()
@@ -233,10 +243,9 @@ async function fetchData() {
 
 // Every promise is resolved automatically
 button.on("click", () => {
+  // The next function never runs until the previous one is finished.
   display
-    // You don't have to await anything. It will just work!
-    .text(fetchData())
-    // The next function never runs until the previous one is finished.
+    .text(fetchData()) // No await, no try/catch, no problem!
     .css(color, display.textContent === "Jesse Pence" ? "green" : "red")
   // Each proxy has full access to the DOM API-- useful for conditional logic.
 
@@ -275,21 +284,23 @@ button.on("click", () => {
 // (while passing an error to the error handler).
 const pollAPIUntilItWorks = promisify(
   (resolve, reject) => {
-    const interval = setInterval(async () => {
       const response = await fetch("https://someCrappyAPI.com")
       if (response.ok) {
-        clearInterval(interval)
         resolve(response.json()) // you can just pass this promise through
       }
-    }, 1000)
-  },
+      // No reject, no problem! It'll be covered by the default error handler.
+    },
   {
-    timeout: 10000, // You can set the timeout to whatever you want.
-    url: "https://someCrappyAPI.com", // You can pass extra metadata to the error handler.
+    timeout: 10000,
+    // You can set the timeout to whatever you want.
+    interval: 500,
+    // It will usually only try the function once, but you can set an interval to retry.
+    url: "https://someCrappyAPI.com",
+    // You can pass extra metadata to the error handler.
   }
 )
 
-// The default error handler catches all errors and promise rejections
+// The default error handler catches most errors and promisify rejections
 // It simply logs using console.error, but you can use setErrorHandler to override this.
 setErrorHandler((err, context) => {
   sendErrorToAnalytics(err, context)
@@ -297,9 +308,9 @@ setErrorHandler((err, context) => {
 
 display.on("mouseover", () => {
   display
-    .html(`<pre>JSON.stringify(data, null, 2)</pre>`)
+    .html(`<pre>JSON.stringify(${pollAPIUntilItWorks()}, null, 2)</pre>`)
     .attach(
-      `This will wait for five seconds, but it will still show up if the API fails!`
+      `This will wait for ten seconds, but it will still show up if the API fails!`
     )
 })
 ```
@@ -541,13 +552,17 @@ Sets an error handler that will be called when an error occurs somewhere in Jess
 
 ### promisify
 
-- **promisify(fn: (...args: any[]) => void, meta?: any): () => Promise<any>**
+- **promisify(fn: (...args: any[]) => void, meta?: { timeout?: number, interval?: number, [key: string]: any }): () => Promise<any>**
 
-  - Wraps a function in a promise, allowing easy integration into DomProxy chains.. This is particularly useful for things like setTimeout, setInterval, and any older APIs that use callbacks.
+  - Wraps a function in a promise, allowing easy integration into DomProxy chains.. This is particularly useful for things like setTimeout and any older APIs that use callbacks.
 
   - It accepts a function that works just like building a normal promise: call the resolve function when the function is successful, and call the reject function when it fails. The value that you pass will get passed to whatever method you use to consume the promise.
 
-  - If the function does not call either resolve or reject within the specified timeout, the promise will reject with an error. Every promise that rejects inside of a promisified function will get routed through the default errorHandler (which you can set with the [setErrorHandler](#seterrorhandler) function). You can set the amount of time to wait before rejecting the promise with the timeout property on the meta object. If you don't provide a timeout, it will default to 5000ms.
+  - If the function does not call either resolve or reject within the specified timeout, the promise will reject with an error. Every promise that rejects inside of a promisified function will get routed through the default errorHandler (which you can set with the [setErrorHandler](#seterrorhandler) function).
+
+  - You can set the amount of time to wait before rejecting the promise with the timeout property on the meta object. If you don't provide a timeout, it will default to 5000ms.
+
+  - You can also set an interval to retry the function if it fails. This is useful for things like polling an API. If you don't provide an interval, it will default to 0ms (no retries).
 
   - The easiest way to use the function that you get from this method is call it to provide values to one of the `DomProxy` methods like text() or html(), but you can also use the [DomProxy.do](#domproxydo) / [DomProxyCollection.do](#domproxycollectiondo) method to execute the function and use the result on the element / elements represented by them.
 
@@ -562,6 +577,10 @@ Sets an error handler that will be called when an error occurs somewhere in Jess
 - **meta.timeout?: number**
 
   - The number of milliseconds to wait before automatically rejecting the promise. If this is not provided, it will be set to 5000ms.
+
+- **meta.interval?: number**
+
+  - The number of milliseconds to wait before retrying the function if it fails. The function will only run once by default.
 
 - Example:
 
@@ -635,10 +654,15 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
 
 ##### DomProxy.html
 
-- **html(newHtml: string): DomProxy**
+- **html(newHtml: string, outerHTML?: boolean): DomProxy**
 
   - Change the HTML of the element with an **UNSANITIZED** string of new HTML. This is useful if you want to add a script tag or something. If you want to sanitize the HTML, use `sanitize` instead.
+
+  - By default, only the element's children will be replaced (innerHTML). If you want to replace the entire element (outerHTML), you can pass `true` as the second argument.
   - Example: `$('button').html('<span>Click me!</span>')`
+  - Expectation: `<button><span>Click me!</span></button>`
+  - Example: `$('button').html('<span>Click me!</span>', true)`
+  - Expectation: `<span>Click me!</span>` (The button will be replaced with the span)
 
 ##### DomProxy.sanitize
 
@@ -1086,7 +1110,40 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
   - Waits for a specified number of milliseconds before continuing the chain.
   - Returns the proxy so you can continue chaining. If you need to return the animation object, use the `animate` method instead.
   - Remember, this method is blocking, so watch out for any event handlers using the same variable.
+  - If you do not want to switch to a new variable, make sure that you use this in combination with `defer` which will allow the events to skip ahead in the queue.
+  - `wait` will **always** reliably hold up a queue when used in the middle of a chain, but each method that contains the element as an argument will operate on a different queue so `wait()` calls inside of them will not be respected in subsequent methods on the parent chain.
+  - These methods, such as `do`, `fromJSON`, and `if`, will respect `wait` calls held within them for their own individual queues, but they will not hold up the queue of the parent chain.
+  - So, if you call `wait` inside the callback for the method, you must continue the chain inside. Otherwise, the chain will continue immediately.
   - Example: `$('button').wait(1000)`
+  - Example:
+
+  ```javascript
+  testButton
+    .on("click", () => {
+      testButton.text(`Clicked ${++count} times`)
+    })
+    .wait(2000)
+    .css({ color: "red" }) // BAD! The click handler will not register for 2 seconds!
+
+  testButton
+    .on("click", () => {
+      testButton.text(`Clicked ${++count} times`)
+    })
+    .defer((el) => el.wait(2000).css({ color: "red" })) // Good! The click handler will register immediately!
+
+  testButton
+    .on("click", () => {
+      $(".testButton").text(`Clicked ${++count} times`)
+    })
+    .wait(2000)
+    .css({ color: "red" }) // Less good, but still better!
+  // You made a new proxy for no reason, but at least the user can click the button!
+
+  testButton
+    .do((el) => el.wait(2000).css({ color: "green" }).wait(2000))
+    .css({ color: "red" })
+  // This will turn red, then green. NOT GREEN, THEN RED!
+  ```
 
 ##### DomProxy.next
 
@@ -1199,12 +1256,13 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
 
 ##### DomProxy.takeWhile
 
-- **takeWhile: (predicate: (el: DomProxy<T>) => boolean) => DomProxy<T>**
+- **takeWhile: (predicate: (el: DomProxy<T>, reverse: boolean) => boolean) => DomProxy<T>**
 
   - Filters the current element in the proxy based on a predicate.
   - If the current element does not satisfy the predicate, the proxy will be emptied.
   - This will throw an error if the proxy was created as "fixed" (with a second argument of true).
   - The predicate is a function that receives the element as an argument and returns a boolean.
+  - The function will run from the first element to the last, unless you pass a second argument of true. Then, it will run from the last element to the first. This generally corresponds with position in the DOM, but it's not guaranteed.
   - It's essential to use this method with caution as it can empty the proxy if the current element does not match the predicate.
   - The `refresh()` method can be used to restore the proxy to its original state.
   - For simple, conditional logic, use the `if` method instead.
@@ -1263,10 +1321,16 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 
 ##### DomProxyCollection.html
 
-- **html(newHtml: string): DomProxyCollection**
+- **html(newHtml: string, outerHTML?: boolean): DomProxyCollection**
 
   - Change the HTML of the elements with an **UNSANITIZED** string of new HTML. This is useful if you want to add a script tag or something. If you want to sanitize the HTML, use `sanitize` instead.
+
+  - By default, only the element's children will be replaced (innerHTML). If you want to replace the element itself (outerHTML), set the second argument to true.
+
   - Example: `$$('button').html('<span>Click me!</span>')`
+  - Expectation: Every button will have a span inside of it.
+  - Example: `$$('button').html('<span>Click me!</span>', true)`
+  - Expectation: Every button will be replaced with a span.
 
 ##### DomProxyCollection.sanitize
 
@@ -1663,8 +1727,42 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 - **wait(ms: number): DomProxyCollection**
 
   - Waits for a specified number of milliseconds before continuing the chain.
+  - Returns the proxy so you can continue chaining. If you need to return the animation object, use the `animate` method instead.
   - Remember, this method is blocking, so watch out for any event handlers using the same variable.
-  - Example: `$$('button').wait(1000)`
+  - If you do not want to switch to a new variable, make sure that you use this in combination with `defer` which will allow the events to skip ahead in the queue.
+  - `wait` will **always** reliably hold up a queue when used in the middle of a chain, but each method that contains the element as an argument will operate on a different queue so `wait()` calls inside of them will not be respected in subsequent methods on the parent chain.
+  - These methods, such as `do`, `fromJSON`, and `if`, will respect `wait` calls held within them for their own individual queues, but they will not hold up the queue of the parent chain.
+  - So, if you call `wait` inside the callback for the method, you must continue the chain inside. Otherwise, the chain will continue immediately.
+  - Example: `$$('buttons').wait(1000)`
+  - Example:
+
+  ```javascript
+  testButtons
+    .on("click", () => {
+      testButtons.text(`Clicked ${++count} times`)
+    })
+    .wait(2000)
+    .css({ color: "red" }) // BAD! The click handler will not register for 2 seconds!
+
+  testButtons
+    .on("click", () => {
+      testButtons.text(`Clicked ${++count} times`)
+    })
+    .defer((el) => el.wait(2000).css({ color: "red" })) // Good! The click handler will register immediately!
+
+  testButtons
+    .on("click", () => {
+      $(".testButton").text(`Clicked ${++count} times`)
+    })
+    .wait(2000)
+    .css({ color: "red" }) // Less good, but still better!
+  // You made a new proxy for no reason, but at least the user can click the button!
+
+  testButtons
+    .do((el) => el.wait(2000).css({ color: "green" }).wait(2000))
+    .css({ color: "red" })
+  // This will turn red, then green. NOT GREEN, THEN RED!
+  ```
 
 ##### DomProxyCollection.next
 
@@ -1776,10 +1874,12 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 
 ##### DomProxyCollection.takeWhile
 
-- **takeWhile: (predicate: (el: DomProxyCollection<T>) => boolean) => DomProxyCollection<T>**
+- **takeWhile: (predicate: (el: DomProxyCollection<T>, reverse: boolean) => boolean) => DomProxyCollection<T>**
 
   - Filters the current elements in the proxy based on a predicate.
   - The predicate is a function that receives the elements as an argument and returns a boolean.
+  - The predicate will be executed on each element in the proxy in order. If the predicate returns true, the element will be kept. If the predicate returns false, the element will be removed.
+  - It will run on the elements in the order they were added to the proxy unless the `reverse` argument is set to true. In that case, it will run in reverse order. Usually, this will correspond to position in the DOM, but it's not guaranteed.
   - It's essential to use this method with caution as it can empty the proxy if the current elements do not match the predicate.
   - The `refresh()` method can be used to restore the proxy to its original state.
   - This will throw an error if the proxy was created as "fixed" (with a second argument of true).

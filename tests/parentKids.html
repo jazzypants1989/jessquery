@@ -6,24 +6,60 @@
     <title>Test parent function</title>
   </head>
   <body>
-    <div>
-      <div id="child">kid</div>
+    <div class="textShouldBeHere">
+      <div id="child"></div>
     </div>
     <div id="parent">
-      <div>kid</div>
+      <div class="textShouldBeHere"></div>
     </div>
     <div id="testContainer"></div>
 
     <script type="module">
       import { $, $$ } from "../index.js"
 
-      const parent = $("#child").parent()
+      const testContainer = $("#testContainer")
+      const test = () => {
+        const parent = $("#child").parent()
 
-      parent.text("Parent text").css("color", "blue")
+        parent.text("Parent text").css("color", "blue")
 
-      const child = $("#parent").kids()
+        const child = $("#parent").kids()
 
-      child.text("Child text").css("color", "red")
+        child.text("Child text").css("color", "red")
+
+        const textShouldBeHere = $$(".textShouldBeHere")
+
+        textShouldBeHere
+          .takeWhile((el) => el.parentNode.id !== "parent")
+          .if({
+            is: (el) => el.textContent === "Parent text",
+            then: (el) =>
+              testContainer
+                .attach("<h2>parent test PASSED</h2>")
+                .css("color", "green"),
+            or: (el) =>
+              testContainer
+                .attach("<h2>parent test NONONONO</h2>")
+                .css("color", "red"),
+          })
+          .refresh()
+
+        textShouldBeHere
+          .takeWhile((el) => el.parentNode.id === "parent", true)
+          .if({
+            is: (el) => el.textContent === "Child text",
+            then: (el) =>
+              testContainer
+                .attach("<h2>child test PASSED</h2>")
+                .css("color", "green"),
+            or: (el) =>
+              testContainer
+                .attach("<h2>child test NONONONO</h2>")
+                .css("color", "red"),
+          })
+      }
+
+      document.addEventListener("DOMContentLoaded", test)
     </script>
   </body>
 </html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Val Method Test Page</title>
+    <style>
+      .test-result {
+        margin: 10px 0;
+      }
+      .passed {
+        color: green;
+      }
+      .failed {
+        color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <input id="text-input" type="text" value="Old Value" />
+    <input id="checkbox-input" type="checkbox" />
+    <input id="radio1" type="radio" value="radio1" name="radio-group" />
+    <input id="radio2" type="radio" value="radio2" name="radio-group" />
+    <select id="multi-select" multiple>
+      <option value="option1">Option 1</option>
+      <option value="option2">Option 2</option>
+      <option value="option3">Option 3</option>
+    </select>
+
+    <div class="test-result" id="text-input-result"></div>
+    <div class="test-result" id="checkbox-input-result"></div>
+    <div class="test-result" id="radio-input-result"></div>
+    <div class="test-result" id="multi-select-result"></div>
+
+    <script type="module">
+      import { $, $$ } from "../index.js"
+
+      function reportTestResult(testId, passed) {
+        const testResultDiv = document.getElementById(testId)
+        if (passed) {
+          testResultDiv.textContent = "Test passed!"
+          testResultDiv.classList.add("passed")
+        } else {
+          testResultDiv.textContent = "Test failed!"
+          testResultDiv.classList.add("failed")
+        }
+      }
+
+      window.onload = function () {
+        // Test for input[type="text"]
+        $("#text-input").val("New Value")
+        reportTestResult(
+          "text-input-result",
+          $("#text-input").value === "New Value"
+        )
+
+        // Test for input[type="checkbox"]
+        $("#checkbox-input").val(true)
+        reportTestResult(
+          "checkbox-input-result",
+          $("#checkbox-input").checked === true
+        )
+
+        // Test for input[type="radio"]
+        $('input[type="radio"]').val("radio1")
+        reportTestResult("radio-input-result", $("#radio1").checked === true)
+
+        // Test for select[multiple]
+        $("#multi-select").val(["option1", "option2"])
+        reportTestResult(
+          "multi-select-result",
+          $("#multi-select").options[0].selected &&
+            $("#multi-select").options[1].selected
+        )
+      }
+    </script>
+  </body>
+</html>

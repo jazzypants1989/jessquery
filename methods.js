@@ -1,5 +1,6 @@
 import { createQueue, handlerMaker, queueAndReturn } from "./core.js"
 import { errorHandler, giveContext } from "./errors.js"
+import { fetchElements, send, wrappedFetch } from "./ajax.js"
 import {
   addStyleSheet,
   attach,
@@ -8,9 +9,7 @@ import {
   moveOrClone,
   parseArgument,
   setFormElementValue,
-  transition,
 } from "./DOM.js"
-import { fetchElements, send, wrappedFetch } from "./ajax.js"
 
 export function addMethods(type, selector, target, fixed = false) {
   let proxy = null
@@ -50,7 +49,21 @@ export function addMethods(type, selector, target, fixed = false) {
       el.removeEventListener(ev, fn)
     }, "off"),
 
-    html: makeMethod((el, newHtml) => (el.innerHTML = newHtml), "html"),
+    html: makeMethod((el, newHtml, outer) => {
+      if (outer) {
+        const nextSibling = el.nextSibling // We need to get the nextSibling before removing the element
+        el.outerHTML = newHtml // Otherwise, we lose the reference, and the proxy is empty
+
+        const newElement = nextSibling // If nextSibling is null, then we're at the end of the list
+          ? nextSibling.previousSibling // So, we get the previousSibling from where we were
+          : el.parentElement.lastElementChild // Otherwise, we get the lastElementChild from the parent
+
+        target = [newElement]
+        proxy = updateProxy(target)
+      } else {
+        el.innerHTML = newHtml
+      }
+    }, "html"),
 
     text: makeMethod((el, newText) => (el.textContent = newText), "text"),
 
@@ -111,8 +124,7 @@ export function addMethods(type, selector, target, fixed = false) {
 
     do: makeMethod(async (el, fn) => {
       const wrappedElement = addMethods(type, selector, [el])
-      const result = await fn(wrappedElement)
-      return result
+      await fn(wrappedElement)
     }, "do"),
 
     defer: makeMethod((el, fn) => {
@@ -136,10 +148,9 @@ export function addMethods(type, selector, target, fixed = false) {
       fetchElements(type, url, options, [el])
     }, "fromStream"),
 
-    transition: queueFunction(
-      (keyframes, options) => transition(target, keyframes, options),
-      giveContext("transition", selector)
-    ),
+    transition: makeMethod((el, keyframes, options) => {
+      return el.animate(keyframes, options).finished
+    }, "transition"),
 
     wait: queueFunction(
       (duration) => new Promise((resolve) => setTimeout(resolve, duration)),
@@ -204,8 +215,9 @@ export function addMethods(type, selector, target, fixed = false) {
       false
     ),
 
-    takeWhile: queueFunction((predicate) => {
+    takeWhile: queueFunction((predicate, reverse) => {
       const result = []
+      if (reverse) target.reverse()
       for (const item of target) {
         try {
           if (predicate(item.raw || item)) {
@@ -225,11 +237,8 @@ export function addMethods(type, selector, target, fixed = false) {
     }, giveContext("refresh", selector)),
   }
 
-  function updateProxy(newTarget) {
-    const handler = handlerMaker(newTarget, customMethods)
-    const proxy = new Proxy(customMethods, handler)
-    proxy.raw = newTarget
-    return proxy
+  function filterTarget(action) {
+    return target.map(action).filter((el) => el)
   }
 
   function contextSwitch(prop) {
@@ -247,8 +256,11 @@ export function addMethods(type, selector, target, fixed = false) {
     return proxy
   }
 
-  function filterTarget(action) {
-    return target.map(action).filter((el) => el)
+  function updateProxy(newTarget) {
+    const handler = handlerMaker(newTarget, customMethods)
+    const proxy = new Proxy(customMethods, handler)
+    proxy.raw = newTarget
+    return proxy
   }
 
   proxy = updateProxy(target)

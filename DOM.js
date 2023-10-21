@@ -3,7 +3,6 @@ export function setFormElementValue(element, value) {
     const inputTypes = {
       checkbox: () => (element.checked = !!value),
       radio: () => (element.checked = element.value === value),
-      file: () => (element.files = value),
       default: () => {
         if (typeof value === "string") element.value = value
       },
@@ -80,11 +79,11 @@ export function become(elements, replacements, options = { mode: "clone" }) {
       options.mode === "clone" ? replacement.cloneNode(true) : replacement
     element.replaceWith(newElement)
   }
-  const isIterable = (candidate) => candidate[Symbol.iterator]
   const proxyOrDOM = (candidate) => candidate.raw || candidate
   const makeArray = (candidate) => {
-    if (isIterable(candidate)) return Array.from(candidate)
+    if (Array.isArray(candidate)) return candidate
     if (candidate instanceof HTMLElement) return [candidate]
+    if (candidate instanceof NodeList) return Array.from(candidate)
     return []
   }
 
@@ -94,14 +93,6 @@ export function become(elements, replacements, options = { mode: "clone" }) {
   elementsArray.forEach((element, index) =>
     handleReplacement(element, replacementsArray[index])
   )
-}
-
-export function transition(elements, keyframes, options) {
-  elements = Array.isArray(elements) ? elements : [elements].flat()
-  const animations = elements.map((element) =>
-    element.animate(keyframes, options)
-  )
-  return Promise.all(animations.map((animation) => animation.finished))
 }
 
 export function modifyDOM(parent, children, options) {

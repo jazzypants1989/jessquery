@@ -12,7 +12,6 @@ export async function wrappedFetch(url, options, type, target) {
     return data
   } catch (error) {
     const errorMessage = error || `Failed to load ${type}`
-    console.log(target)
     onError
       ? requestIdleCallback(() => onError(error))
       : target.forEach((el) => (el.innerHTML = errorMessage))
@@ -140,12 +139,10 @@ function sanitizeOrNot(target, data, options) {
 }
 
 function runScripts(target) {
-  target.forEach((el) =>
-    el.querySelectorAll("script").forEach((script) => {
-      const newScript = document.createElement("script")
-      newScript.textContent = script.textContent
-      newScript.type = script.type
-      script.replaceWith(newScript)
-    })
-  )
+  target.querySelectorAll("script").forEach((script) => {
+    const newScript = document.createElement("script")
+    newScript.textContent = script.textContent
+    newScript.type = script.type
+    script.replaceWith(newScript)
+  })
 }
