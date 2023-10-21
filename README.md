@@ -11,6 +11,8 @@ Rekindle your love for method chaining-- now in a lightweight, type-safe package
 | jQuery    | 88.3kb           | 31.7kb          |
 | jessquery | 8.46kb           | 3.63kb          |
 
+And, if that's too big for you, you can use our scrawny kid brother [Droxy](https://github.com/jazzypants1989/droxy/) instead. He's only 2kb after gzip!
+
 ![It's only 3.59kb! I swear! This badge proves it.](https://deno.bundlejs.com/badge?q=jessquery@2.4.1)
 [![npm version](https://badge.fury.io/js/jessquery.svg)](https://badge.fury.io/js/jessquery)
 
