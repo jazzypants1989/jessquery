@@ -25,6 +25,22 @@
         .html("bye")
         .wait(1000)
         .purge()
+
+      buttons
+        .addClass("btn")
+        .wait(1000)
+        .attach(
+          `<p>
+              "These buttons will animate in 2 seconds. They will fade in and out twice
+              then disappear."
+          </p>`
+        )
+        .wait(2000)
+        .transition(fadeIn, oneSecond)
+        .transition(fadeOut, oneSecond)
+        .transition(fadeIn, oneSecond)
+        .transition(fadeOut, oneSecond)
+        .purge()
     </script>
   </body>
 </html>

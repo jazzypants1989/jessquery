@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div id="test"></div>
+    <button id="btn">Click Me</button>
+    <script type="module">
+      import { $, $$ } from "../index.js"
+      let count = 0
+      const test = $("#test")
+      const btn = $("#btn")
+      <!-- test.html("<div><scr" + ">alert('Hello!');</scr" + "ipt></div>", { scripts: true }); -->
+      let scriptContent = `
+<div>
+<script>
+alert('Hello!');
+</script>
+</div>
+`;
+
+myElement.html(scriptContent, { scripts: true });
+
+    </script>
+  </body>
+</html>

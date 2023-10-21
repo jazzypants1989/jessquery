@@ -14,6 +14,7 @@
 
       $("#testDiv")
         .text("Loading...")
+        .wait(1000)
         .fromJSON(
           "https://jsonplaceholder.typicode.com/todos/1",
           async (element, data) => {
@@ -27,6 +28,7 @@
               )
               .addClass("updated")
               .css("backgroundColor", "skyblue")
+              .wait(1000)
           },
           {
             fallback: "I'M A CUSTOM FALLBACK",
@@ -34,6 +36,7 @@
             onSuccess: () => $$("p").css("color", "green"),
           }
         )
+        .css("backgroundColor", "yellow")
     </script>
 
     <style>

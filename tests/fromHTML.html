@@ -12,9 +12,9 @@
     <script type="module">
       import { $, $$ } from "../index.js"
 
-      const body = $("body")
+      const buttons = $$("button")
 
-      body.fromHTML("http://localhost:5500/tests/playground.html", {
+      buttons.fromHTML("http://localhost:5500/tests/playground.html", {
         onSuccess: () => $("body").attach("<h1>It worked!</h1>"),
         runScripts: true,
         sanitize: false,

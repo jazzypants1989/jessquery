@@ -14,18 +14,18 @@
 
       let count = 0
       const testButton = $(".testButton")
-      testButton
-        .on("click", () => {
-          testButton.text(`Clicked ${++count} times`)
-        })
-        .wait(2000)
-        .css({ color: "red" }) // BAD!
-
       // testButton
       //   .on("click", () => {
       //     testButton.text(`Clicked ${++count} times`)
       //   })
-      //   .defer((el) => el.wait(2000).css({ color: "red" })) // Good!
+      //   .wait(2000)
+      //   .css({ color: "red" }) // BAD!
+
+      testButton
+        .on("click", () => {
+          testButton.text(`Clicked ${++count} times`)
+        })
+        .defer((el) => el.wait(2000).css({ color: "red" })) // Good!
 
       // testButton
       //   .on("click", () => {
