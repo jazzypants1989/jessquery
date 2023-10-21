@@ -9,7 +9,7 @@ Rekindle your love for method chaining-- now in a lightweight, type-safe package
 | Library   | Size before gzip | Size after gzip |
 | --------- | ---------------- | --------------- |
 | jQuery    | 88.3kb           | 31.7kb          |
-| jessquery | 8.48kb           | 3.63kb          |
+| jessquery | 8.46kb           | 3.63kb          |
 
 ![It's only 3.59kb! I swear! This badge proves it.](https://deno.bundlejs.com/badge?q=jessquery@2.4.1)
 [![npm version](https://badge.fury.io/js/jessquery.svg)](https://badge.fury.io/js/jessquery)
@@ -327,17 +327,20 @@ display.on("mouseover", () => {
 
 ```javascript
 const fetchOptions = {
-  // This custom loading message will replace the element's text while it waits.
-  onWait: "Hold your horses! I'm loading data!",
-  // But, only if it doesn't load within one second. (default is 250ms and no message)
-  waitTime: 1000,
   // This custom error message will replace the element's text if it fails.
   error: "Aw, shucks! I couldn't load the data!",
   // You can replace that with a function that does whatever you want.
   onError: (err) => sendFetchErrorToAnalytics(err).
   // This will reflect the DOM AFTER the fetch is done.
   onSuccess: () => dynamicSpans.attach("<h6>Data Loaded!</h6>"),
-  // the full range of fetch options (requestInit) are still supported.
+  // This custom loading message will replace the element's text while it waits.
+  onWait: () => dynamicSpans.text("Hold your horses! I'm loading data!")
+  // But, only if it doesn't load within one second. (default is 250ms and no message)
+  waitTime: 1000,
+  // Everything is sanitized by default, but you can turn it off if you want.
+  runScripts: true,
+  sanitize: false,
+  // the full range of fetch options (request) are still supported.
   headers: {
     "Cool-Header": "Cool-Value",
   },
@@ -488,6 +491,7 @@ $("#otherSubmitButton").on("click", (event) => {
     - [DomProxyCollection.if](#DomProxyCollectionif)
     - [DomProxyCollection.takeWhile](#DomProxyCollectiontakeWhile)
     - [DomProxyCollection.refresh](#DomProxyCollectionrefresh)
+- [FetchOptions](#FetchOptions)
 
 ### $()
 
@@ -958,7 +962,8 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
   $("#myInput").send(myElement, {
     url: "/api/data",
     json: true,
-    fallback: "Loading...",
+    onWait: () => $("#myInput").html('<span>Loading...</span>'),
+    waitTime: 500 // The onWait function only gets called if the request takes longer than 500ms
     onSuccess: (data) => console.log("Received:", data),
     onError: (error) => console.log("Error occurred:", error),
   })
@@ -1039,7 +1044,8 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
 
   - Fetches a JSON resource from the provided URL and applies a transformation function which uses the fetched JSON and the proxy's target element as arguments.
   - The transform function can be used to set the text, html, or any other property of the element.
-  - The options object can be used to set a fallback message while the fetch is in progress, an error message if the fetch fails, and a callback to execute when the fetch is complete.
+  - The options object can be used define a plethora of options defined in [FetchOptions](#FetchOptions).
+    - These options extend the [Request](https://developer.mozilla.org/en-US/docs/Web/API/Request/Request) interface, so you can use all of the normal fetch options as well. (e.g., method, headers, etc.)
   - Example:
 
   ```javascript
@@ -1067,9 +1073,10 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
   },
   {
     error: 'Failed to load news item',
-    fallback: 'Loading news item...'
+    pnWait: () => $('#news-item').text('Loading news item...'),
     onSuccess: () => console.log('News item loaded')
   }
+  )
   ```
 
 ##### DomProxy.fromHTML
@@ -1077,18 +1084,23 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
 - **fromHTML(url: string, options?: FetchOptions): DomProxy**
 
   - Fetches an HTML resource from the provided URL and inserts it into the proxy's target element.
-  - The options object can be used to set a fallback message while the fetch is in progress, an error message if the fetch fails, and a callback to execute when the fetch is complete.
+  - The options object can be used define a plethora of options defined in [FetchOptions](#FetchOptions).
+    - These options extend the [Request](https://developer.mozilla.org/en-US/docs/Web/API/Request/Request) interface, so you can use all of the normal fetch options as well. (e.g., method, headers, etc.)
   - The HTML is sanitized by default, which helps prevent XSS attacks.
   - Example: `$('#template').fromHTML('/template.html')`
-  - Example: `$('#update').fromHTML('/update.html', { fallback: 'Loading update...', error: 'Failed to load update!' })`
+  - Example: `$('#update').fromHTML('/update.html', { onWait: () => $('#fromHTML)'.text('Loading update...'), error: 'Failed to load update!' })`
   - Example: `$('#content').fromHTML('/malicious-content.html', { sanitize: false })`
 
 ##### DomProxy.fromStream
 
-- **fromStream(url: string, options?: { sse?: boolean; add?: boolean; error?: string; fallback?: string; sanitize?: boolean; onSuccess?: (data: any) => void }): DomProxy**
+- **fromStream(url: string, options?: { sse?: boolean; add?: boolean; toTop?: boolean; error?: string; onError?: () => void; onWait?: () => void; waitTime?: number; runScripts?: boolean; sanitize?: boolean; onSuccess?: (data: any) => void }): DomProxy**
 
   - Dynamically fetches data from the provided URL and updates a single DOM element using a stream or Server-Sent Event (SSE).
-  - The options object can be used to set a fallback message while the stream is in progress, an error message if the stream fails, and a callback to execute when the stream is complete.
+  - This includes all the same options as the `fromHTML` and `fromJSON` methods for normal streams, but with a few caveats for SSEs.
+    - the `onSuccess` callback will be invoked after each message is received, and it will receive the last event as an argument.
+    - SSE's have two additional options, `add` and `onTop`, which determine how the new data is added to the existing content.
+  - The options object can be used define a plethora of options defined in [FetchOptions](#FetchOptions).
+    - These options extend the [Request](https://developer.mozilla.org/en-US/docs/Web/API/Request/Request) interface, so you can use all of the normal fetch options as well. (e.g., method, headers, etc.)
   - The HTML is sanitized by default, which helps prevent XSS attacks.
   - Example: `$('#content').fromStream('/api/data', { sanitize: false })` <-- Only for trusted sources!
   - Example: `$('#liveFeed').fromStream('/api/live', { sse: true, add: true, onSuccess: (data) => console.log('New data received:', data) })`
@@ -1658,7 +1670,10 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 
   - Fetches a JSON resource from the provided URL and applies a transformation function which uses the fetched JSON and the proxy's target element as arguments.
   - The transform function can be used to set the text, html, or any other property of the element.
-  - The options object can be used to set a fallback message while the fetch is in progress, an error message if the fetch fails, and a callback to execute when the fetch is complete.
+  - The options object can be used define a plethora of options defined in [FetchOptions](#FetchOptions).
+
+    - These options extend the [Request](https://developer.mozilla.org/en-US/docs/Web/API/Request/Request) interface, so you can use all of the normal fetch options as well. (e.g., method, headers, etc.)
+
   - Example:
 
   ```javascript
@@ -1686,7 +1701,7 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
   },
   {
     error: 'Failed to load news item',
-    fallback: 'Loading news item...'
+    onWait: () => `<h1>Loading news item...</h1>`,
     onSuccess: () => console.log('News item loaded')
   }
   ```
@@ -1696,7 +1711,8 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 - **fromHTML(url: string, options?: FetchOptions): DomProxyCollection**
 
   - Fetches an HTML resource from the provided URL and inserts it into the proxy's target element.
-  - The options object can be used to set a fallback message while the fetch is in progress, an error message if the fetch fails, and a callback to execute when the fetch is complete.
+  - The options object can be used define a plethora of options defined in [FetchOptions](#FetchOptions).
+    - These options extend the [Request](https://developer.mozilla.org/en-US/docs/Web/API/Request/Request) interface, so you can use all of the normal fetch options as well. (e.g., method, headers, etc.)
   - The HTML is sanitized by default, which helps prevent XSS attacks.
   - Example: `$$('.template').fromHTML('/template.html')`
   - Example: `$$('.update').fromHTML('/update.html', { fallback: 'Loading update...', error: 'Failed to load update!' })`
@@ -1704,10 +1720,14 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 
 ##### DomProxyCollection.fromStream
 
-- **fromStream(url: string, options?: { sse?: boolean; add?: boolean; error?: string; fallback?: string; sanitize?: boolean; onSuccess?: (data: any) => void }): DomProxyCollection**
+- **fromStream(url: string, options?: { sse?: boolean; add?: boolean; toTop?: boolean; error?: string; onError?: () => void; onWait?: () => void; waitTime?: number; runScripts?: boolean; sanitize?: boolean; onSuccess?: (data: any) => void }): DomProxyCollection**
 
   - Dynamically fetches data from the provided URL and updates a single DOM element using a stream or Server-Sent Event (SSE).
-  - The options object can be used to set a fallback message while the stream is in progress, an error message if the stream fails, and a callback to execute when the stream is complete.
+  - This includes all the same options as the `fromHTML` and `fromJSON` methods for normal streams, but with a few caveats for SSEs.
+    - the `onSuccess` callback will be invoked after each message is received, and it will receive the last event as an argument.
+    - SSE's have two additional options, `add` and `onTop`, which determine how the new data is added to the existing content.
+  - The options object can be used define a plethora of options defined in [FetchOptions](#FetchOptions).
+    - These options extend the [Request](https://developer.mozilla.org/en-US/docs/Web/API/Request/Request) interface, so you can use all of the normal fetch options as well. (e.g., method, headers, etc.)
   - The HTML is sanitized by default, which helps prevent XSS attacks.
   - Example: `$$('.content').fromStream('/api/data', { sanitize: false })` <-- Only for trusted sources!
   - Example: `$$('.liveFeed').fromStream('/api/live', { sse: true, add: true, onSuccess: (data) => console.log('New data received:', data) })`
@@ -1902,6 +1922,69 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
   - Restores the proxy to its original state.
   - Example: `$$('button').next().css('color', 'blue').refresh().css('color', 'green')`
   - Expectation: Every button will turn green. Each of their next siblings will remain blue.
+
+### FetchOptions
+
+- **error?: string**
+
+  - The error message to display if the fetch fails.
+    - There is a standard, boring error message that will display if none is provided.
+    - If you provide an onError callback, the error message will be ignored.
+
+- **onError?: () => void**
+
+  - A callback to execute if the fetch fails.
+
+- **onSuccess?: () => void**
+
+  - A callback to execute if the fetch succeeds.
+    - If you are using `fromStream()` and the `sse` option is set to true, this will receive the last event as an argument.
+
+- **onWait?: () => void**
+
+  - A callback to execute while the fetch is pending.
+    - This will not run for 250ms by default, but you can change that by setting the `waitTime` option.
+
+- **waitTime?: number**
+
+  - The number of milliseconds to wait before executing the `onWait` callback.
+    - This defaults to 250ms.
+
+- **runScripts?: boolean**
+
+  - Whether or not to run scripts in the fetched HTML.
+    - This defaults to false.
+
+- **sanitize?: boolean**
+
+  - Whether or not to sanitize the fetched HTML.
+    - This defaults to true.
+
+- **Sanitizer?:**
+
+  - The sanitizer to use for the fetched HTML.
+    - This defaults to the default sanitizer.
+    - [Here's the MDN docs for the Sanitizer API](https://developer.mozilla.org/en-US/docs/Web/API/Sanitizer/Sanitizer)
+
+- **sse?: boolean**
+
+  - **Only in `fromStream()`**
+  - Whether or not to use Server-Sent Events (SSE) instead of a normal stream.
+    - This defaults to false.
+
+- **add?: boolean**
+
+  - **Only for SSE's**
+  - Whether or not to add the new data to the existing content.
+    - This defaults to false.
+
+- **toTop?: boolean**
+
+  - **Only for SSE's**
+  - Whether or not to add the new data to the top of the existing content.
+    - This defaults to false.
+
+- Finally, all of the normal [Request](https://developer.mozilla.org/en-US/docs/Web/API/Request/Request) options are available as well.
 
 ## Contributing
 

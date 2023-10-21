@@ -2,25 +2,25 @@ import { errorHandler, giveContext } from "./errors.js"
 import { addMethods } from "./methods.js"
 import { getDOMElement } from "./DOM.js"
 
-export function $(string, fixed = false) {
-  return addProxy("$", string, fixed)
+export function $(selector, fixed = false) {
+  return createProxy("$", selector, fixed)
 }
 
-export function $$(string, fixed = false) {
-  return addProxy("$$", string, fixed)
+export function $$(selector, fixed = false) {
+  return createProxy("$$", selector, fixed)
 }
 
-function addProxy(type, string, fixed = false) {
-  const elements = getDOMElement(string, {
+function createProxy(type, selector, fixed = false) {
+  const elements = getDOMElement(selector, {
     all: type === "$$",
     sanitize: false,
   })
 
   if (!elements[0]) {
-    return errorHandler(new Error(`No elements.`), giveContext(type, string))
+    return errorHandler(new Error(`No elements.`), giveContext(type, selector))
   }
 
-  return addMethods(type, string, elements, fixed)
+  return addMethods(selector, elements, fixed)
 }
 
 export function createQueue() {

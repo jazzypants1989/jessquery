@@ -528,10 +528,11 @@ declare module "jessquery" {
      * @param {string} url - The URL to fetch the JSON from.
      * @param {function} transformFunc - The function that applies transformations on the fetched JSON and the proxy's target element.
      * @param {FetchOptions} [options={}] - Options for the fetch operation.
-     * @param {string} [options.error] - A message to display if the fetch fails.
-     * @param {string} [options.fallback] - A message to display while the fetch is in progress.
+     * @param {function} [options.error] - A message to display if the fetch fails. Will not be displayed if the `onError` callback is provided.
+     * @param {function} [options.onError] - A callback to execute if the fetch fails.
      * @param {function} [options.onSuccess] - A callback to execute when the fetch is complete.
-     *
+     * @param {function} [options.onWait] - A callback to execute while the fetch is in progress.
+     * @param {function} [options.waitTime] - The amount of time to wait before executing the onWait callback. Defaults to 250ms.
      * @returns This {@link DomProxy}
      * @example
      * $('#item').fromJSON('/api/data', (element, json) => {
@@ -570,10 +571,15 @@ declare module "jessquery" {
      * Fetches an HTML resource from the provided URL and inserts it into the proxy's target element.
      * @param {string} url - The URL to fetch the HTML from.
      * @param {FetchOptions} [options={}] - Options for the fetch operation.
-     * @param {string} [options.error] - A message to display if the fetch fails.
-     * @param {string} [options.fallback] - A message to display while the fetch is in progress.
+     * @param {function} [options.error] - A message to display if the fetch fails. Will not be displayed if the `onError` callback is provided.
+     * @param {function} [options.onError] - A callback to execute if the fetch fails.
+     * @param {function} [options.onSuccess] - A callback to execute when the fetch is complete.
+     * @param {function} [options.onWait] - A callback to execute while the fetch is in progress.
+     * @param {function} [options.waitTime] - The amount of time to wait before executing the onWait callback. Defaults to 250ms.
+     * @param {boolean} [options.runScripts=false] - Determines if scripts in the fetched HTML should be executed. Defaults to false.
      * @param {boolean} [options.sanitize=true] - Determines if the fetched HTML should be sanitized before insertion. Defaults to true.
      * @param {function} [options.sanitizer] - A custom sanitizer to use for sanitization. {@link https://developer.mozilla.org/en-US/docs/Web/API/Sanitizer/Sanitizer}
+     * @returns This {@link DomProxy}
      *
      * @returns This {@link DomProxy}
      * @example
@@ -588,15 +594,23 @@ declare module "jessquery" {
     /**
      * Dynamically fetches data from the provided URL and updates a single DOM element using a stream or Server-Sent Event (SSE).
      *
+     * - This includes all the same options as the `fromHTML` and `fromJSON` methods for normal streams, but with a few caveats for SSEs.
+     *    - the `onSuccess` callback will be invoked after each message is received, and it will receive the last event as an argument.
+     *    - SSE's have two additional options, `add` and `onTop`, which determine how the new data is added to the existing content.
+     *
      * @param {string} url - The source URL to retrieve data from.
      * @param {object} [options={}] - Configurations for the stream operation.
-     * @param {boolean} [options.sse=false] - If set to true, fetches data using SSE. Otherwise, uses a generic data stream.
+     * @param {boolean} [options.sse=false] - If set to true, listens for messages using SSE. Otherwise, it will make an HTTP request using the ReadableStream interface included in the Fetch API.
      * @param {boolean} [options.add=false] - For SSE, if set to true, appends new data to existing content. Otherwise, it replaces the content.
-     * @param {string} [options.error="An error occurred."] - The message displayed if the stream encounters an error.
-     * @param {string} [options.fallback="Loading..."] - The message displayed while the stream is connecting or data is loading.
+     * @param {boolean} [options.toTop=false] - For SSE, if set to true, prepends new data to the top of existing content. Otherwise, it appends to the bottom.
+     * @param {string} [options.error] - Message to display if the fetch fails. Will not be displayed if the `onError` callback is provided.
+     * @param {string} [options.onError] - Callback to execute if the fetch fails.
+     * @param {function} [options.onSuccess] - Callback invoked upon stream completion or after each SSE message is received. For SSEs, receives the last event as an argument.
+     * @param {string} [options.onWait] - Callback to execute while the fetch is in progress.
+     * @param {string} [options.waitTime] - Amount of time to wait before executing the onWait callback. Defaults to 250ms.
+     * @param {string} [options.runScripts=false] - Determines if scripts in the fetched HTML should be executed. Defaults to false.
      * @param {boolean} [options.sanitize=true] - If set to true, sanitizes incoming HTML content before injecting it into the DOM to prevent potential XSS attacks.
-     * @param {function} [options.onSuccess] - Callback invoked upon stream completion or after each SSE message is received. Receives the last data chunk or SSE event as an argument.
-     *
+     * @param {function} [options.sanitizer] - A custom sanitizer to use for sanitization. {@link https://developer.mozilla.org/en-US/docs/Web/API/Sanitizer/Sanitizer}
      * @returns {DomProxy} - Returns the instance of DomProxy for chaining.
      *
      * @example
@@ -615,10 +629,14 @@ declare module "jessquery" {
       options?: {
         sse?: boolean
         add?: boolean
-        error?: string
-        fallback?: string
-        sanitize?: boolean
+        toTop?: boolean
+        onError?: (error: string) => void
         onSuccess?: (data: any) => void
+        onWait?: () => void
+        waitTime?: number
+        runScripts?: boolean
+        sanitize?: boolean
+        sanitizer?: Sanitizer
       }
     ) => DomProxy<T>
 
@@ -1441,9 +1459,11 @@ declare module "jessquery" {
      * @param {string} url - The URL to fetch the JSON from.
      * @param {function} transformFunc - The function that applies transformations on the fetched JSON and each of the proxy's target elements.
      * @param {FetchOptions} [options={}] - Options for the fetch operation.
-     * @param {string} [options.error] - A message to display if the fetch fails.
-     * @param {string} [options.fallback] - A message to display while the fetch is in progress.
+     * @param {string} [options.error] - A message to display if the fetch fails. Will not be displayed if the `onError` callback is provided.
+     * @param {string} [options.onError] - A callback to execute if the fetch fails.
      * @param {function} [options.onSuccess] - A callback to execute when the fetch is complete.
+     * @param {string} [options.onWait] - A callback to execute while the fetch is in progress.
+     * @param {boolean} [options.waitTime] - The amount of time to wait before executing the `onWait` callback. Defaults to 250.
      *
      * @returns This {@link DomProxyCollection}
      * @example
@@ -1485,8 +1505,12 @@ declare module "jessquery" {
      * Fetches an HTML resource from the provided URL and inserts it into the proxy's target elements.
      * @param {string} url - The URL to fetch the HTML from.
      * @param {FetchOptions} [options={}] - Options for the fetch operation.
-     * @param {string} [options.error] - A message to display if the fetch fails.
-     * @param {string} [options.fallback] - A message to display while the fetch is in progress.
+     * @param {string} [options.error] - A message to display if the fetch fails. Will not be displayed if the `onError` callback is provided.
+     * @param {string} [options.onError] - A callback to execute if the fetch fails.
+     * @param {function} [options.onSuccess] - A callback to execute when the fetch is complete.
+     * @param {string} [options.onWait] - A callback to execute while the fetch is in progress.
+     * @param {boolean} [options.waitTime=250] - The amount of time to wait before executing the `onWait` callback. Defaults to 250.
+     * @param {boolean} [options.runScripts=false] - Determines if scripts in the fetched HTML should be executed. Defaults to false.
      * @param {boolean} [options.sanitize=true] - Determines if the fetched HTML should be sanitized before insertion. Defaults to true.
      * @param {function} [options.sanitizer] - A custom sanitizer to use for sanitization. {@link https://developer.mozilla.org/en-US/docs/Web/API/Sanitizer/Sanitizer}
      *
@@ -1503,12 +1527,20 @@ declare module "jessquery" {
     /**
      * Dynamically fetches data from the provided URL and updates multiple DOM elements using a stream or Server-Sent Event (SSE).
      *
+     * - This includes all the same options as the `fromHTML` and `fromJSON` methods for normal streams, but with a few caveats for SSEs.
+     *    - the `onSuccess` callback will be invoked after each message is received, and it will receive the last event as an argument.
+     *    - SSE's have two additional options, `add` and `onTop`, which determine how the new data is added to the existing content.
+     *
      * @param {string} url - The source URL to retrieve data from.
      * @param {object} [options={}] - Configurations for the stream operation.
      * @param {boolean} [options.sse=false] - If set to true, fetches data using SSE. Otherwise, uses a generic data stream.
      * @param {boolean} [options.add=false] - For SSE, if set to true, appends new data to existing content of each element. Otherwise, it replaces the content in all targeted elements.
-     * @param {string} [options.error="An error occurred."] - The message displayed if the stream encounters an error.
-     * @param {string} [options.fallback="Loading..."] - The message displayed while the stream is connecting or data is loading.
+     * @param {string} [options.error="An error occurred."] - The message displayed if the stream encounters an error. Will not be displayed if the `onError` callback is provided.
+     * @param {Function} [options.onError] - A callback to execute if the stream encounters an error.
+     * @param {Function} [options.onSuccess] - A callback to execute when the stream is complete.
+     * @param {Function} [options.onWait] - A callback to execute while waiting for the stream to complete.
+     * @param {number} [options.waitTime=250] - The amount of time to wait before executing the `onWait` callback.
+     * @param {boolean} [options.runScripts=false] - Determines if scripts in the fetched HTML should be executed. Defaults to false.
      * @param {boolean} [options.sanitize=true] - If set to true, sanitizes incoming HTML content before injecting it into the DOM to prevent potential XSS attacks.
      * @param {function} [options.onSuccess] - Callback invoked upon stream completion or after each SSE message is received for each element. Receives the last data chunk or SSE event as an argument.
      *
@@ -1530,10 +1562,15 @@ declare module "jessquery" {
       options?: {
         sse?: boolean
         add?: boolean
+        toTop?: boolean
         error?: string
-        fallback?: string
-        sanitize?: boolean
+        onError?: (err: Error) => void
         onSuccess?: (data: any) => void
+        onWait?: () => void
+        waitTime?: number
+        runScripts?: boolean
+        sanitize?: boolean
+        sanitizer?: Sanitizer
       }
     ) => DomProxyCollection<T>
 
@@ -1787,6 +1824,7 @@ declare module "jessquery" {
      * For simple conditional logic, use the {@link DomProxyCollection.if} method instead.
      *
      * @param {Function} predicate A function that tests each element for a specific condition.
+     * @param {Boolean} reverse If true, the array will be filtered in reverse (from the end).
      * @returns This {@link DomProxyCollection} filtered based on the predicate.
      *
      * @example
@@ -1802,7 +1840,10 @@ declare module "jessquery" {
      * .css('font-weight', 'bold')
      * // Only makes the list items bold if they have a data-value attribute greater than 5, and it's consecutive from the start.
      */
-    takeWhile: (predicate: (el: Element) => boolean) => DomProxyCollection<T>
+    takeWhile: (
+      predicate: (el: DomProxyCollection<T>) => boolean,
+      reverse?: boolean
+    ) => DomProxyCollection<T>
 
     /**
      * Restores the proxy collection to its original state (when the variable was created).
@@ -1949,18 +1990,19 @@ declare module "jessquery" {
   ): void
 
   /**
-   * Transforms any function into one that returns a Promise, enabling easy integration into DomProxy chains. This is particularly useful for things like setTimeout, setInterval, or older APIs that are callback-based. It works just like returning a promise normally, but there are a few conveniences built in:
+   * Transforms any function into one that returns a Promise, enabling easy integration into DomProxy chains. This is particularly useful for things like setTimeout or older APIs that are callback-based. It works just like returning a promise normally, but there are a few conveniences built in:
    *
    * - All promise rejections are automatically caught and directed through the default error handler, which can be customized.
    * - If neither resolve or reject are called within a specified timeout, the promise will reject with a timeout error. This prevents the chain from hanging indefinitely when you simply forget to meet a condition. Remember-- you can always reject the promise at any time.
    * - A `meta` object can be optionally passed to add additional metadata for debugging or error handling. The `meta` object is fully extensible. Any extra fields you add will be accessible in the default error handler, making it highly flexible for diagnostic purposes.
+   * - If you pass an `interval` property in the `meta` object, the promise will automatically retry the function call after the specified interval if it rejects. This is useful for things like polling or waiting for an element to appear.
    *
    * Usage in a chain allows you to feed its values into a DomProxy method like `text()` or `html()`, or use it within the {@link DomProxy.do} method to use the element itself as an argument.
    *
    * @param {(...args: any[]) => any} fn - The function to be promisified. Must call either the `resolve` or `reject` function.
    * @param {object} [meta={}] - Metadata for debugging and error-handling. Can include any key-value pairs. Custom fields will be available in the default error handler.
    * @param {number} [meta.timeout=5000] - The amount of time in milliseconds to wait before resolving the promise automatically. Defaults to 5000 (5 seconds).
-   * @param {number} [meta.interval] - The amount of time in milliseconds to wait before trying again. Defaults to 100 (0.1 seconds).
+   * @param {number} [meta.interval] - The amount of time in milliseconds to wait before trying again. Will not retry if omitted.
    * @returns {(...args: any[]) => Promise<any>} - Returns a new function that, when invoked, returns a Promise.
    *
    * @example
@@ -2021,15 +2063,19 @@ declare module "jessquery" {
     fn: (...args: any[]) => void,
     meta?: {
       timeout?: number
+      interval?: number
       [key: string]: any
     }
   ): (...args: any[]) => Promise<any>
 
   interface FetchOptions extends RequestInit {
-    fallback?: string
+    onError?: () => void
     onSuccess?: () => void
+    onWait?: () => void
+    waitTime?: number
     error?: string
     sanitize?: boolean
+    runScripts?: boolean
     sanitizer?: Function
   }
 

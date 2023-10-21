@@ -52,7 +52,9 @@ export function fetchElements(type, url, options = {}, target) {
     eventSource.onmessage = (event) => {
       target.forEach((el) => {
         if (options.add) {
-          sanitizeOrNot(el, event.data + "<br />" + el.innerHTML, options)
+          options.toTop
+            ? sanitizeOrNot(el, event.data + "<br />" + el.innerHTML, options)
+            : sanitizeOrNot(el, el.innerHTML + "<br />" + event.data, options)
         } else {
           sanitizeOrNot(el, event.data, options)
         }
@@ -139,10 +141,12 @@ function sanitizeOrNot(target, data, options) {
 }
 
 function runScripts(target) {
-  target.querySelectorAll("script").forEach((script) => {
-    const newScript = document.createElement("script")
-    newScript.textContent = script.textContent
-    newScript.type = script.type
-    script.replaceWith(newScript)
-  })
+  target.forEach((el) =>
+    el.querySelectorAll("script").forEach((script) => {
+      const newScript = document.createElement("script")
+      newScript.textContent = script.textContent
+      newScript.type = script.type
+      script.replaceWith(newScript)
+    })
+  )
 }

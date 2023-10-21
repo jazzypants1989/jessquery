@@ -11,7 +11,7 @@ import {
   setFormElementValue,
 } from "./DOM.js"
 
-export function addMethods(type, selector, target, fixed = false) {
+export function addMethods(selector, target, fixed = false) {
   let proxy = null
   let originalTarget = [...target]
 
@@ -20,11 +20,7 @@ export function addMethods(type, selector, target, fixed = false) {
 
   const makeMethod = (action, context) => {
     return queueFunction(async (...args) => {
-      let promises = []
-      target.forEach((el) => {
-        promises.push(action(el, ...args))
-      })
-      await Promise.all(promises)
+      await Promise.all(target.map((el) => action(el, ...args)))
     }, giveContext(context, selector))
   }
 
@@ -123,39 +119,38 @@ export function addMethods(type, selector, target, fixed = false) {
     send: makeMethod((el, options) => send(el, options, target), "send"),
 
     do: makeMethod(async (el, fn) => {
-      const wrappedElement = addMethods(type, selector, [el])
-      await fn(wrappedElement)
+      const wrappedElement = addMethods(selector, [el])
+      return await fn(wrappedElement)
     }, "do"),
 
     defer: makeMethod((el, fn) => {
-      const wrappedElement = addMethods(type, selector, [el])
-      defer(fn, [wrappedElement])
+      const wrappedElement = addMethods(selector, [el])
+      return defer(fn, [wrappedElement])
     }, "defer"),
 
     fromJSON: makeMethod((el, url, fn, options = {}) => {
-      wrappedFetch(url, options, "json", target).then((json) => {
-        const wrappedElement = addMethods(type, selector, [el])
+      return wrappedFetch(url, options, "json", target).then((json) => {
+        const wrappedElement = addMethods(selector, [el])
         fn(wrappedElement, json)
       })
     }, "fromJSON"),
 
     fromHTML: makeMethod((el, url, options = {}) => {
-      fetchElements("text", url, options, [el])
+      return fetchElements("text", url, options, [el])
     }, "fromHTML"),
 
     fromStream: makeMethod((el, url, options = {}) => {
       const type = options.sse ? "sse" : "stream"
-      fetchElements(type, url, options, [el])
+      return fetchElements(type, url, options, [el])
     }, "fromStream"),
 
     transition: makeMethod((el, keyframes, options) => {
       return el.animate(keyframes, options).finished
     }, "transition"),
 
-    wait: queueFunction(
-      (duration) => new Promise((resolve) => setTimeout(resolve, duration)),
-      giveContext("wait", selector)
-    ),
+    wait: makeMethod((el, duration) => {
+      return new Promise((resolve) => setTimeout(resolve, duration))
+    }, "wait"),
 
     next: contextSwitch("nextElementSibling"),
 
@@ -198,8 +193,8 @@ export function addMethods(type, selector, target, fixed = false) {
 
     if: queueFunction(
       ({ is, then, or }) => {
-        target.forEach((el) => {
-          const wrappedElement = addMethods(type, selector, [el])
+        for (const el of target) {
+          const wrappedElement = addMethods(selector, [el])
           try {
             if (is(wrappedElement)) {
               then && then(wrappedElement)
@@ -209,7 +204,7 @@ export function addMethods(type, selector, target, fixed = false) {
           } catch (error) {
             errorHandler(error, giveContext("if", selector))
           }
-        })
+        }
       },
       giveContext("if", selector),
       false
@@ -218,10 +213,10 @@ export function addMethods(type, selector, target, fixed = false) {
     takeWhile: queueFunction((predicate, reverse) => {
       const result = []
       if (reverse) target.reverse()
-      for (const item of target) {
+      for (const el of target) {
         try {
-          if (predicate(item.raw || item)) {
-            result.push(item)
+          if (predicate(el.raw || el)) {
+            result.push(el)
           } else {
             break
           }
@@ -241,19 +236,19 @@ export function addMethods(type, selector, target, fixed = false) {
     return target.map(action).filter((el) => el)
   }
 
-  function contextSwitch(prop) {
-    return queueFunction(() => {
-      const resultElements = filterTarget((el) => el[prop])
-      return switchTarget(resultElements)
-    }, giveContext(prop, selector))
-  }
-
   function switchTarget(newTarget) {
     if (fixed)
       throw new Error(`Proxy is fixed. Create new proxy to switch targets.`)
     target = newTarget.length > 0 ? newTarget : []
     proxy = updateProxy(target)
     return proxy
+  }
+
+  function contextSwitch(prop) {
+    return queueFunction(() => {
+      const resultElements = filterTarget((el) => el[prop])
+      return switchTarget(resultElements)
+    }, giveContext(prop, selector))
   }
 
   function updateProxy(newTarget) {
