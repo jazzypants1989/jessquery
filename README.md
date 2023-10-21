@@ -149,7 +149,7 @@ const button = $(".button")
 button.html(`<h3>I am not a button</h3>`, true)
 // The second argument determines if the parent element should be replaced as well.
 
-// You can also use become to use something from elsewhere in the DOM.
+// You can also use become() to transform the elements into something from elsewhere in the DOM.
 const buttons = $$(".button")
 buttons.become($(".other-button"))
 
