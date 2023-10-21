@@ -163,7 +163,7 @@ coolDiv.cloneTo(".container", { position: "prepend" })
 coolDiv.next().text("I'm the next element!")
 // The coolDiv proxy will no longer operate on elements with the class "cool-div"
 
-// Just remember: use refresh() to reset the proxy to its original state.
+// When in doubt, just use refresh() to reset the proxy to its original state.
 // /**
 //  * <div class="container">
 //  *   <p id="ME">1</p>
