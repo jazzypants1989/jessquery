@@ -8,22 +8,21 @@
   <body>
     <div id="test"></div>
     <button id="btn">Click Me</button>
+    <button id="btn">Click Me</button>
     <script type="module">
       import { $, $$ } from "../index.js"
       let count = 0
       const test = $("#test")
-      const btn = $("#btn")
-      <!-- test.html("<div><scr" + ">alert('Hello!');</scr" + "ipt></div>", { scripts: true }); -->
-      let scriptContent = `
-<div>
-<script>
-alert('Hello!');
-</script>
-</div>
-`;
+      const btns = $$("#btn")
 
-myElement.html(scriptContent, { scripts: true });
-
+      btns
+        .on("click", () => {
+          count++
+          test.html(count)
+        })
+        .wait(2000)
+        .html("<span>hi</span>", true)
+        .css("color", "red")
     </script>
   </body>
 </html>

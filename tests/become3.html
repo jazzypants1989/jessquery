@@ -42,7 +42,9 @@
         )
 
         // Cycle Match Test
-        toBeReplacedElsCycle.become(replacementElsCycle, {})
+        toBeReplacedElsCycle.become(replacementElsCycle, {
+          mode: "clone",
+        })
 
         if (
           document.querySelectorAll("#cycle .replacementElement").length === 4

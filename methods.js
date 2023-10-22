@@ -12,8 +12,9 @@ import {
 } from "./DOM.js"
 
 export function addMethods(selector, target, fixed = false) {
+  const originalTarget = [...target]
+
   let proxy = null
-  let originalTarget = [...target]
 
   const { addToQueue, defer } = createQueue()
   const queueFunction = queueAndReturn(addToQueue, () => proxy)
@@ -54,8 +55,8 @@ export function addMethods(selector, target, fixed = false) {
           ? nextSibling.previousSibling // So, we get the previousSibling from where we were
           : el.parentElement.lastElementChild // Otherwise, we get the lastElementChild from the parent
 
-        target = [newElement]
-        proxy = updateProxy(target)
+        const index = target.indexOf(el)
+        target[index] = newElement
       } else {
         el.innerHTML = newHtml
       }

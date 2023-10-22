@@ -3,9 +3,7 @@ export function setFormElementValue(element, value) {
     const inputTypes = {
       checkbox: () => (element.checked = !!value),
       radio: () => (element.checked = element.value === value),
-      default: () => {
-        if (typeof value === "string") element.value = value
-      },
+      default: () => (element.value = value),
     }
     const handler = inputTypes[element.type] || inputTypes.default
     return handler()

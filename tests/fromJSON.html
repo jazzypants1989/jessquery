@@ -28,10 +28,9 @@
               )
               .addClass("updated")
               .css("backgroundColor", "skyblue")
-              .wait(1000)
           },
           {
-            fallback: "I'M A CUSTOM FALLBACK",
+            onWait: () => $("#testDiv").text("Waiting..."),
             error: "I'M A CUSTOM ERROR",
             onSuccess: () => $$("p").css("color", "green"),
           }

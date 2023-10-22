@@ -450,7 +450,7 @@ declare module "jessquery" {
         url?: string
         json?: boolean
         event?: Event
-        serializer?: () => void
+        serializer?: (HTMLElement) => FormData
       } & FetchOptions
     ) => DomProxy<T>
 
@@ -467,7 +467,7 @@ declare module "jessquery" {
      * })
      * .css('color', 'blue')
      */
-    do: (fn: (el: DomProxy<T>) => Promise<void>) => DomProxy<T>
+    do: (fn: (el: DomProxy<T>) => Promise<void> | void) => DomProxy<T>
 
     /**
      * Schedules a function for deferred execution on the element. This will push the operation to the very end of the internal event loop.
@@ -517,7 +517,7 @@ declare module "jessquery" {
      *    .wait(500).text("Goodbye, world!") // Text is blue
      * // This is missing the point of JessQuery. Just put each method in sequence.
      */
-    defer: (fn: (element: DomProxy) => void) => DomProxy
+    defer: (fn: (element: DomProxy) => Promise<void> | void) => DomProxy<T>
 
     /**
      * Fetches a JSON resource from the provided URL and applies a transformation function which uses the fetched JSON and the proxy's target element as arguments.
@@ -563,7 +563,7 @@ declare module "jessquery" {
      */
     fromJSON: (
       url: string,
-      transformFunc: (el: DomProxy<T>, json: any) => void,
+      transformFunc: (el: DomProxy<T>, json: any) => Promise<void> | void,
       options?: FetchOptions
     ) => DomProxy<T>
 
@@ -1448,7 +1448,9 @@ declare module "jessquery" {
      *    .wait(500).text("Goodbye, world!") // Text is blue
      * // This is missing the point of JessQuery. Just put each method in sequence.
      */
-    defer: (fn: (el: DomProxyCollection) => void) => DomProxyCollection<T>
+    defer: (
+      fn: (el: DomProxyCollection) => Promise<void> | void
+    ) => DomProxyCollection<T>
 
     /**
      * Fetches a JSON resource from the provided URL, applies a transformation function on it and the proxy's target elements.
@@ -1497,7 +1499,10 @@ declare module "jessquery" {
      */
     fromJSON: (
       url: string,
-      transformFunc: (el: DomProxyCollection<T>, json: any) => void,
+      transformFunc: (
+        el: DomProxyCollection<T>,
+        json: any
+      ) => Promise<void> | void,
       options?: FetchOptions
     ) => DomProxyCollection<T>
 

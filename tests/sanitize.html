@@ -12,26 +12,28 @@
     </div>
     <script type="module">
       import { $, $$ } from "../index.js" // Adjust the path to where you've stored the module.
-      const contentDiv = $("#content")
-      // 2. Using $$ utility
-      const paragraphs = $$(".paragraph")
-      paragraphs.css("color", "blue")
+      // // 2. Using $$ utility
+      // const paragraphs = $$(".paragraph")
+      // paragraphs.css("color", "blue")
 
-      // 3. Dynamically attach and prepend content
-      contentDiv.attach(
-        '<p class="attached">This is an attached paragraph.</p>',
-        true
-      )
-      contentDiv.attach(
-        '<p class="prepended">This is a prepended paragraph.</p>',
-        { position: "after" }
-      )
+      // contentDiv.attach(
+      //   '<p class="prepended">This is a prepended paragraph.</p>',
+      //   { position: "after" }
+      // )
 
-      // Unsafe HTML, should get sanitized
+      //
+      //       contentDiv.attach(
+      //   '<p class="attached">This is an attached paragraph.</p>'
+      // )
+
       const unsafeHtml = '<img src="x" onerror="alert(\'XSS Attack\')">'
+      const contentDiv = $("#content").sanitize(unsafeHtml)
 
-      contentDiv.attach(unsafeHtml, { sanitize: false }) // will not get sanitized-- will trigger alert
-      contentDiv.attach(unsafeHtml) // will get sanitized-- so only one alert will trigger
+      // const noWorries = `<scr` + `ipt>alert("No worries!")</scr` + `ipt>`
+      // const contentDiv = $("#content").html(noWorries)
+
+      // contentDiv.attach(unsafeHtml, { sanitize: false }) // will not get sanitized-- will trigger alert
+      // contentDiv.attach(unsafeHtml) // will get sanitized-- so only one alert will trigger
     </script>
   </body>
 </html>
