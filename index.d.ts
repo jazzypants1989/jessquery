@@ -119,16 +119,16 @@ declare module "jessquery" {
      * @example
      * const maliciousHTML = `<span>Safe Content</span>
      *                        <script>alert("hacked!")</script>`;
-     * const customSanitizer = new Sanitizer({
+     * const sanitizer = new Sanitizer({
      *   allowElements: ['span']
      * });
-     * $('button').sanitize(maliciousHTML, customSanitizer);
+     * $('button').sanitize(maliciousHTML, { sanitizer });
      * // The button will only contain the 'Safe Content' span;
      * // Any scripts (or other unwanted tags) will be removed.
      * // Only span elements will be allowed.
      * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Element/setHTML}
      */
-    sanitize: (html: string, sanitizer?: Sanitizer) => DomProxy<T>
+    sanitize: (html: string, options: SetHTMLOptions) => DomProxy<T>
 
     /** Change the text of the element while retaining the HTML.
      * @param newText The new text
@@ -1044,20 +1044,21 @@ declare module "jessquery" {
      * Provides protection against XSS attacks.
      *
      * @param {string} html - Untrusted HTML string to sanitize and set.
-     * @param {Sanitizer} [sanitizer] - An instance of Sanitizer to customize the sanitization. Defaults to a new Sanitizer() with default configuration.
+     * @param {SetHTMLOptions} [options={}] - Options for the setHTML API.
+     * @param {boolean} [options.sanitizer] - A custom sanitizer to use for sanitization. {@link https://developer.mozilla.org/en-US/docs/Web/API/Sanitizer/Sanitizer}
      * @returns {DomProxyCollection} - The matched elements with the sanitized content set.
      *
      * @example
      * const maliciousHTML = '<span>Safe Content</span><script>alert("hacked!")</script>';
-     * const customSanitizer = new Sanitizer({
+     * const sanitizer = new Sanitizer({
      *   allowElements: ['span']
      * });
-     * $('.targetElement').sanitize(maliciousHTML, customSanitizer);
+     * $('.targetElement').sanitize(maliciousHTML, { sanitizer });
      * // The .targetElement will only contain the 'Safe Content' span; the script and other unwanted tags will be removed.
      *
      * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Element/setHTML}
      */
-    sanitize: (html: string, sanitizer?: Sanitizer) => DomProxyCollection<T>
+    sanitize: (html: string, options: SetHTMLOptions) => DomProxyCollection<T>
 
     /** Change the text of the elements
      * @param newText The new text
@@ -1960,15 +1961,15 @@ declare module "jessquery" {
    *
    * The error handler receives two arguments:
    * - `error`: The Error object thrown or rejected.
-   * - `context`: An object containing contextual information, such as function name, arguments, or any other metadata associated with the error. This is particularly useful for debugging and diagnostic purposes.
+   * - `context`: A string explaining where the error originated-- unless called by promisify, in which case it will be an object containing contextual information, such as function name, arguments, or any other metadata associated with the error. This is particularly useful for debugging and diagnostic purposes.
    *
    * By setting a custom error handler, you replace the default behavior. The custom handler will be executed for every error or rejected promise occurring within JessQuery. The default behavior is to log the error and its context to the console. You can modify this to any behavior, including but not limited to displaying alerts, sending error reports, or suppressing the errors entirely.
    *
-   * @param {(error: Error, context: object) => void} handler - The custom error handler function.
+   * @param {(error: Error, context: string | object) => void} handler - The custom error handler to be executed for every error or rejected promise occurring within JessQuery.
    *
    * @example
    * // Basic usage
-   * setErrorHandler((err) => {
+   * setErrorHandler((err, context) => {
    *   alert(err.message);
    *   console.log(`Error context: ${JSON.stringify(context)}`);
    * });
@@ -1991,7 +1992,7 @@ declare module "jessquery" {
    * // Errors occurring within JessQuery will be swallowed, showing neither logs nor alerts.
    */
   export function setErrorHandler(
-    handler: (error: Error, context: object) => void
+    handler: (error: Error, context: string | object) => void
   ): void
 
   /**
@@ -2061,8 +2062,13 @@ declare module "jessquery" {
    *
    * // Customizing error handler to make use of metadata
    * setErrorHandler((err, meta) => {
-   *   console.error(`Error: ${err.message}, Function: ${meta.fnName}, Args: ${meta.fnArgs}, Custom Info: ${meta.customDebugInfo}`);
-   * });
+   *     if (typeof meta === "string") {
+   *      console.error(`Error: ${err.message}, Context: ${meta}`);
+   *    } else {
+   *     console.error(`Error: ${err.message}, Function: ${meta.fnName},
+   *      Args: ${meta.fnArgs}, Custom Info: ${meta.customDebugInfo}`);
+   *    }
+   *  });
    */
   export function promisify(
     fn: (...args: any[]) => void,
@@ -2098,8 +2104,28 @@ declare module "jessquery" {
 }
 
 interface Element {
-  setHTML(input: string, sanitizer?: Sanitizer): void
+  setHTML(input: string, options?: SetHTMLOptions): void
 }
+
+interface SetHTMLOptions {
+  sanitizer?: Sanitizer
+}
+
+interface Sanitizer {
+  sanitize(input: Document | DocumentFragment): DocumentFragment
+  sanitizeFor(element: string, input: string): Element | null
+  getConfiguration(): SanitizerConfig
+  new (config?: SanitizerConfig): Sanitizer
+}
+
+interface SanitizerConstructor {
+  new (config?: SanitizerConfig): Sanitizer
+  getDefaultConfiguration(): SanitizerConfig
+}
+
+declare const Sanitizer: SanitizerConstructor
+
+type AttributeMatchList = Record<string, string[]>
 
 interface SanitizerConfig {
   allowElements?: string[]
@@ -2110,12 +2136,4 @@ interface SanitizerConfig {
   allowCustomElements?: boolean
   allowUnknownMarkup?: boolean
   allowComments?: boolean
-}
-
-type AttributeMatchList = Record<string, string[]>
-
-interface Sanitizer {
-  sanitize(input: string): string
-  getConfiguration(): SanitizerConfig
-  getDefaultConfiguration(): SanitizerConfig
 }

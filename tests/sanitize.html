@@ -26,8 +26,18 @@
       //   '<p class="attached">This is an attached paragraph.</p>'
       // )
 
-      const unsafeHtml = '<img src="x" onerror="alert(\'XSS Attack\')">'
-      const contentDiv = $("#content").sanitize(unsafeHtml)
+      const unsafeHtml =
+        `<img src="x" onerror="alert(\'XSS Attack\')">
+        <span style="color: red">This is a span.</span>
+      <p class="paragraph">This is a paragraph.</p>
+      <p class="paragraph">This is another paragraph.</p>
+      <script>alert("No worries!")<` + `/script>`
+
+      const sanitizer = new Sanitizer({
+        allowElements: ["p"],
+      })
+
+      const contentDiv = $("#content").sanitize(unsafeHtml, { sanitizer })
 
       // const noWorries = `<scr` + `ipt>alert("No worries!")</scr` + `ipt>`
       // const contentDiv = $("#content").html(noWorries)
