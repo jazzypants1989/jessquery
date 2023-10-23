@@ -39,6 +39,8 @@
     "url": "https://github.com/jazzypants1989/jessquery.git"
   },
   "dependencies": {
-    "benchmark": "^2.1.4"
+    "benchmark": "^2.1.4",
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
   }
 }

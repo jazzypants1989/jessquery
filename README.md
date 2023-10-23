@@ -9,11 +9,11 @@ Rekindle your love for method chaining-- now in a lightweight, type-safe package
 | Library   | Size before gzip | Size after gzip |
 | --------- | ---------------- | --------------- |
 | jQuery    | 88.3kb           | 31.7kb          |
-| jessquery | 8.46kb           | 3.63kb          |
+| jessquery | 8.82kb           | 3.76kb          |
 
 And, if that's too big for you, you can use our scrawny kid brother [Droxy](https://github.com/jazzypants1989/droxy/) instead. He's only 2kb after gzip!
 
-![It's only 3.59kb! I swear! This badge proves it.](https://deno.bundlejs.com/badge?q=jessquery@2.4.1)
+![It's only 3.76kb! I swear! This badge proves it.](https://deno.bundlejs.com/badge?q=jessquery@2.4.3)
 [![npm version](https://badge.fury.io/js/jessquery.svg)](https://badge.fury.io/js/jessquery)
 
 - [Basic Usage](#basic-usage)
@@ -342,11 +342,14 @@ display.on("mouseover", () => {
 
 ```javascript
 const fetchOptions = {
-  // This custom error message will replace the element's text if it fails.
-  error: "Aw, shucks! I couldn't load the data!",
-  // You can replace that with a function that does whatever you want.
+  // You can use the same options as fetch, but with loads of extra features like:
+  // Automatic Retries with exponential backoff. (default is 0)
+  retries: 3,
+  // The first retry will be in one second, then two seconds, then four seconds...
+  retryDelay: 1000,
+  // You can set up an error handler that will be called if the fetch still fails after all retries.
   onError: (err) => sendFetchErrorToAnalytics(err).
-  // This will reflect the DOM AFTER the fetch is done.
+  // Or, a success handler that will reflect the DOM AFTER the element has been updated.
   onSuccess: () => dynamicSpans.attach("<h6>Data Loaded!</h6>"),
   // This custom loading message will replace the element's text while it waits.
   onWait: () => dynamicSpans.text("Hold your horses! I'm loading data!")
