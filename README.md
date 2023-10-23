@@ -403,20 +403,20 @@ $("#bigForm").send()
 // EVERYTHING is optional. You can just pass a URL if you want.
 $("#otherSubmitButton").on("click", (event) => {
   $$("#bigForm").send({
-    event,
     // Just pass in the event to prevent default submission
+    event,
+    // If no URL, it will use the formaction attribute or any ancestor form's action that exists.
     url: "/api/cool-endpoint",
-    // Otherwise, it will use the formaction attribute or any parent form's action if it exists.
+    // If no body, the form's data would be used. If no form, the value/textContent would be used.
     body: { cool: "data" },
-    // Otherwise, the form's data would be used. If no form, the textContent would be used.
-    method: "PUT",
     // POST is the default
-    onWait: () => console.log("Waiting for the server to respond..."),
+    method: "PUT",
     // You still get all the extra event hooks and options.
+    onWait: () => console.log("Waiting for the server to respond..."),
+    // And, of course, all the normal fetch options as well.
     headers: {
       "Cool-Header": "Cool-Value",
     },
-    // And, of course, all the normal fetch options as well.
   })
 })
 // (this will send multiple fetches ($$) though. No caching or batching... yet)
