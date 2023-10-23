@@ -21,6 +21,7 @@ And, if that's too big for you, you can use our scrawny kid brother [Droxy](http
 - [Demo and Key Concepts](#demo-and-key-concepts)
 - [TypeScript](#typescript)
 - [The Rules](#the-rules)
+- [Code Walkthrough](#codewalkthrough)
 - [Advanced Usage](#advanced-usage)
 - [Interfaces](#interfaces)
 - [Contributing](#contributing)
@@ -109,6 +110,12 @@ I wrote a lot, but the main idea is that everything should be predictable. You p
 10. **Each method is blocking, so if you use the same variable for event handlers, you will block the event handler from firing until that function is finished**. This is particularly problematic if that chain has any `wait()` calls or long animations.
 
 Generally, just try to keep each discrete chain of DOM operations for a single element together, and try to use a new variable for any event handlers. I mean, the whole point of this library is that `$()` and `$$()` are really easy to type, and you only need to worry about it when things aren't behaving the way you expect. If anything gets too hard, you can also use the `defer()` and `wait()` methods to let the DOM catch up while you re-evaluate your life choices. 😅
+
+## Code Walkthrough
+
+[![I recorded a three hour long video explaining the code.] // Title
+(https://i.ytimg.com/vi/BVKHJcd4Ifs/maxresdefault.jpg)] // Thumbnail
+(https://www.youtube.com/watch?v=BVKHJcd4Ifs "I recorded a three hour long video explaining the code.") // Video Link
 
 ## Advanced Usage
 

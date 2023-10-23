@@ -13,27 +13,6 @@
     <script type="module">
       import { $, $$ } from "../index.js"
 
-      // async function doMethodTest() {
-      //   const output = document.createElement("div")
-      //   document.getElementById("testContainer").appendChild(output)
-
-      //   $$(".testButton").do(async (el) => {
-      //     // throw new Error("do method test FAILED")
-      //     await new Promise((resolve, reject) => {
-      //       setTimeout(() => {
-      //         resolve()
-      //       }, 1000)
-      //     })
-
-      //     el.css({ backgroundColor: "hotpink" })
-
-      //     el.style.color = "darkgreen"
-      //     el.text("do method test PASSED")
-      //   })
-      // }
-
-      // doMethodTest()
-
       async function deferMethodTest() {
         const output = document.createElement("div")
         document.getElementById("testContainer").appendChild(output)
