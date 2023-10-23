@@ -150,9 +150,10 @@ const button = $(".button")
 button.html(`<h3>I am not a button</h3>`, true)
 // The second argument determines if the parent element should be replaced as well.
 
-// You can also use become() to transform the elements into something from elsewhere in the DOM. (Again, permanent.)
-const buttons = $$(".button")
-buttons.become($(".other-button"))
+// You can also use become() to transform the elements into something from elsewhere in the DOM.
+const buttons = $(".button")
+buttons.become($("#other-button"))
+// Each button will now be a deep clone of the other-button element. (no event handlers)
 
 // moveTo, cloneTo, and attach allow you to move elements around the DOM.
 // If you don't want to move things permanently, you can:
@@ -374,9 +375,9 @@ dynamicSpans.fromJSON(
     `
     )
       .wait(5000)
-      .fromHTML("/api/cool-html", fetchOptions)
+      .fromHTML("/api/extended-bio", fetchOptions)
       .attach(
-        "<h2>Enough about me, watch this! I'm gonna replace this cool HTML with a stream in 5 seconds.</h2>"
+        "<h2>Enough about me, I'll replace this with a cool stream in 5 seconds!</h2>"
       )
       .wait(5000)
       .fromStream("/api/cool-stream", fetchOptions)
@@ -402,17 +403,23 @@ $("#bigForm").send()
 // EVERYTHING is optional. You can just pass a URL if you want.
 $("#otherSubmitButton").on("click", (event) => {
   $$("#bigForm").send({
-    event, // to prevent default submission
-    url: "/api/cool-endpoint", // Otherwise, the formaction attribute or any parent form's action would be used if it exists.
-    body: { cool: "data" }, // Otherwise, the form's data would be used. If no form, the textContent would be used.
-    method: "PUT", // POST is the default
-    onWait: () => console.log("Waiting for the server to respond..."), // You still get all the extra event hooks and options.
+    event,
+    // Just pass in the event to prevent default submission
+    url: "/api/cool-endpoint",
+    // Otherwise, it will use the formaction attribute or any parent form's action if it exists.
+    body: { cool: "data" },
+    // Otherwise, the form's data would be used. If no form, the textContent would be used.
+    method: "PUT",
+    // POST is the default
+    onWait: () => console.log("Waiting for the server to respond..."),
+    // You still get all the extra event hooks and options.
     headers: {
-      "Cool-Header": "Cool-Value", // And, of course, all the normal fetch options as well.
+      "Cool-Header": "Cool-Value",
     },
+    // And, of course, all the normal fetch options as well.
   })
 })
-// (this will send multiple fetches though. No caching or batching... yet)
+// (this will send multiple fetches ($$) though. No caching or batching... yet)
 ```
 
 ## Interfaces
