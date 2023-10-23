@@ -474,6 +474,17 @@ declare module "jessquery" {
      *    el.text(data.message) // All the methods are still available
      * })
      * .css('color', 'blue')
+     *
+     * @example
+     * const fetchDog = async (el) => {
+     *   const response = await fetch("https://dog.ceo/api/breeds/image/random")
+     *   const data = await response.json()
+     *     el.set("src", data.message)
+     *   }
+     *
+     * button.on("click", () => {
+     *   display.html(`<img />`, true).do(fetchDog)
+     * })
      */
     do: (fn: (el: DomProxy<T>) => Promise<void> | void) => DomProxy<T>
 
@@ -1418,10 +1429,21 @@ declare module "jessquery" {
      * .css('color', 'red')
      * .do(async (el) => { // The elements are passed as an argument
      *   const response = await fetch('/api')
-     *  const data = await response.json()
-     * el.text(data.message) // All the methods are still available
+     *   const data = await response.json()
+     *   el.text(data.message) // All the methods are still available
      * })
      * .css('color', 'blue')
+     *
+     * @example
+     *const fetchDog = async (el) => {
+     *   const response = await fetch("https://dog.ceo/api/breeds/image/random")
+     *   const data = await response.json()
+     *   el.set("src", data.message)
+     * }
+     *
+     * buttons.on("click", () => {
+     *   display.html(`<img />`, true).do(fetchDog)
+     * })
      */
     do: (
       fn: (el: DomProxyCollection) => Promise<void> | void
