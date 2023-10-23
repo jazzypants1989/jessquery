@@ -1,58 +1,58 @@
-import http from "http"
+// import http from "http"
 
-// // ** Submissions **
-import url from "url"
+// // // ** Submissions **
+// import url from "url"
 
-const server = http.createServer((req, res) => {
-  console.log(req.method, req.url)
+// const server = http.createServer((req, res) => {
+//   console.log(req.method, req.url)
 
-  // Set CORS headers
-  res.setHeader("Access-Control-Allow-Origin", "http://localhost:5500")
-  res.setHeader("Access-Control-Allow-Methods", "POST")
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
+//   // Set CORS headers
+//   res.setHeader("Access-Control-Allow-Origin", "http://localhost:5500")
+//   res.setHeader("Access-Control-Allow-Methods", "POST")
+//   res.setHeader("Access-Control-Allow-Headers", "Content-Type")
 
-  if (req.method === "OPTIONS") {
-    res.statusCode = 200
-    res.end()
-    return
-  }
+//   if (req.method === "OPTIONS") {
+//     res.statusCode = 200
+//     res.end()
+//     return
+//   }
 
-  if (req.method === "POST") {
-    const queryParams = new url.URL(req.url, `http://${req.headers.host}`)
-      .searchParams
+//   if (req.method === "POST") {
+//     const queryParams = new url.URL(req.url, `http://${req.headers.host}`)
+//       .searchParams
 
-    const delay = parseInt(queryParams.get("delay")) || 0
+//     const delay = parseInt(queryParams.get("delay")) || 0
 
-    let requestData = ""
+//     let requestData = ""
 
-    req.on("data", (chunk) => {
-      requestData += chunk
-    })
+//     req.on("data", (chunk) => {
+//       requestData += chunk
+//     })
 
-    req.on("end", () => {
-      setTimeout(() => {
-        // Use setTimeout here
-        console.log("Received data:")
-        console.log(requestData)
-        res.statusCode = 200
-        res.end(
-          requestData +
-            "\n" +
-            "JESSE IS THE BEST" +
-            "\n" +
-            new Date().toLocaleTimeString()
-        )
-      }, delay) // Delay the response by the specified amount
-    })
-  } else {
-    res.statusCode = 404
-    res.end("Not Found")
-  }
-})
+//     req.on("end", () => {
+//       setTimeout(() => {
+//         // Use setTimeout here
+//         console.log("Received data:")
+//         console.log(requestData)
+//         res.statusCode = 200
+//         res.end(
+//           requestData +
+//             "\n" +
+//             "JESSE IS THE BEST" +
+//             "\n" +
+//             new Date().toLocaleTimeString()
+//         )
+//       }, delay) // Delay the response by the specified amount
+//     })
+//   } else {
+//     res.statusCode = 404
+//     res.end("Not Found")
+//   }
+// })
 
-server.listen(3000, () => {
-  console.log(`click here: http://localhost:3000`)
-})
+// server.listen(3000, () => {
+//   console.log(`click here: http://localhost:3000`)
+// })
 
 // ** STREAMING **
 
@@ -130,3 +130,58 @@ server.listen(3000, () => {
 // server.listen(8080, () => {
 //   console.log("Server is running on port 8080")
 // })
+
+// **RETRIES**
+import http from "http"
+import url from "url"
+
+const PORT = 3000
+
+let requestCounter = 0
+let firstRequestTime = null
+
+const server = http.createServer((req, res) => {
+  const parsedUrl = new url.URL(req.url, `http://${req.headers.host}`)
+
+  // Set CORS headers
+  res.setHeader("Access-Control-Allow-Origin", "*")
+  res.setHeader("Access-Control-Allow-Methods", "GET")
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
+
+  if (req.method === "OPTIONS") {
+    res.statusCode = 200
+    res.end()
+    return
+  }
+
+  if (req.method === "GET" && parsedUrl.pathname === "/data") {
+    requestCounter++
+
+    // note the time at which the request was made
+    firstRequestTime = firstRequestTime || new Date()
+    console.log(
+      `Request #${requestCounter} received at ${new Date().toLocaleTimeString()}, first request at ${firstRequestTime.toLocaleTimeString()}`
+    )
+
+    // Mock an error for the first 5 requests
+    if (requestCounter <= 5) {
+      res.statusCode = 500
+      res.end("Something went wrong!")
+    } else {
+      // note the difference in the response time
+      const responseTime = new Date()
+      res.end(
+        `Request #${requestCounter} took ${
+          Number(responseTime) - Number(firstRequestTime)
+        } milliseconds`
+      )
+    }
+  } else {
+    res.statusCode = 404
+    res.end("Not Found")
+  }
+})
+
+server.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`)
+})
