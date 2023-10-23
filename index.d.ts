@@ -454,8 +454,13 @@ declare module "jessquery" {
       } & FetchOptions
     ) => DomProxy<T>
 
-    /** Executes an asynchronous function and waits for it to resolve before continuing the chain (can be synchronous too)
-     * @param fn The async callback. This can receive the element as an argument.
+    /**
+     * Executes a function and waits for it to resolve before continuing the chain. Basically, if you need to do something and there isn't a good method for it already, just use this.
+     *    - This can be used to do conditional logic, although the `if` or `takeWhile` methods can make this easier.
+     *    - This function can be asynchronous. Either way, any methods called on the queue after this point will reflect changes made to the element after the function is called.
+     *    - The only exception is if you use the wait method inside of the function. Unfortunately, this will cause the external queue to continue on without waiting for the timeout to finish.
+     *    - To call arbitrary timeouts inside of the do method, you can simply use the old `await new Promise((resolve) => setTimeout(resolve, 1000))` trick.
+     * @param fn The callback. This can receive the element as an argument.
      * @returns This {@link DomProxy}
      * @example
      * $('button')
@@ -563,7 +568,7 @@ declare module "jessquery" {
      */
     fromJSON: (
       url: string,
-      transformFunc: (el: DomProxy<T>, json: any) => Promise<void> | void,
+      transformFunc: TransformFunction<DomProxy<T>>,
       options?: FetchOptions
     ) => DomProxy<T>
 
@@ -1389,9 +1394,12 @@ declare module "jessquery" {
       } & FetchOptions
     ) => DomProxyCollection<T>
 
-    /** Executes an asynchronous function on all of the elements and waits for it to resolve before continuing the chain (can be synchronous too)
+    /** Executes a function and waits for it to resolve before continuing the chain. Basically, if you need to do something and there isn't a good method for it already, just use this.
+     *    - The function will operate on every element in the collection. If you need to conditionally operate on individual elements held within the collection, use the `if` method or use `takeWhile` to filter the collection.
+     *    - This function can be asynchronous. Either way, any methods called on the queue after this point will reflect changes made to the element after the function is called.
+     *    - The only exception is if you use the wait method inside of the function. Unfortunately, this will cause the external queue to continue on without waiting for the timeout to finish.
+     *    - To call arbitrary timeouts inside of the do method, you can simply use the old `await new Promise((resolve) => setTimeout(resolve, 1000))` trick.
      *
-     * - The functions will operate on each element unconditionally. If you need to use conditional logic, either use the `if` method or first filter the collection with `takeWhile` or the `filter` array method.
      * @param fn The async callback. This can receive the elements as an argument.
      * @returns This {@link DomProxyCollection}
      * @example
@@ -1500,10 +1508,7 @@ declare module "jessquery" {
      */
     fromJSON: (
       url: string,
-      transformFunc: (
-        el: DomProxyCollection<T>,
-        json: any
-      ) => Promise<void> | void,
+      transformFunc: TransformFunction<DomProxyCollection<T>>,
       options?: FetchOptions
     ) => DomProxyCollection<T>
 
@@ -2080,8 +2085,8 @@ declare module "jessquery" {
   ): (...args: any[]) => Promise<any>
 
   interface FetchOptions extends RequestInit {
-    onError?: () => void
-    onSuccess?: () => void
+    onError?: (error: any) => void
+    onSuccess?: (data: any) => void
     onWait?: () => void
     waitTime?: number
     error?: string
@@ -2101,6 +2106,11 @@ declare module "jessquery" {
   type ElementForTag<S extends string> = S extends keyof HTMLElementTagNameMap
     ? HTMLElementTagNameMap[S]
     : HTMLElement
+
+  type TransformFunction<T> = (
+    el: T,
+    json: Record<string, any>
+  ) => Promise<void> | void
 }
 
 interface Element {
