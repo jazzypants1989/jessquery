@@ -1,8 +1,8 @@
 export async function wrappedFetch(url, options, type, target) {
   const { onWait, waitTime, onSuccess, onError, retryDelay = 1000 } = options
+
   let waitTimeout = null
   onWait && (waitTimeout = setTimeout(() => onWait(), waitTime || 250))
-
   try {
     const response = await fetch(url, options)
     const data = await handleResponse(response, type, target, options)
