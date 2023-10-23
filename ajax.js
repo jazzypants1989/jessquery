@@ -1,8 +1,5 @@
 export async function wrappedFetch(url, options, type, target) {
   const { onWait, waitTime, onSuccess, onError, retryDelay = 1000 } = options
-
-  console.log("wrappedFetch", url, options, type, target)
-
   let waitTimeout = null
   onWait && (waitTimeout = setTimeout(() => onWait(), waitTime || 250))
 
