@@ -396,10 +396,10 @@ dynamicSpans.fromJSON(
 ```javascript
 // This will automatically serialize the form
 // It will send it to the action attribute if it exists (The page's URL if not)
-// You can also customize each aspect of the request if you want.
-// EVERYTHING is optional. You can just pass a URL if you want.
 $("#bigForm").send()
 
+// You can also customize each aspect of the request if you want.
+// EVERYTHING is optional. You can just pass a URL if you want.
 $("#otherSubmitButton").on("click", (event) => {
   $$("#bigForm").send({
     event, // to prevent default submission
