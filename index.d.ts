@@ -536,7 +536,7 @@ declare module "jessquery" {
      *    .wait(500).text("Goodbye, world!") // Text is blue
      * // This is missing the point of JessQuery. Just put each method in sequence.
      */
-    defer: (fn: (element: DomProxy) => Promise<void> | void) => DomProxy<T>
+    defer: (fn: (element: DomProxy<T>) => Promise<void> | void) => DomProxy<T>
 
     /**
      * Fetches a JSON resource from the provided URL and applies a transformation function which uses the fetched JSON and the proxy's target element as arguments.
@@ -1445,7 +1445,7 @@ declare module "jessquery" {
      *   display.html(`<img />`, true).do(fetchDog)
      * })
      */
-    do: (fn: (el: DomProxy) => Promise<void> | void) => DomProxyCollection<T>
+    do: (fn: (el: DomProxy<T>) => Promise<void> | void) => DomProxyCollection<T>
 
     /**
      * Schedules a function for deferred execution on all of the elements. This will push the operation to the very end of the internal event loop.
@@ -1489,7 +1489,7 @@ declare module "jessquery" {
      * // This is missing the point of JessQuery. Just put each method in sequence.
      */
     defer: (
-      fn: (el: DomProxyCollection) => Promise<void> | void
+      fn: (el: DomProxyCollection<T>) => Promise<void> | void
     ) => DomProxyCollection<T>
 
     /**
