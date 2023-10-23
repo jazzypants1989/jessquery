@@ -888,7 +888,7 @@ declare module "jessquery" {
      * if the current element does not match the predicate. The `refresh()` method
      * can be used to restore the proxy to its original state.
      *
-     * Usually, the {@link DomProxy.if} method is a better choice for conditional logic.
+     * Usually, the {@link DomProxy.if} method or a simple ternary operator is a better choice for conditional logic.
      *
      * @param {Function} predicate A function that tests the element for a specific condition.
      * @returns This {@link DomProxy} either filtered or emptied based on the predicate.
@@ -906,7 +906,10 @@ declare module "jessquery" {
      * .css('border', '1px solid red')
      * // Only applies the border style if the div with class 'container' has more than 3 children.
      */
-    takeWhile: (predicate: (el: Element) => boolean) => DomProxy<T>
+    takeWhile: (
+      predicate: (el: Element) => boolean,
+      reverse?: boolean
+    ) => DomProxy<T>
 
     /**
      * Restores the proxy to its original state (when the variable was created).
@@ -1836,9 +1839,11 @@ declare module "jessquery" {
      * The collection will be modified to contain only those elements that
      * satisfy the predicate consecutively from the start.
      *
-     * This method provides a more natural way to filter elements in the proxy.
-     * It's powerful but should be used with caution. The `refresh()` method
-     * can be employed to restore the proxy to its original state if the filtering becomes confusing.
+     * This method is useful for filtering out elements that are not needed
+     * for a particular operation. The {@link DomProxyCollection.refresh}
+     * can be employed to restore the proxy to its original state.
+     *
+     * Remember-- the filter array method can be used for a more general filtering operation.
      *
      * For simple conditional logic, use the {@link DomProxyCollection.if} method instead.
      *
@@ -1858,6 +1863,14 @@ declare module "jessquery" {
      * .takeWhile(el => el.dataset.value && parseInt(el.dataset.value, 10) > 5)
      * .css('font-weight', 'bold')
      * // Only makes the list items bold if they have a data-value attribute greater than 5, and it's consecutive from the start.
+     *
+     * @example
+     * // Complex example with reverse
+     * $$('.list-items')
+     * .css('color', 'blue')
+     * .takeWhile(el => el.dataset.value && parseInt(el.dataset.value, 10) > 5, true)
+     * .css('font-weight', 'bold')
+     * // Only makes the list items bold if they have a data-value attribute greater than 5, and it's consecutive from the end.
      */
     takeWhile: (
       predicate: (el: DomProxyCollection<T>) => boolean,

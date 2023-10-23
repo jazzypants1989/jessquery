@@ -11,7 +11,33 @@
     <script type="module">
       import { $, $$, setErrorHandler } from "../index.js"
 
-      $(`<h1>HEY</h1>`).moveTo("#testContainer", { position: "before" })
+      $$(`<h1>HEY</h1>
+      <p>Look at all these elements!</p>
+      <p>There are so many!</p>
+      <p>And they're all in the right place!</p>
+      <span>1</span>
+      <span>2</span>
+      <span>3</span>
+      <span>4</span>
+      <span>5</span>
+      <table STYLE="width:100%; border: 1px solid black; border-collapse: collapse; text-align: center;">
+        <tr>
+          <th>First Name</th>
+          <th>Last Name</th>
+          <th>Age</th>
+        </tr>
+        <tr>
+          <td>John</td>
+          <td>Doe</td>
+          <td>25</td>
+        </tr>
+        <tr>
+          <td>Jane</td>
+          <td>Doe</td>
+          <td>24</td>
+        </tr>
+      </table>
+      `).moveTo("#testContainer", { position: "before" })
     </script>
   </body>
 </html>
