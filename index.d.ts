@@ -400,7 +400,7 @@ declare module "jessquery" {
      * - Finally, it will use the current URL.
      *
      * Unless the `body` option is provided, it will be created automatically based on the element type:
-     * - If it's a form, the entire form will be serialized using the formData API unless a custom serializer is provided.
+     * - If it's a form, the entire form will be serialized normally using the formData API unless a custom serializer is provided.
      * - If it's an input, textarea, or select, the value will be used.
      * - If it isn't a form or one of the above elements, we will check to see if the element has a form property or one can be found with the `closest` method. If so, we will serialize the form using the formData API unless a custom serializer is provided.
      * - If none of the above, the element's textContent will be used.
@@ -408,6 +408,9 @@ declare module "jessquery" {
      * If the `json` option is set to true, the request will be sent as JSON and the response will be parsed as JSON.
      *
      * Otherwise, the request will be sent as FormData and the response will be parsed as text.
+     *
+     *   - The serializer option can be used to provide a custom function to serialize the form. It will be passed the element as an argument and should return the serialized form data.
+     *   - This will probably break if you don't return a FormData object from your serializer, but I haven't tested it.
      *
      * @param {Element} element - The DOM element to gather data from and determine type of the request.
      * @param {object} options - Configuration for the AJAX request.
@@ -1334,7 +1337,9 @@ declare module "jessquery" {
     purge: () => DomProxyCollection<T>
 
     /**
-     * Sends HTTP requests using each of the current element as the body of the requests unless otherwise specified.
+     * Sends HTTP requests using each of the current elements as the body of the requests unless otherwise specified.
+     *
+     * - This will **NOT** cache or dedupe these requests, so you should probably be careful with this.
      *
      * None of the options are required-- not even the URL.
      *
@@ -1353,6 +1358,9 @@ declare module "jessquery" {
      * If the `json` option is set to true, the request will be sent as JSON and the response will be parsed as JSON.
      *
      * Otherwise, the request will be sent as FormData and the response will be parsed as text.
+     *
+     *   - The serializer option can be used to provide a custom function to serialize the form. It will be passed the element as an argument and should return the serialized form data.
+     *   - This will probably break if you don't return a FormData object from your serializer, but I haven't tested it.
      *
      * @param {Element} element - The DOM element to gather data from and determine type of the request.
      * @param {object} options - Configuration for the AJAX request.

@@ -984,6 +984,9 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
   - If the `json` option is set to true, the request will be sent as JSON and the response will be parsed as JSON.
   - Otherwise, the request will be sent as FormData and the response will be parsed as text.
 
+  - The serializer option can be used to provide a custom function to serialize the form. It will be passed the element as an argument and should return the serialized form data.
+  - This will probably break if you don't return a FormData object, but I haven't tested it.
+
   - Example:
 
   ```javascript
@@ -1621,6 +1624,7 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 - **send(options: { url?: string, json?: boolean, event?: Event, serializer?: (elements) => void } & FetchOptions) => DomProxyCollection<T>**
 
   - Sends HTTP requests using each of the current elements as the body of the requests unless otherwise specified.
+  - This will **not** cache or dedupe the fetches-- you should probably be careful with this.
   - None of the options are required-- not even the URL.
 
   - If you do not provide a URL the method will:
@@ -1639,6 +1643,9 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 
   - If the `json` option is set to true, the request will be sent as JSON and the response will be parsed as JSON.
   - Otherwise, the request will be sent as FormData and the response will be parsed as text.
+
+  - The serializer option can be used to provide a custom function to serialize the form. It will be passed the element as an argument and should return the serialized form data.
+  - This will probably break if you don't return a FormData object, but I haven't tested it.
 
   - Example: `$$('button').send({ url: '/api/submit' })`
   - Example: `$$('button').send({ url: '/api/submit', method: 'GET' })`
