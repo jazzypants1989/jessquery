@@ -1445,9 +1445,7 @@ declare module "jessquery" {
      *   display.html(`<img />`, true).do(fetchDog)
      * })
      */
-    do: (
-      fn: (el: DomProxyCollection) => Promise<void> | void
-    ) => DomProxyCollection<T>
+    do: (fn: (el: DomProxy) => Promise<void> | void) => DomProxyCollection<T>
 
     /**
      * Schedules a function for deferred execution on all of the elements. This will push the operation to the very end of the internal event loop.

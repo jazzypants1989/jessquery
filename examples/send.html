@@ -7,8 +7,13 @@
   </head>
   <body>
     <form action="http://localhost:3000" id="myForm">
-      <input id="butt" type="text" name="title" value="My Title" />
-      <textarea name="body">This is the body of my post.</textarea>
+      <input
+        id="butt"
+        type="text"
+        name="title"
+        value="It gets the URL from the action attribute"
+      />
+      <textarea name="body">This was automatically serialized.</textarea>
       <button id="submitButton">Submit</button>
     </form>
 
@@ -16,13 +21,9 @@
       import { $, $$ } from "../index.js"
 
       $("#submitButton").on("click", async (event) => {
-        $("#submitButton").send({
+        $("#myForm").send({
           event,
-          body: "HELLO TO YOU MY FRIEND!!",
           json: true,
-          onSuccess: (response) => {
-            console.log(response)
-          },
         })
       })
     </script>

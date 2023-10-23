@@ -30,6 +30,8 @@ export async function wrappedFetch(url, options, type, target) {
 export function send(element, options = {}, target) {
   let { url, method = "POST", json = false, body, event, headers } = options
 
+  console.log("send", element, options, target)
+
   event && event.preventDefault()
   url = url || getAction(element)
   headers = headers ? new Headers(headers) : new Headers()

@@ -1,7 +1,7 @@
-// import http from "http"
+import http from "http"
+import url from "url"
 
-// // // ** Submissions **
-// import url from "url"
+// // ** Submissions **
 
 // const server = http.createServer((req, res) => {
 //   console.log(req.method, req.url)
@@ -56,38 +56,38 @@
 
 // ** STREAMING **
 
-// const server = http.createServer((req, res) => {
-//   // Allow requests from any origin
-//   res.setHeader("Access-Control-Allow-Origin", "*")
+const server = http.createServer((req, res) => {
+  // Allow requests from any origin
+  res.setHeader("Access-Control-Allow-Origin", "*")
 
-//   // Set other CORS headers as needed
-//   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
-//   res.setHeader("Access-Control-Allow-Headers", "Content-Type")
+  // Set other CORS headers as needed
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
 
-//   // Respond with the data
-//   res.writeHead(200, { "Content-Type": "application/octet-stream" })
+  // Respond with the data
+  res.writeHead(200, { "Content-Type": "application/octet-stream" })
 
-//   res.write("<h1>hello</h1>")
+  res.write("<h1>hello</h1>")
 
-//   // Simulate streaming by sending chunks of data every 1 second
-//   const intervalId = setInterval(() => {
-//     res.write(`<p>${new Date().toLocaleTimeString()} \n</p>`)
-//     res.write(`<script>console.log("hello")</script>`)
-//   }, 1000)
+  // Simulate streaming by sending chunks of data every 1 second
+  const intervalId = setInterval(() => {
+    res.write(`<p>${new Date().toLocaleTimeString()} \n</p>`)
+    res.write(`<script>console.log("hello")</script>`)
+  }, 1000)
 
-//   // End the stream and clear the interval after 5 seconds
-//   setTimeout(() => {
-//     clearInterval(intervalId)
-//     res.end()
-//   }, 5000)
+  // End the stream and clear the interval after 5 seconds
+  setTimeout(() => {
+    clearInterval(intervalId)
+    res.end()
+  }, 5000)
 
-//   // Clear the interval if the client disconnects before 5 seconds
-//   res.on("close", () => clearInterval(intervalId))
-// })
+  // Clear the interval if the client disconnects before 5 seconds
+  res.on("close", () => clearInterval(intervalId))
+})
 
-// server.listen(8080, () => {
-//   console.log("Server is running on port 8080")
-// })
+server.listen(8080, () => {
+  console.log("Server is running on port 8080")
+})
 
 // ** SERVER SENT EVENTS **
 
@@ -131,59 +131,54 @@
 //   console.log("Server is running on port 8080")
 // })
 
-// **RETRIES**
-import http from "http"
-import url from "url"
+// // **RETRIES**
+// let requestCounter = 0
+// let firstRequestTime = null
 
-const PORT = 3000
+// const server = http.createServer((req, res) => {
+//   const parsedUrl = new url.URL(req.url, `http://${req.headers.host}`)
 
-let requestCounter = 0
-let firstRequestTime = null
+//   console.log(req.method, req.url)
 
-const server = http.createServer((req, res) => {
-  const parsedUrl = new url.URL(req.url, `http://${req.headers.host}`)
+//   // Set CORS headers
+//   res.setHeader("Access-Control-Allow-Origin", "*")
+//   res.setHeader("Access-Control-Allow-Methods", "GET")
+//   res.setHeader("Access-Control-Allow-Headers", "Content-Type")
 
-  console.log(req.method, req.url)
+//   if (req.method === "OPTIONS") {
+//     res.statusCode = 200
+//     res.end()
+//     return
+//   }
 
-  // Set CORS headers
-  res.setHeader("Access-Control-Allow-Origin", "*")
-  res.setHeader("Access-Control-Allow-Methods", "GET")
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
+//   if (req.method === "GET" && parsedUrl.pathname === "/data") {
+//     requestCounter++
 
-  if (req.method === "OPTIONS") {
-    res.statusCode = 200
-    res.end()
-    return
-  }
+//     // note the time at which the request was made
+//     firstRequestTime = firstRequestTime || new Date()
+//     console.log(
+//       `Request #${requestCounter} received at ${new Date().toLocaleTimeString()}, first request at ${firstRequestTime.toLocaleTimeString()}`
+//     )
 
-  if (req.method === "GET" && parsedUrl.pathname === "/data") {
-    requestCounter++
+//     // Mock an error for the first 5 requests
+//     if (requestCounter <= 5) {
+//       res.statusCode = 500
+//       res.end("Something went wrong!")
+//     } else {
+//       // note the difference in the response time
+//       const responseTime = new Date()
+//       res.end(
+//         `Request #${requestCounter} took ${
+//           Number(responseTime) - Number(firstRequestTime)
+//         } milliseconds`
+//       )
+//     }
+//   } else {
+//     res.statusCode = 404
+//     res.end("Not Found")
+//   }
+// })
 
-    // note the time at which the request was made
-    firstRequestTime = firstRequestTime || new Date()
-    console.log(
-      `Request #${requestCounter} received at ${new Date().toLocaleTimeString()}, first request at ${firstRequestTime.toLocaleTimeString()}`
-    )
-
-    // Mock an error for the first 5 requests
-    if (requestCounter <= 5) {
-      res.statusCode = 500
-      res.end("Something went wrong!")
-    } else {
-      // note the difference in the response time
-      const responseTime = new Date()
-      res.end(
-        `Request #${requestCounter} took ${
-          Number(responseTime) - Number(firstRequestTime)
-        } milliseconds`
-      )
-    }
-  } else {
-    res.statusCode = 404
-    res.end("Not Found")
-  }
-})
-
-server.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`)
-})
+// server.listen(3000, () => {
+//   console.log(`Server is running on http://localhost:${3000}`)
+// })

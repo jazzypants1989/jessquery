@@ -6,16 +6,24 @@
     <title>Test Next Method</title>
   </head>
   <body>
-    <button id="btn1">Button 1</button>
+    <div>I'll still be here.</div>
+    <div id="display">I'll be replaced with a stream soon.</div>
+    <div>I'm sticking around</div>
     <script type="module">
       import { $, $$ } from "../index.js"
 
-      const body = $("body")
+      const display = $("#display")
 
-      body.fromStream("http://localhost:8080", {
-        onSuccess: () => $("body").attach("<h1>It worked!</h1>"),
-        runScripts: true,
-        sanitize: false,
+      // display.wait(1000).fromStream("http://localhost:8080", {
+      //   onSuccess: () => $("body").attach("<h1>It worked!</h1>"),
+      //   runScripts: true,
+      //   sanitize: false,
+      // })
+
+      display.wait(1000).fromStream("http://localhost:8080", {
+        sse: true,
+        add: true,
+        toTop: true,
       })
     </script>
   </body>
