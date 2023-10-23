@@ -21,7 +21,7 @@ And, if that's too big for you, you can use our scrawny kid brother [Droxy](http
 - [Demo and Key Concepts](#demo-and-key-concepts)
 - [TypeScript](#typescript)
 - [The Rules](#the-rules)
-- [Code Walkthrough](#codewalkthrough)
+- [Code Walkthrough](#code-walkthrough)
 - [Advanced Usage](#advanced-usage)
 - [Interfaces](#interfaces)
 - [Contributing](#contributing)
@@ -113,9 +113,7 @@ Generally, just try to keep each discrete chain of DOM operations for a single e
 
 ## Code Walkthrough
 
-[![I recorded a three hour long video explaining the code.] // Title
-(https://i.ytimg.com/vi/BVKHJcd4Ifs/maxresdefault.jpg)] // Thumbnail
-(https://www.youtube.com/watch?v=BVKHJcd4Ifs "I recorded a three hour long video explaining the code.") // Video Link
+[![I recorded a three hour long video explaining the code.](https://i.ytimg.com/vi/BVKHJcd4Ifs/maxresdefault.jpg)](https://www.youtube.com/watch?v=BVKHJcd4Ifs "I recorded a three hour long video explaining the code.")
 
 ## Advanced Usage
 
