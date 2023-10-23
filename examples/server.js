@@ -143,6 +143,8 @@ let firstRequestTime = null
 const server = http.createServer((req, res) => {
   const parsedUrl = new url.URL(req.url, `http://${req.headers.host}`)
 
+  console.log(req.method, req.url)
+
   // Set CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*")
   res.setHeader("Access-Control-Allow-Methods", "GET")

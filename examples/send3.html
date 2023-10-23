@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wrapped Fetch Test</title>
+  </head>
+  <body>
+    <div id="target">Data will appear here...</div>
+
+    <button>Fetch Data</button>
+
+    <script type="module">
+      import { $, $$ } from "../index.js"
+      const target = $("#target")
+
+      $("button").on("click", () => {
+        $("button").send({
+          url: "http://localhost:3000/data",
+          onWait: () => target.text("Fetching..."),
+          onSuccess: (data) => target.text(`Data: ${data}`),
+          onError: (error) => target.text(`Error: ${error}`),
+          retries: 5,
+          retryDelay: 1000,
+          waitTime: 500,
+          method: "GET",
+          body: "This will get ignored on GET/HEAD requests",
+        })
+      })
+    </script>
+  </body>
+</html>

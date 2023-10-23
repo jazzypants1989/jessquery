@@ -23,13 +23,13 @@
       import { $$, $ } from "../index.js"
 
       const elems = $$("span")
-        .takeWhile((el) => parseInt(el.textContent) < 5)
-        .css("background-color", "yellow")
-        .do((el) => console.log(el.textContent))
-        .refresh()
+        .if({
+          is: (el) => parseInt(el.textContent) % 2 === 0,
+          then: (el) => el.css("background-color", "yellow"),
+          or: (el) => el.css("background-color", "pink"),
+        })
         .css("border", "2px solid black")
-        .takeWhile((el) => parseInt(el.textContent) > 5, true)
-        .css("background-color", "pink")
+        .do((el) => console.log(el.textContent))
     </script>
   </body>
 </html>
