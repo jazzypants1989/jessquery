@@ -37,5 +37,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/jazzypants1989/jessquery.git"
+  },
+  "dependencies": {
+    "benchmark": "^2.1.4"
   }
 }

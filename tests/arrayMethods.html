@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Benchmark Test</title>
+  </head>
+  <body>
+    <div id="container">
+      <!-- This script will create 5000 div elements -->
+      <script>
+        const container = document.getElementById("container")
+        for (let i = 0; i < 1000; i++) {
+          const div = document.createElement("div")
+          div.textContent = `Div ${i + 1}`
+          container.appendChild(div)
+        }
+      </script>
+    </div>
+
+    <script type="module">
+      import { $$ } from "../index.js"
+
+      const divs = $$("#container div")
+
+      // Filter: Highlights all divs that include "1" in their text content
+      const filteredDivs = divs.filter((el) => el.textContent.includes("1"))
+      filteredDivs.css("backgroundColor", "yellow")
+
+      // Find: Finds the first div that includes "1" in its text content and gives it a red border
+      const findDiv = divs.find((el) => el.textContent.includes("1"))
+      findDiv.css("border", "2px solid red")
+
+      // Slice: Takes a subsection of the divs (from 10 to 20) and gives them a blue font color
+      const slicedDivs = divs.slice(10, 20)
+      slicedDivs.css("color", "blue")
+
+      // Map: Slices the first ten divs, then removes the fifth and returns the rest while giving them a green font color
+      const mappedDivs = divs.slice(0, 10).map((el, index) => {
+        if (el.textContent === "Div 5") {
+          el.remove()
+        }
+        return el
+      })
+      mappedDivs.css("color", "green")
+
+      // Reduce: Checks each div, finds those that include "9" in their text content, and gives them a purple font color
+      const reducedDivs = divs.reduce((acc, el) => {
+        if (el.textContent.includes("9")) {
+          acc.push(el)
+        }
+        return acc
+      }, [])
+      reducedDivs.css("color", "purple")
+
+      // Reverse: We slice between 20 and 30, reverse the order and give the first five a pink font color
+      const reversedDivs = divs.slice(20, 30).reverse()
+      reversedDivs.slice(0, 5).css("color", "pink")
+    </script>
+  </body>
+</html>

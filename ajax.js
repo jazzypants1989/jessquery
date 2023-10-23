@@ -1,5 +1,5 @@
 export async function wrappedFetch(url, options, type, target) {
-  const { onWait, waitTime, onSuccess, onError } = options
+  const { onWait, waitTime, onSuccess, onError, retryDelay = 1000 } = options
 
   let waitTimeout = null
   onWait && (waitTimeout = setTimeout(() => onWait(), waitTime || 250))
@@ -11,7 +11,16 @@ export async function wrappedFetch(url, options, type, target) {
     onSuccess && requestIdleCallback(() => onSuccess(data))
     return data
   } catch (error) {
-    const errorMessage = error || `Failed to load ${type}`
+    if (options.retries > 0) {
+      const newOptions = {
+        ...options,
+        retries: options.retries - 1,
+        retryDelay: options.retryDelay * 2,
+      }
+      await new Promise((resolve) => setTimeout(resolve, retryDelay))
+      return wrappedFetch(url, newOptions, type, target)
+    }
+    const errorMessage = error.message || error || `Failed to load ${type}`
     onError
       ? requestIdleCallback(() => onError(error))
       : target.forEach((el) => (el.innerHTML = errorMessage))
@@ -136,7 +145,7 @@ function sanitizeOrNot(target, data, options) {
   const { sanitize = true, sanitizer } = options
   const targetElements = Array.isArray(target) ? target : [target]
   targetElements.forEach((el) => {
-    sanitize ? el.setHTML(data, sanitizer) : (el.innerHTML = data)
+    sanitize ? el.setHTML(data, { sanitizer }) : (el.innerHTML = data)
   })
 }
 

@@ -1940,15 +1940,11 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 
 ### FetchOptions
 
-- **error?: string**
-
-  - The error message to display if the fetch fails.
-    - There is a standard, boring error message that will display if none is provided.
-    - If you provide an onError callback, the error message will be ignored.
-
 - **onError?: () => void**
 
   - A callback to execute if the fetch fails.
+    - There is a standard, boring error message that will replace the element if no `onError` callback is provided.
+    - This will either simply contain the error message or `Failed to load ${type}` (e.g., `Failed to load HTML`)
 
 - **onSuccess?: () => void**
 
@@ -1958,12 +1954,26 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
 - **onWait?: () => void**
 
   - A callback to execute while the fetch is pending.
+
     - This will not run for 250ms by default, but you can change that by setting the `waitTime` option.
+
+  - The error message to display if the fetch fails.
+    - If you provide an onError callback, the error message will be ignored.
 
 - **waitTime?: number**
 
   - The number of milliseconds to wait before executing the `onWait` callback.
     - This defaults to 250ms.
+
+- **retries?: number**
+
+  - The number of times to retry the fetch if it fails.
+    - This defaults to 0.
+
+- **retryDelay?: number**
+
+  - The number of milliseconds to wait before retrying the fetch.
+    - This defaults to 1000ms.
 
 - **runScripts?: boolean**
 

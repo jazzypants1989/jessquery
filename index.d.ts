@@ -2085,14 +2085,15 @@ declare module "jessquery" {
   ): (...args: any[]) => Promise<any>
 
   interface FetchOptions extends RequestInit {
+    sanitize?: boolean
+    sanitizer?: Sanitizer
+    runScripts?: boolean
+    retries?: number
+    retryDelay?: number
+    waitTime?: number
     onError?: (error: any) => void
     onSuccess?: (data: any) => void
     onWait?: () => void
-    waitTime?: number
-    error?: string
-    sanitize?: boolean
-    runScripts?: boolean
-    sanitizer?: Function
   }
 
   type ChildInput = string | HTMLElement | DomProxy | ChildInput[]

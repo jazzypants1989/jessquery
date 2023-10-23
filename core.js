@@ -95,6 +95,15 @@ export function handlerMaker(elements, customMethods) {
         return customMethods[prop]
       }
 
+      if (Array.isArray(elements) && typeof elements[prop] === "function") {
+        return function (...args) {
+          const result = elements[prop](...args)
+          return result instanceof Array
+            ? addMethods(elements[prop].name + args, result)
+            : addMethods(elements[prop].name + args, [result])
+        }
+      }
+
       return typeof elements[prop] === "function"
         ? elements[prop].bind(elements)
         : elements[prop]

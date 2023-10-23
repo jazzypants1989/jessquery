@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Benchmark Test</title>
+  </head>
+  <body>
+    <div id="container">
+      <!-- This script will create 5000 div elements -->
+      <script>
+        const container = document.getElementById("container")
+        for (let i = 0; i < 1000; i++) {
+          const div = document.createElement("div")
+          div.textContent = `Div ${i + 1}`
+          container.appendChild(div)
+        }
+      </script>
+    </div>
+
+    <script type="module">
+      import { $, $$ } from "../index.js"
+
+      const runBenchmark = async () => {
+        console.time("Benchmarking Time")
+
+        // for (let i = 0; i < 100; i++) {
+        const divs = $$("#container div")
+
+        // // Use the `do` method to manipulate each div element
+        // await divs.do(async (el) => {
+        //   console.log(el.textContent)
+        //   el.text(`Updated Div ${el.textContent.split("Div ")[1]}`)
+        // })
+        // }
+
+        // const divs = $$("#container div").forEach((el) => {
+        //   console.log(el.textContent)
+        //   el.textContent = `Updated Div ${el.textContent.split("Div ")[1]}`
+        // })
+
+        // lets test the if method
+        // divs
+        //   .takeWhile((el) => el.textContent.includes("1"))
+        //   .do((el) => {
+        //     console.log(el.textContent)
+        //     el.text(`Updated Div ${el.textContent.split("Div ")[1]}`)
+        //   })
+
+        // divs.text("Hey!")
+
+        // const filteredDivs = divs.filter((el) => el.textContent.includes("1"))
+        // filteredDivs.text("hey")
+
+        // filteredDivs.forEach((el) => {
+        //   console.log(el.textContent)
+        //   el.textContent = `Updated Div ${el.textContent.split("Div ")[1]}`
+        // })
+
+        const findDiv = divs.find((el) => el.textContent.includes("1"))
+
+        findDiv.text("hey")
+
+        // const newArray = divs.map((el) => el.innerHTML).text("hey")
+
+        //   .if({
+        //     is: (el) => el.textContent.includes("1"),
+        //     then: (el) => {
+        //       console.log(el.textContent)
+        //       el.text(
+        //         `There is a one in Div ${el.textContent.split("Div ")[1]}`
+        //       )
+        //     },
+        //     or: (el) => {
+        //       console.log(el.textContent)
+        //       el.text(`No one in Div ${el.textContent.split("Div ")[1]}`)
+        //     },
+        //   })
+
+        // const divs = document.querySelectorAll("#container div")
+        // divs.forEach((el) => {
+        //   console.log(el.textContent)
+        //   el.textContent = `Updated Div ${el.textContent.split("Div ")[1]}`
+        // })
+
+        console.timeEnd("Benchmarking Time")
+      }
+
+      runBenchmark()
+    </script>
+  </body>
+</html>
