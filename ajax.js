@@ -1,12 +1,13 @@
 export async function wrappedFetch(url, options, type, target) {
   const { onWait, waitTime, onSuccess, onError, retryDelay = 1000 } = options
 
+  console.log("wrappedFetch", url, options, type, target)
+
   let waitTimeout = null
   onWait && (waitTimeout = setTimeout(() => onWait(), waitTime || 250))
 
   try {
     const response = await fetch(url, options)
-    clearTimeout(waitTimeout)
     const data = await handleResponse(response, type, target, options)
     onSuccess && requestIdleCallback(() => onSuccess(data))
     return data
@@ -24,6 +25,8 @@ export async function wrappedFetch(url, options, type, target) {
     onError
       ? requestIdleCallback(() => onError(error))
       : target.forEach((el) => (el.innerHTML = errorMessage))
+  } finally {
+    clearTimeout(waitTimeout)
   }
 }
 
@@ -32,8 +35,11 @@ export function send(element, options = {}, target) {
 
   event && event.preventDefault()
   url = url || getAction(element)
-  body = body || getBody(element, options)
   headers = headers ? new Headers(headers) : new Headers()
+  body = body || getBody(element, options)
+  if (method === "GET" || method === "HEAD") {
+    body = null
+  }
 
   if (json) {
     headers.append("Content-Type", "application/json")
