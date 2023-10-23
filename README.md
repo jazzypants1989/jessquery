@@ -985,7 +985,8 @@ A proxy covering a single HTML element that allows you to chain methods sequenti
   - Otherwise, the request will be sent as FormData and the response will be parsed as text.
 
   - The serializer option can be used to provide a custom function to serialize the form. It will be passed the element as an argument and should return the serialized form data.
-  - This will probably break if you don't return a FormData object, but I haven't tested it.
+
+    - This will probably break if you don't return a FormData object, but I haven't tested it.
 
   - Example:
 
@@ -1645,7 +1646,8 @@ A proxy covering a collection of HTML elements that allows you to chain methods 
   - Otherwise, the request will be sent as FormData and the response will be parsed as text.
 
   - The serializer option can be used to provide a custom function to serialize the form. It will be passed the element as an argument and should return the serialized form data.
-  - This will probably break if you don't return a FormData object, but I haven't tested it.
+
+    - This will probably break if you don't return a FormData object, but I haven't tested it.
 
   - Example: `$$('button').send({ url: '/api/submit' })`
   - Example: `$$('button').send({ url: '/api/submit', method: 'GET' })`
