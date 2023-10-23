@@ -406,6 +406,10 @@ $("#otherSubmitButton").on("click", (event) => {
     url: "/api/cool-endpoint", // Otherwise, the formaction attribute or any parent form's action would be used if it exists.
     body: { cool: "data" }, // Otherwise, the form's data would be used. If no form, the textContent would be used.
     method: "PUT", // POST is the default
+    onWait: () => console.log("Waiting for the server to respond..."), // You still get all the extra event hooks and options.
+    headers: {
+      "Cool-Header": "Cool-Value", // And, of course, all the normal fetch options as well.
+    },
   })
 })
 // (this will send multiple fetches though. No caching or batching... yet)
