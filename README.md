@@ -37,7 +37,6 @@ const fadeOut = [{ opacity: 1 }, { opacity: 0 }] // WAAPI keyframes
 const animatedText = $$(".animated-text") // $$ ≈ querySelectorAll, use $ for querySelector
 
 // <span hidden class="animated-text"></span>
-// <span hidden class="animated-text"></span>
 animatedText
   .addClass("special")
   .wait(1000) // Will not appear for one second
